@@ -1,4 +1,5 @@
 import { Hero } from "./components/Hero";
+import Link from "next/link";
 
 export default function HomePage() {
   return (
@@ -19,27 +20,27 @@ export default function HomePage() {
         {/* Navigation */}
         <nav className="flex justify-between items-center py-3 md:py-4 px-4 md:px-6">
           <div className="flex items-center">
-            <a href="/" className="text-white text-xl font-bold hover:text-gray-200 transition-colors">
+            <Link href="/" className="text-white text-xl font-bold hover:text-gray-200 transition-colors">
               verxio
-            </a>
+            </Link>
           </div>
           <div className="flex items-center gap-3 md:gap-4">
-            <a href="#" className="text-white bg-white/10 px-4 py-2 rounded-lg hover:bg-white/20 transition-colors">
+            <Link href="#" className="text-white bg-white/10 px-4 py-2 rounded-lg hover:bg-white/20 transition-colors">
               Request Demo
-            </a>
-            <a href="#" className="bg-[#FFEB3B] text-black px-4 py-2 rounded-lg hover:bg-[#FFE100] transition-colors">
+            </Link>
+            <Link href="#" className="bg-[#FFEB3B] text-black px-4 py-2 rounded-lg hover:bg-[#FFE100] transition-colors">
               Join Waitlist
-            </a>
+            </Link>
           </div>
         </nav>
 
         {/* Feature Banner */}
         <div className="flex justify-center mt-4 px-4">
-          <a href="#" 
+          <Link href="#" 
              className="inline-flex items-center gap-2 bg-[#1A1A1A] text-white px-4 py-2 rounded-full text-sm md:text-base hover:bg-[#252525] transition-colors">
             <span className="bg-[#4CAF50] text-xs px-2 py-0.5 rounded">New</span>
             <span>Core NFT Experience Points →</span>
-          </a>
+          </Link>
         </div>
 
         <Hero />

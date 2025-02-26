@@ -1,13 +1,6 @@
 import type { Metadata } from "next";
-import { Open_Sans, Schibsted_Grotesk } from "next/font/google";
+import { Open_Sans } from "next/font/google";
 import "./globals.css";
-
-
-const schibstedGrotesk = Schibsted_Grotesk({
-  subsets: ['latin'],
-  weight: ['400', '500', '600', '700'],
-  variable: '--font-schibsted-grotesk',
-});
 
 const openSans = Open_Sans({
   subsets: ['latin'],
