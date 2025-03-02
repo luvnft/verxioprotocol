@@ -1,0 +1,40 @@
+{
+  "name": "@verxio/protocol",
+  "version": "0.1.0",
+  "description": "Verxio Protocol - Web3 Community Rewards Protocol",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "test": "jest",
+    "prepare": "npm run build",
+    "dev": "tsc --watch",
+    "start": "ts-node src/test.ts"
+  },
+  "keywords": [
+    "web3",
+    "protocol",
+    "blockchain",
+    "rewards",
+    "community"
+  ],
+  "author": "Verxio Protocol",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/jest": "^29.5.12",
+    "@types/node": "^20.11.24",
+    "jest": "^29.7.0",
+    "ts-jest": "^29.1.2",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.3.3"
+  },
+  "dependencies": {
+    "@metaplex-foundation/mpl-core": "^1.2.0",
+    "@metaplex-foundation/umi": "^1.1.1",
+    "@metaplex-foundation/umi-web3js-adapters": "^1.1.1",
+    "@solana/web3.js": "^1.98.0"
+  }
+}
