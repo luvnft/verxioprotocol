@@ -1,6 +1,5 @@
-import { PublicKey, Keypair, Commitment, Connection } from "@solana/web3.js";
+import { PublicKey, Commitment, Connection } from "@solana/web3.js";
 import { generateSigner, publicKey, Umi } from "@metaplex-foundation/umi";
-import { fromWeb3JsKeypair } from "@metaplex-foundation/umi-web3js-adapters";
 import { 
   createCollection,  
   create, 
@@ -19,7 +18,10 @@ import {
 } from "../types";
 import { PublicKey as UmiPublicKey } from "@metaplex-foundation/umi";
 import { createUmi } from "@metaplex-foundation/umi-bundle-defaults";
+import { createSignerFromWalletAdapter } from "@metaplex-foundation/umi-signer-wallet-adapters";
+import { signerIdentity } from "@metaplex-foundation/umi";
 import bs58 from "bs58";
+import { WalletAdapter } from '@solana/wallet-adapter-base';
 
 export class VerxioProtocol {
   private network: Network;
@@ -27,6 +29,7 @@ export class VerxioProtocol {
   private collectionAddress: PublicKey | null = null;
   private collectionSigner: any = null;
   public umi!: Umi;
+  private userWallet: WalletAdapter | null = null;
 
   private static DEFAULT_RPC_URLS: Record<Network, string> = {
     mainnet: "https://api.mainnet-beta.solana.com",
@@ -35,18 +38,29 @@ export class VerxioProtocol {
     "sonic-testnet": "https://api.testnet.sonic.game",
   };
 
-  constructor(network: Network, programAuthority: PublicKey, rpcUrl?: string) {
+  constructor(
+    network: Network, 
+    programAuthority: PublicKey, 
+    userWallet?: WalletAdapter,
+    rpcUrl?: string
+  ) {
     this.network = network;
     this.programAuthority = programAuthority;
+    this.userWallet = userWallet || null;
 
     const commitment: Commitment = 'processed';   
-    // Initialize UMI with appropriate RPC
     const finalRpcUrl = rpcUrl || VerxioProtocol.DEFAULT_RPC_URLS[network];
     const connection = new Connection(finalRpcUrl, {
       commitment,
       wsEndpoint: finalRpcUrl
     });
     this.umi = createUmi(connection);
+
+    // If user wallet is provided, set it as the fee payer
+    if (userWallet) {
+      const walletSigner = createSignerFromWalletAdapter(userWallet);
+      this.umi.use(signerIdentity(walletSigner));
+    }
   }
 
   // Convert Solana PublicKey to Umi PublicKey
@@ -67,6 +81,13 @@ export class VerxioProtocol {
   // Add method to set collection signer
   public setCollectionSigner(signer: any): void {
     this.collectionSigner = signer;
+  }
+
+  // Add method to update user wallet
+  public setUserWallet(wallet: WalletAdapter) {
+    this.userWallet = wallet;
+    const walletSigner = createSignerFromWalletAdapter(wallet);
+    this.umi.use(signerIdentity(walletSigner));
   }
 
   // Add method to initialize from existing program
@@ -160,10 +181,18 @@ export class VerxioProtocol {
       throw new Error("Collection not initialized. Call createProgram first.");
     }
 
+    if (!this.userWallet) {
+      throw new Error("User wallet not set. Call setUserWallet first.");
+    }
+
     try {
       const assetSigner = generateSigner(this.umi);
       
-      const tx = await create(this.umi, {
+      // Ensure the user's wallet is set as the fee payer
+      const walletSigner = createSignerFromWalletAdapter(this.userWallet);
+      this.umi.use(signerIdentity(walletSigner));
+      
+      const createTx = await create(this.umi, {
         asset: assetSigner,
         name: passName,
         uri: passMetadataUri,
@@ -192,7 +221,6 @@ export class VerxioProtocol {
 
       console.log("Initializing loyalty pass data");
 
-      // After creating the pass, initialize its data
       await writeData(this.umi, {
         key: {
           type: "AppData",
@@ -218,7 +246,7 @@ export class VerxioProtocol {
 
       return {
         signer: assetSigner,
-        signature: bs58.encode(tx.signature)
+        signature: bs58.encode(createTx.signature)
       };
     } catch (error) {
       throw new Error(`Failed to issue loyalty pass: ${error}`);
@@ -234,6 +262,10 @@ export class VerxioProtocol {
     signer: ReturnType<typeof generateSigner>,
     multiplier: number = 1
   ): Promise<{ points: number; signature: string }> {
+    if (!this.userWallet) {
+      throw new Error("User wallet not set. Call setUserWallet first.");
+    }
+
     try {
       const asset = await fetchAsset(this.umi, this.toUmiPublicKey(passAddress));
       const appDataPlugin = asset.appDatas?.[0];
@@ -278,7 +310,7 @@ export class VerxioProtocol {
         { name: "Grind", xpRequired: 0, rewards: ["nothing for you!"] }
       );
 
-      // Write updated data
+      // Write updated data (using the already set userWallet as fee payer)
       const tx = await writeData(this.umi, {
         key: {
           type: "AppData",
@@ -429,4 +461,5 @@ export class VerxioProtocol {
     }
   }
 }
-export default VerxioProtocol; 
+
+export default VerxioProtocol;

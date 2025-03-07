@@ -2,7 +2,7 @@
 
 import { useWallet } from '@solana/wallet-adapter-react';
 import { PublicKey } from '@solana/web3.js';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { VerxioProtocol } from '../../../../protocol/src/core/index';
 import { ActionPanel } from './ActionPanel';
 import { createSignerFromWalletAdapter } from '@metaplex-foundation/umi-signer-wallet-adapters';
@@ -28,7 +28,7 @@ export const EXPLORER_URLS: Record<NetworkOption, string> = {
 };
 
 export function LoyaltyProgram() {
-  const { publicKey, wallet } = useWallet();
+  const { publicKey, wallet, connected } = useWallet();
   const [verxio, setVerxio] = useState<VerxioProtocol | null>(null);
   type StepType = 'program' | 'pass' | 'details';
   const [step, setStep] = useState<StepType>('program');
@@ -54,18 +54,27 @@ export function LoyaltyProgram() {
     rewards: ['']
   });
 
-  const initializeProtocol = () => {
-    if (!publicKey || !wallet?.adapter) return;
+  // Add useEffect to handle wallet changes
+  useEffect(() => {
+    if (publicKey && wallet?.adapter && connected) {
+      const protocol = new VerxioProtocol(
+        network,
+        programId ? new PublicKey(programId) : publicKey,
+        wallet.adapter
+      );
 
-    const protocol = new VerxioProtocol(
-      network,
-      publicKey
-    );
+      // If we have a programId, set it as the collection address and initialize collection signer
+      if (programId) {
+        protocol.setCollectionAddress(new PublicKey(programId));
+        const collectionSigner = generateSigner(protocol.umi);
+        protocol.setCollectionSigner(collectionSigner);
+      }
 
-    const walletSigner = createSignerFromWalletAdapter(wallet.adapter);
-    protocol.umi.use(signerIdentity(walletSigner));
-    setVerxio(protocol);
-  };
+      setVerxio(protocol);
+    } else {
+      setVerxio(null);
+    }
+  }, [publicKey, wallet, connected, network, programId]);
 
   const addTier = () => {
     if (newTier.name && newTier.xpRequired >= 0) {
@@ -102,12 +111,20 @@ export function LoyaltyProgram() {
     try {
       const result = await verxio.createProgram({
         organizationName: programName,
-        metadataUri: metadataUri || 'https://arweave.net/test',
+        metadataUri: metadataUri,
         tiers,
         pointsPerAction: actions,
       });
+
+      // Store program ID and signature
       setProgramId(result.programId);
       setProgramSignature(result.signature);
+
+      // Set collection address and initialize a new collection signer
+      verxio.setCollectionAddress(new PublicKey(result.programId));
+      const collectionSigner = generateSigner(verxio.umi);
+      verxio.setCollectionSigner(collectionSigner);
+
       setStep('pass');
     } catch (error) {
       console.error('Error creating program:', error);
@@ -117,12 +134,15 @@ export function LoyaltyProgram() {
 
   const createLoyaltyPass = async () => {
     if (!verxio || !publicKey || !programName) return;
+    if (!wallet?.adapter.connected) {
+      await wallet?.adapter.connect();
+    }
     setLoading(true);
     try {
       const result = await verxio.issueLoyaltyPass(
         publicKey,
         `${programName} Loyalty Pass`,
-        metadataUri || 'https://arweave.net/test'
+        metadataUri
       );
       setUserPass(result.signer.publicKey);
       setPassSigner(result.signer);
@@ -150,14 +170,6 @@ export function LoyaltyProgram() {
             <p className="text-zinc-600 text-center max-w-md mb-6">
               Connect your wallet to create and manage your own onchain loyalty programs.
             </p>
-            {/* <div className="flex gap-4">
-              <button className="px-6 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium">
-                Get Started
-              </button>
-              <a href="https://docs.verxio.xyz" target="_blank" rel="noopener noreferrer" className="px-6 py-2.5 border border-zinc-300 text-zinc-700 rounded-lg hover:bg-zinc-50 transition-colors text-sm font-medium">
-                Learn More
-              </a>
-            </div> */}
           </div>
 
           {/* Preview Form */}
@@ -239,7 +251,7 @@ export function LoyaltyProgram() {
 
   // Initialize Protocol if not already initialized
   if (!verxio && step === 'program') {
-    initializeProtocol();
+    // initializeProtocol();
   }
 
   return (
@@ -258,7 +270,8 @@ export function LoyaltyProgram() {
                   Create Program
                 </span>
               </div>
-              <div className="absolute top-6 left-1/2 w-full h-1 bg-gray-200 -z-10"></div>
+              {/* Line to Step 2 */}
+              <div className={`absolute top-6 left-[65%] w-[70%] h-1 ${step === 'program' ? 'bg-gray-200' : 'bg-blue-600'}`}></div>
             </div>
             
             {/* Step 2 */}
@@ -271,7 +284,8 @@ export function LoyaltyProgram() {
                   Loyalty Pass
                 </span>
               </div>
-              <div className="absolute top-6 left-1/2 w-full h-1 bg-gray-200 -z-10"></div>
+              {/* Line to Step 3 */}
+              <div className={`absolute top-6 left-[65%] w-[70%] h-1 ${step === 'details' ? 'bg-blue-600' : 'bg-gray-200'}`}></div>
             </div>
             
             {/* Step 3 */}
@@ -318,15 +332,6 @@ export function LoyaltyProgram() {
                     value={network}
                     onChange={(e) => {
                       setNetwork(e.target.value as NetworkOption);
-                      if (publicKey && wallet?.adapter) {
-                        const protocol = new VerxioProtocol(
-                          e.target.value as NetworkOption,
-                          publicKey
-                        );
-                        const walletSigner = createSignerFromWalletAdapter(wallet.adapter);
-                        protocol.umi.use(signerIdentity(walletSigner));
-                        setVerxio(protocol);
-                      }
                     }}
                     className="w-full px-4 py-2 rounded-lg border border-zinc-700 bg-transparent focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
                   >

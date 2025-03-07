@@ -19,12 +19,10 @@ async function testNewProgramCreation() {
 
   console.log("\n=== Testing New Program Creation ===\n");
 
-  const verxio = new VerxioProtocol({
-    network: "sonic-testnet",
-    programAuthority: authorityKey,
-    organizationName: "Jupiter Exchange",
-    passMetadataUri: "https://arweave.net/123abc",
-  });
+  const verxio = new VerxioProtocol(
+    "sonic-testnet",
+    authorityKey
+  );
 
   verxio.umi.use(keypairIdentity(umiKeypair));
 
@@ -70,7 +68,11 @@ async function testNewProgramCreation() {
     console.log("Test user public key:", testUser.publicKey.toString());
 
     console.log("\n2. Issuing loyalty pass...");
-    const passResult = await verxio.issueLoyaltyPass(testUser.publicKey);
+    const passResult = await verxio.issueLoyaltyPass(
+      testUser.publicKey,
+      "Jupiter Exchange Pass",
+      "https://arweave.net/123abc"
+    );
     const passAddress = new PublicKey(passResult.signer.publicKey);
     console.log("Loyalty pass issued:", passResult);
 
