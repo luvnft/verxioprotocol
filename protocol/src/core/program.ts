@@ -14,16 +14,16 @@ import {
   fetchAssetsByOwner
 } from "@metaplex-foundation/mpl-core";
 import { 
+  VerxioConfig, 
+  LoyaltyProgramData, 
   Network,
-  LoyaltyProgramData
 } from "../types";
 import { PublicKey as UmiPublicKey } from "@metaplex-foundation/umi";
 import { createUmi } from "@metaplex-foundation/umi-bundle-defaults";
 import bs58 from "bs58";
 
 export class VerxioProtocol {
-  private network: Network;
-  private programAuthority: PublicKey;
+  private config: VerxioConfig;
   private collectionAddress: PublicKey | null = null;
   private collectionSigner: any = null;
   public umi!: Umi;
@@ -35,18 +35,18 @@ export class VerxioProtocol {
     "sonic-testnet": "https://api.testnet.sonic.game",
   };
 
-  constructor(network: Network, programAuthority: PublicKey, rpcUrl?: string) {
-    this.network = network;
-    this.programAuthority = programAuthority;
+  constructor(config: VerxioConfig) {
+    this.config = config;
 
     const commitment: Commitment = 'processed';   
     // Initialize UMI with appropriate RPC
-    const finalRpcUrl = rpcUrl || VerxioProtocol.DEFAULT_RPC_URLS[network];
-    const connection = new Connection(finalRpcUrl, {
+    const rpcUrl = this.config.rpcUrl? this.config.rpcUrl : VerxioProtocol.DEFAULT_RPC_URLS[config.network];
+    const connection = new Connection(rpcUrl, {
       commitment,
-      wsEndpoint: finalRpcUrl
-    });
-    this.umi = createUmi(connection);
+      wsEndpoint: rpcUrl
+  });
+      this.umi = createUmi(connection);
+
   }
 
   // Convert Solana PublicKey to Umi PublicKey
@@ -56,7 +56,7 @@ export class VerxioProtocol {
 
   //  Get network
   public getNetwork(): Network {
-    return this.network;
+    return this.config.network;
   }
 
   // Add method to set collection address
@@ -70,29 +70,27 @@ export class VerxioProtocol {
   }
 
   // Add method to initialize from existing program
-  // public static async fromExistingProgram(
-  //   network: Network,
-  //   programAuthority: PublicKey,
-  //   programId: string,
-  //   collectionPrivateKey: string,
-  //   rpcUrl?: string
-  // ): Promise<VerxioProtocol> {
-  //   const protocol = new VerxioProtocol(network, programAuthority, rpcUrl);
+  public static async fromExistingProgram(
+    config: VerxioConfig,
+    programId: string,
+    collectionPrivateKey: string
+  ): Promise<VerxioProtocol> {
+    const protocol = new VerxioProtocol(config);
 
-  //   // Set up collection from existing program
-  //   const collectionKeypair = Keypair.fromSecretKey(
-  //     bs58.decode(collectionPrivateKey)
-  //   );
-  //   protocol.setCollectionAddress(new PublicKey(programId));
-  //   protocol.setCollectionSigner(fromWeb3JsKeypair(collectionKeypair));
+    // Set up collection from existing program
+    const collectionKeypair = Keypair.fromSecretKey(
+      bs58.decode(collectionPrivateKey)
+    );
+    protocol.setCollectionAddress(new PublicKey(programId));
+    protocol.setCollectionSigner(fromWeb3JsKeypair(collectionKeypair));
 
-  //   return protocol;
-  // }
+    return protocol;
+  }
 
   /**
    * Creates a new loyalty program with tiers and point actions
    */
-  async createProgram(data: Omit<LoyaltyProgramData, 'network' | 'programAuthority' | 'rpcUrl'>): Promise<{
+  async createProgram(data: LoyaltyProgramData): Promise<{
     programId: string;
     signature: string;
     collectionPrivateKey: string;
@@ -119,7 +117,7 @@ export class VerxioProtocol {
               },
               {
                 key: "creator",
-                value: this.programAuthority.toString(),
+                value: this.config.programAuthority.toString(),
               },
             ],
           },
@@ -127,7 +125,7 @@ export class VerxioProtocol {
             type: "PermanentTransferDelegate",
             authority: { 
               type: "Address",
-              address: this.toUmiPublicKey(this.programAuthority),
+              address: this.toUmiPublicKey(this.config.programAuthority),
             } as PluginAuthority,
           },
         ],
@@ -148,11 +146,7 @@ export class VerxioProtocol {
   /**
    * Issues a loyalty NFT pass to a user
    */
-  async issueLoyaltyPass(
-    recipient: PublicKey,
-    passName: string,
-    passMetadataUri: string
-  ): Promise<{
+  async issueLoyaltyPass(recipient: PublicKey): Promise<{
     signer: ReturnType<typeof generateSigner>;
     signature: string;
   }> {
@@ -165,8 +159,8 @@ export class VerxioProtocol {
       
       const tx = await create(this.umi, {
         asset: assetSigner,
-        name: passName,
-        uri: passMetadataUri,
+        name: `${this.config.organizationName} Loyalty Pass`,
+        uri: this.config.passMetadataUri,
         owner: this.toUmiPublicKey(recipient),
         collection: {
           publicKey: this.toUmiPublicKey(this.collectionAddress),
@@ -356,7 +350,7 @@ export class VerxioProtocol {
     passAddress: PublicKey,
     toAddress: PublicKey
   ): Promise<void> {
-    if (!this.programAuthority) {
+    if (!this.config.programAuthority) {
       throw new Error("Program authority not configured");
     }
 

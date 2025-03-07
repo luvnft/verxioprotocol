@@ -1,46 +1,71 @@
 # Verxio Protocol
 
-Verxio is a decentralized loyalty protocol that enables organizations to create and manage NFT-based loyalty programs with experience points (XP) on Solana. The protocol leverages Metaplex's MPL Core standard to provide secure, on-chain loyalty tracking and rewards that can be redeemed in both digital and real-world marketplaces.
+A protocol for creating and managing loyalty programs on Solana using MPL Core.
 
 ## Features
 
-- - 🏆 **Customizable Loyalty Programs**: Organizations can define their own tiers, rewards, and 
-point systems
-- 🎯 **NFT-Based Loyalty Passes**: Issue unique NFTs that track user progress and rewards
-- 🏆 **Dynamic XP System**: Award experience points for various user actions
-- 📈 **Automatic Tier Progression**: Users automatically level up based on XP milestones
-- 🔒 **Secure Transfer System**: Managed token transfers with organization verification
-- ⚡ **Flexible Integration**: Easy integration with existing platforms and dApps
-- 🌐 **Cross-Platform Compatibility**: XP and achievements are tracked across different platforms
+- Create loyalty programs with custom tiers and rewards
+- Issue loyalty passes as NFTs
+- Track user XP and tier progression
+- Support for transferable loyalty passes (with organization approval)
+- Multiple database adapters (MongoDB, Supabase, Firebase)
+- **Inventory management system for tracking user assets**
+- **Query methods for loyalty passes and inventories**
 
 ## Installation
 
 ```bash
-npm install @verxio/protocol
+npm install verxio-protocol
+# or
+yarn add verxio-protocol
 ```
 
 ## Usage
 
+### On-Chain Only (No Database Required)
 ```typescript
-// Import the protocol
-import VerxioProtocol from '@verxio/protocol';
-
-// Or import with types
-import { VerxioProtocol, LoyaltyProgramData } from '@verxio/protocol';
-
-// Initialize the protocol
+// Initialize Verxio without database
 const verxio = new VerxioProtocol({
-  umi: umiConnection,
-  programAuthority: publicKey,
-  organizationName: "Jupiter Exchange",
-  passMetadataUri: "https://..."
+  network: 'devnet',
+  programAuthority: new PublicKey('YOUR_AUTHORITY_KEY'),
+  organizationName: "Your Organization",
+  passMetadataUri: "https://your-metadata-uri.com"
+});
+
+// Fetch loyalty pass details from chain
+const pass = await verxio.getLoyaltyPassOnChain(passAddress);
+
+// Get pass with token data
+const passWithToken = await verxio.getLoyaltyPassWithToken(passAddress);
+
+// Get all passes owned by a wallet
+const walletPasses = await verxio.getWalletLoyaltyPasses(walletAddress);
+
+// Get all passes created by an organization
+const orgPasses = await verxio.getOrganizationLoyaltyPasses(creatorAddress);
+```
+
+### With Database Support
+```typescript
+// Initialize with database
+const verxio = new VerxioProtocol({
+  network: 'devnet',
+  programAuthority: new PublicKey('YOUR_AUTHORITY_KEY'),
+  organizationName: "Your Organization",
+  passMetadataUri: "https://your-metadata-uri.com",
+  database: {
+    type: 'mongodb',
+    config: {
+      uri: "your-database-uri"
+    }
+  }
 });
 
 // Create a loyalty program
 const programId = await verxio.createProgram({
-  organizationName: "Jupiter Exchange",
+  organizationName: "Your Organization",
   metadataUri: "https://...",
-  symbol: "JUP",
+  symbol: "LOYAL",
   tiers: [
     { 
       name: "Bronze", 
@@ -50,218 +75,150 @@ const programId = await verxio.createProgram({
     { 
       name: "Silver", 
       xpRequired: 1000, 
-      rewards: ["5% cashback", "Priority support"] 
+      rewards: ["5% cashback"] 
     }
   ],
   pointsPerAction: {
-    "swap": 10,
-    "referral": 50,
-    "dailyLogin": 5
+    "purchase": 10,
+    "review": 5
   }
 });
 
-// Issue a loyalty pass
-const userPass = await verxio.issueLoyaltyPass(userPublicKey);
+// Issue loyalty pass to user
+const userWallet = new PublicKey('USER_WALLET_ADDRESS');
+const passAddress = await verxio.issueLoyaltyPass(userWallet);
 
-// Award points
-const newXp = await verxio.awardPoints(userPass, "swap");
-```
+// Award points for actions
+await verxio.awardPoints(passAddress, "purchase", 2); // With 2x multiplier
 
-## Quick Start
-
-```typescript
-import { LoyaltyProgram } from '@verxio/protocol';
-import { createUmi } from '@metaplex-foundation/umi';
-
-// Initialize the Umi connection
-const umi = createUmi('https://api.mainnet-beta.solana.com');
-
-// Initialize the loyalty program
-const program = new LoyaltyProgram({
-  umi,
-  programAuthority: publicKey, // Your program's authority
-  organizationName: "Jupiter Exchange",
-  passMetadataUri: "https://arweave.net/..." // URI for loyalty pass metadata
-});
-
-// Define your loyalty program structure
-const loyaltyProgramData = {
-  organizationName: "Jupiter Exchange",
-  metadataUri: "https://arweave.net/...", // URI for program metadata
-  symbol: "JUP",
-  tiers: [
-    {
-      name: "Bronze",
-      xpRequired: 500,
-      rewards: ["2% cashback"]
-    },
-    {
-      name: "Silver",
-      xpRequired: 1000,
-      rewards: ["5% cashback", "Priority support"]
-    },
-    {
-      name: "Gold",
-      xpRequired: 2500,
-      rewards: ["10% cashback", "VIP access", "Exclusive NFTs"]
-    }
-  ],
-  pointsPerAction: {
-    "swap": 10,
-    "referral": 50,
-    "dailyLogin": 5,
-    "stake": 25
-  }
-};
-
-// Create a new loyalty program
-const programId = await program.createProgram(loyaltyProgramData);
-
-// Issue a loyalty pass to a user
-const userPass = await program.issueLoyaltyPass(userPublicKey);
-
-// Award points for user actions
-const newXp = await program.awardPoints(userPass, "swap"); // Basic points
-const bonusXp = await program.awardPoints(userPass, "referral", 2); // With 2x multiplier
-```
-
-## Core Components
-
-### 1. Loyalty Program Creation
-The `createProgram` method sets up your loyalty program with:
-- NFT collection for loyalty passes
-- Tier structure and requirements
-- Points system configuration
-- Transfer delegation settings
-
-```typescript
-const programId = await program.createProgram({
-  organizationName: string;
-  metadataUri: string;
-  symbol?: string;
-  tiers: Tier[];
-  pointsPerAction: PointAction;
-});
-```
-
-### 2. Loyalty Pass Issuance
-Issue NFT-based loyalty passes to users that track:
-- Current XP balance
-- Tier status
-- Action history
-- Timestamps
-
-```typescript
-const userPass = await program.issueLoyaltyPass(userPublicKey);
-```
-
-### 3. Points Management
-Award XP for user actions with optional multipliers:
-
-```typescript
-const newXp = await program.awardPoints(
-  passAddress: PublicKey, 
-  action: string,
-  multiplier?: number
+// Handle pass transfers
+await verxio.requestTransfer(
+  passAddress,
+  oldOwner,
+  newOwner
 );
-```
 
-## Data Structures
+// Organization approves transfer
+await verxio.approveTransfer(
+  passAddress,
+  oldOwner,
+  newOwner
+);
 
-### LoyaltyProgramData
-```typescript
-interface LoyaltyProgramData {
-  organizationName: string;
-  metadataUri: string;
-  symbol?: string;
-  tiers: Tier[];
-  pointsPerAction: PointAction;
-}
-```
+// Inventory Management
+// Create inventory for user
+await verxio.createInventory(userId);
 
-### Tier
-```typescript
-interface Tier {
-  name: string;
-  xpRequired: number;
-  rewards: string[];
-}
-```
-
-### PointAction
-```typescript
-interface PointAction {
-  [key: string]: number;
-}
-```
-
-## Implementation Guide
-
-### 1. Setting Up Points System
-Design your points system carefully:
-- Define meaningful actions that align with user engagement
-- Set appropriate point values for each action
-- Use multipliers for special events or promotions
-
-```typescript
-const pointsPerAction = {
-  "trade": 10,        // Basic trading activity
-  "stake": 25,        // Staking tokens
-  "referral": 50,     // Referring new users
-  "dailyLogin": 5,    // Daily engagement
-  "eventParticipation": 30  // Special events
-};
-```
-
-### 2. Tier Structure Design
-Create engaging progression paths:
-- Set achievable tier thresholds
-- Offer meaningful rewards at each tier
-- Consider time-based requirements
-
-```typescript
-const tiers = [
+// Add NFT to inventory
+await verxio.addNFTToInventory(
+  userId,
+  nftAddress,
   {
-    name: "Bronze",
-    xpRequired: 500,
-    rewards: ["Basic rewards"]
-  },
-  {
-    name: "Silver",
-    xpRequired: 1500,
-    rewards: ["Enhanced rewards", "Special access"]
-  },
-  {
-    name: "Gold",
-    xpRequired: 5000,
-    rewards: ["Premium benefits", "Exclusive features"]
+    type: 'loyalty-pass',
+    programId: programId.toString(),
+    xp: 0
   }
-];
+);
+
+// Remove NFT from inventory
+await verxio.removeNFTFromInventory(userId, nftAddress);
+
+// Get user's inventory
+const inventory = await verxio.getInventory(userId);
+
+// Get inventory by wallet address
+const walletInventory = await verxio.getWalletInventory(userWallet);
+
+// Check if user has loyalty pass
+const hasPass = await verxio.hasLoyaltyPass(userId, programId);
+
+// Get all user's loyalty passes
+const passes = await verxio.getUserLoyaltyPasses(userId);
+}
 ```
 
-## Best Practices
+## Database Support
 
-1. **XP System Design**
-   - Keep point values balanced and inflation-resistant
-   - Use multipliers strategically for special events
-   - Implement rate limiting for point awards
+The protocol supports multiple database backends:
 
-2. **Security Considerations**
-   - Always verify user actions before awarding points
-   - Monitor for unusual activity patterns
-   - Implement proper access controls
+### MongoDB
+```typescript
+{
+  type: 'mongodb',
+  config: {
+    uri: "mongodb://...",
+    options: {}
+  }
+}
+```
 
-3. **User Experience**
-   - Provide clear feedback on XP earnings
-   - Make tier progression visible and exciting
-   - Ensure rewards are easily accessible
+### Supabase
+```typescript
+{
+  type: 'supabase',
+  config: {
+    uri: "https://your-project.supabase.co",
+    options: {
+      apiKey: "your-api-key"
+    }
+  }
+}
+```
 
-## Support & Resources
+### Firebase
+```typescript
+{
+  type: 'firebase',
+  config: {
+    uri: "your-project-id",
+    options: {
+      firebaseConfig: {
+        // Your Firebase config object
+      }
+    }
+  }
+}
+```
 
-- Documentation: [docs.verxio.xyz](https://docs.verxio.xyz)
-- Discord: [Join our community](https://discord.gg/verxio)
-- Twitter: [@VerxioProtocol](https://x.com/verxioprotocol)
+## Protocol Analytics
+
+```typescript
+// Get protocol-wide statistics
+const stats = await verxio.getProtocolStats();
+console.log(stats);
+// {
+//   totalPrograms: 100,
+//   totalLoyaltyPasses: 5000,
+//   totalXPAwarded: 1000000,
+//   uniqueUsers: 2500
+// }
+
+// Get user's global XP and stats
+const userStats = await verxio.getGlobalUserStats(userId);
+console.log(userStats);
+// {
+//   userId: "user123",
+//   totalXP: 15000,
+//   programsParticipated: 5,
+//   loyaltyPasses: 8,
+//   lastUpdated: Date
+// }
+
+// Get top users by global XP
+const topUsers = await verxio.getTopUsers(10);
+console.log(topUsers);
+// Array of GlobalUserStats sorted by totalXP
+```
+
+This implementation:
+1. Tracks protocol-wide statistics (programs, passes, XP, users)
+2. Maintains global XP balance for users across all programs
+3. Allows querying top users by XP
+4. Updates stats automatically when relevant actions occur
+5. Makes analytics available both with and without database (returns zero values when no database)
+
+Would you like me to add the database adapter implementations for MongoDB, Supabase, and Firebase as well?
 
 ## License
 
-MIT License - see [LICENSE](LICENSE) for details.
+MIT

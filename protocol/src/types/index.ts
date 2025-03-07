@@ -1,11 +1,20 @@
 import { PublicKey } from '@solana/web3.js';
 import { Umi, PublicKey as UmiPublicKey } from '@metaplex-foundation/umi';
+import { DatabaseConfig } from '@/database/types';
+
+export type Network = 'mainnet' | 'devnet' | 'sonic-mainnet' | 'sonic-testnet';
 
 export interface VerxioConfig {
-  umi: Umi;
+  network: Network;
+  rpcUrl?: string; // Optional custom RPC URL
   programAuthority: PublicKey;
   organizationName: string;
   passMetadataUri: string;
+  database?: {  // Make database optional
+    type: 'mongodb' | 'supabase' | 'firebase';
+    config: DatabaseConfig;
+  };
+  umi?: Umi;  // Make it optional since it might not always be provided
 }
 
 export interface Tier {
@@ -14,49 +23,23 @@ export interface Tier {
   rewards: string[];
 }
 
-export interface PointAction {
-  [key: string]: number;
-}
-
-export interface LoyaltyProgramData {
-  organizationName: string;
-  metadataUri: string;
-  symbol?: string;
-  tiers: Tier[];
-  pointsPerAction: PointAction;
-}
-
-// Plugin types
-export interface AttributePlugin {
-  type: 'Attributes';
-  attributeList: { key: string; value: string }[];
-}
-
-export interface AppDataPlugin {
-  type: 'AppData';
-  data: Record<string, unknown>;
-}
-
-export type VerxioPlugin = AttributePlugin | AppDataPlugin;
-
 export interface PointsPerActionMap {
   [key: string]: number;
 }
 
-// Asset type with plugins
-export type AssetWithPlugins = {
-  plugins: VerxioPlugin[];
-};
-
-export interface RewardClaim {
-  tier: string;
-  reward: string;
-  claimedAt: number;
-  transactionId: string;
+// Program data interface for creation
+export interface LoyaltyProgramData {
+  organizationName: string;
+  metadataUri: string;
+  tiers: Array<{
+    name: string;
+    xpRequired: number;
+    rewards: string[];
+  }>;
+  pointsPerAction: Record<string, number>;
+  network: Network;
+  programAuthority: PublicKey;
+  rpcUrl?: string;
 }
 
-export interface RewardParams {
-  amount: string;
-  recipient: string;
-  metadata?: Record<string, any>;
-} 
+

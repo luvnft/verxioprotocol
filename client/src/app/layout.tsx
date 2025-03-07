@@ -10,7 +10,7 @@ const openSans = Open_Sans({
 
 export const metadata: Metadata = {
   title: "Verxio Protocol",
-  description: "On-chain loyalty and rewards system that combines gamified engagement and achievement tracking",
+  description: "NFT based achievement tracking and loyalty reward system",
 };
 
 export default function RootLayout({
