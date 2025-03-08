@@ -28,16 +28,33 @@ import { VerxioProtocol } from 'verxio-protocol';
 import { PublicKey } from '@solana/web3.js';
 import { WalletAdapter } from '@solana/wallet-adapter-base';
 
-// Initialize protocol with wallet
+// Initialize protocol with default RPC
 const verxio = new VerxioProtocol(
   'devnet', // Network: 'devnet' | 'mainnet' | 'sonic-mainnet' | 'sonic-testnet'
   new PublicKey('PROGRAM_AUTHORITY'), // Program authority public key
-  walletAdapter, // Optional: Wallet adapter for transactions
-  'CUSTOM_RPC_URL' // Optional: Custom RPC URL
+  walletAdapter // Optional: Wallet adapter for transactions
+);
+
+// Or initialize with custom RPC URL
+const verxioWithCustomRPC = new VerxioProtocol(
+  'devnet',
+  new PublicKey('PROGRAM_AUTHORITY'),
+  walletAdapter,
+  'https://your-custom-rpc.com' // Optional: Custom RPC URL
 );
 
 // Update user wallet
 verxio.setUserWallet(newWalletAdapter);
+```
+
+Each network has a default RPC URL:
+```typescript
+const DEFAULT_RPC_URLS = {
+  mainnet: "https://api.mainnet-beta.solana.com",
+  devnet: "https://api.devnet.solana.com",
+  "sonic-mainnet": "https://api.mainnet-alpha.sonic.game",
+  "sonic-testnet": "https://api.testnet.sonic.game"
+};
 ```
 
 ### Create Loyalty Program
@@ -75,13 +92,13 @@ console.log(program);
 ### Issue Loyalty Pass
 
 ```typescript
-const pass = await verxio.issueLoyaltyPass(
+const result = await verxio.issueLoyaltyPass(
   new PublicKey('RECIPIENT_ADDRESS'),
   "Coffee Rewards Pass",
   "https://arweave.net/..."
 );
 
-console.log(pass);
+console.log(result);
 // {
 //   signer: ReturnType<typeof generateSigner>,  // Pass signer
 //   signature: string                           // Transaction signature
@@ -123,6 +140,23 @@ console.log(data);
 //   currentTier: string,
 //   tierUpdatedAt: number,
 //   rewards: string[]
+// }
+```
+
+### Get Program Details
+
+```typescript
+const details = await verxio.getProgramDetails();
+
+console.log(details);
+// {
+//   name: string,
+//   uri: string,
+//   collectionAddress: string,
+//   updateAuthority: string,
+//   numMinted: number,
+//   transferAuthority: string,
+//   creator: string
 // }
 ```
 
