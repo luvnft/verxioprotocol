@@ -7,6 +7,8 @@ import { VerxioProtocol } from '../../../../protocol/src/core/index';
 import { TierProgression } from './TierProgression';
 import { EXPLORER_URLS } from './LoyaltyProgram';
 import { NetworkOption } from './LoyaltyProgram';
+import { toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 interface ActionPanelProps {
   verxio: VerxioProtocol;
@@ -38,8 +40,8 @@ export function ActionPanel({ verxio, passAddress, passSigner, network }: Action
   const loadData = async () => {
     setLoading(true);
     try {
-      const assetData = await verxio.getAssetData(passAddress);
-      const programActions = await verxio.getPointsPerAction();
+    const assetData = await verxio.getAssetData(passAddress);
+    const programActions = await verxio.getPointsPerAction();
       const tiers = await verxio.getProgramTiers();
       setData(assetData ? { ...assetData, actions: programActions } : null);
       setProgramTiers(tiers);
@@ -61,6 +63,8 @@ export function ActionPanel({ verxio, passAddress, passSigner, network }: Action
   const performAction = async (action: string) => {
     setLoadingAction(action);
     try {
+      toast.info(`Awarding points via awardPoints() for ${action}`);
+      
       const result = await verxio.awardPoints(
         passAddress,
         action,
@@ -76,9 +80,11 @@ export function ActionPanel({ verxio, passAddress, passSigner, network }: Action
         }
       }
       
+      toast.success(`Successfully awarded points for ${action}`);
       await loadData(); // Reload all data to get updated XP and other changes
     } catch (error) {
       console.error(`Error performing ${action}:`, error);
+      toast.error(`Failed to award points for ${action}`);
     }
     setLoadingAction(null);
   };
@@ -115,50 +121,42 @@ export function ActionPanel({ verxio, passAddress, passSigner, network }: Action
     );
   }
 
-  // Find next tier (if any)
-  const currentTierIndex = programTiers.findIndex(tier => tier.name === data.currentTier);
-  const nextTier = programTiers[currentTierIndex + 1];
-  const currentTierData = programTiers[currentTierIndex];
-  
-  // Calculate XP needed for next tier
-  const xpForNextTier = nextTier ? nextTier.xpRequired - data.xp : 0;
-  const progressPercentage = nextTier ? 
-    ((data.xp - currentTierData.xpRequired) / (nextTier.xpRequired - currentTierData.xpRequired)) * 100 :
-    100;
-
   return (
     <div className="space-y-6">
-      {/* Main Stats */}
-      <div className="bg-white rounded-lg border border-zinc-200 p-6">
-        <div className="flex flex-col space-y-6">
-          <div className="flex items-center justify-between">
-            <div>
+      {/* Progress and Tiers Section */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Main Stats */}
+        <div className="bg-white rounded-lg border border-zinc-200 p-6">
+          <div className="flex flex-col h-full">
+            <div className="mb-6">
               <h2 className="text-xl font-semibold text-zinc-900">Your Progress</h2>
-              <p className="text-sm text-zinc-600 mt-1">Current tier: {data.currentTier}</p>
+              <p className="text-sm text-zinc-600 mt-1">Track your loyalty journey</p>
             </div>
-            <div className="text-right">
-            <span className="text-4xl font-bold text-blue-600">{data.xp} XP</span>
-              {nextTier && (
-                <p className="text-sm text-zinc-600 mt-1">{xpForNextTier} XP until {nextTier.name}</p>
+            
+            <div className="flex-grow flex flex-col justify-center items-center text-center space-y-4">
+              <div className="w-32 h-32 rounded-full bg-blue-50 border-4 border-blue-100 flex items-center justify-center">
+                <span className="text-4xl font-bold text-blue-600">{data.xp} XP</span>
+              </div>
+              <div>
+                <p className="text-lg font-medium text-zinc-900">Current Tier</p>
+                <p className="text-2xl font-semibold text-blue-600 mt-1">{data.currentTier}</p>
+              </div>
+              {data.rewards.length > 0 && (
+                <div className="mt-4">
+                  <p className="text-sm font-medium text-zinc-700">Current Rewards</p>
+                  <p className="text-sm text-zinc-600 mt-1">{data.rewards.join(', ')}</p>
+                </div>
               )}
             </div>
           </div>
-
-          {nextTier && (
-            <div className="space-y-2">
-              <div className="flex justify-between text-sm text-zinc-600">
-                <span>{data.currentTier}</span>
-                <span>{nextTier.name}</span>
-              </div>
-              <div className="h-2 bg-zinc-100 rounded-full overflow-hidden">
-                <div 
-                  className="h-full bg-blue-600 rounded-full transition-all duration-500"
-                  style={{ width: `${Math.min(100, Math.max(0, progressPercentage))}%` }}
-                />
-              </div>
-            </div>
-          )}
         </div>
+
+        {/* Tier Progression */}
+        <TierProgression
+          currentXP={data.xp}
+          currentTier={data.currentTier}
+          tiers={programTiers}
+        />
       </div>
 
       {/* Available Actions */}
@@ -166,9 +164,9 @@ export function ActionPanel({ verxio, passAddress, passSigner, network }: Action
         <h3 className="text-lg font-semibold text-zinc-900 mb-4">Available Actions</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {Object.entries(data.actions).map(([action, points]) => (
-            <button
-              key={action}
-              onClick={() => performAction(action)}
+              <button
+                key={action}
+                onClick={() => performAction(action)}
               disabled={loadingAction === action}
               className="flex items-center justify-between p-4 bg-zinc-50 border border-zinc-200 rounded-lg 
                 hover:bg-zinc-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
@@ -187,15 +185,15 @@ export function ActionPanel({ verxio, passAddress, passSigner, network }: Action
                 )}
               </span>
               <span className="text-sm text-blue-600 font-medium">+{points} XP</span>
-            </button>
-          ))}
+              </button>
+            ))}
+          </div>
         </div>
-      </div>
 
       {/* Action History */}
       <div className="bg-white rounded-lg border border-zinc-200 p-6">
         <h3 className="text-lg font-semibold text-zinc-900 mb-4">Action History</h3>
-        <div className="space-y-3">
+          <div className="space-y-3">
           {data.actionHistory.length === 0 ? (
             <div className="text-center py-8">
               <p className="text-zinc-600">No actions performed yet</p>

@@ -8,9 +8,8 @@ A protocol for creating and managing loyalty programs on Solana using MPL Core.
 - Issue loyalty passes as NFTs
 - Track user XP and tier progression
 - Support for transferable loyalty passes (with organization approval)
-- Multiple database adapters (MongoDB, Supabase, Firebase)
-- **Inventory management system for tracking user assets**
-- **Query methods for loyalty passes and inventories**
+- Automatic wallet and network handling
+- Built-in support for multiple networks (Solana, Sonic)
 
 ## Installation
 
@@ -22,202 +21,167 @@ yarn add verxio-protocol
 
 ## Usage
 
-### On-Chain Only (No Database Required)
+### Initialize Protocol
+
 ```typescript
-// Initialize Verxio without database
-const verxio = new VerxioProtocol({
-  network: 'devnet',
-  programAuthority: new PublicKey('YOUR_AUTHORITY_KEY'),
-  organizationName: "Your Organization",
-  passMetadataUri: "https://your-metadata-uri.com"
-});
+import { VerxioProtocol } from 'verxio-protocol';
+import { PublicKey } from '@solana/web3.js';
+import { WalletAdapter } from '@solana/wallet-adapter-base';
 
-// Fetch loyalty pass details from chain
-const pass = await verxio.getLoyaltyPassOnChain(passAddress);
+// Initialize protocol with wallet
+const verxio = new VerxioProtocol(
+  'devnet', // Network: 'devnet' | 'mainnet' | 'sonic-mainnet' | 'sonic-testnet'
+  new PublicKey('PROGRAM_AUTHORITY'), // Program authority public key
+  walletAdapter, // Optional: Wallet adapter for transactions
+  'CUSTOM_RPC_URL' // Optional: Custom RPC URL
+);
 
-// Get pass with token data
-const passWithToken = await verxio.getLoyaltyPassWithToken(passAddress);
-
-// Get all passes owned by a wallet
-const walletPasses = await verxio.getWalletLoyaltyPasses(walletAddress);
-
-// Get all passes created by an organization
-const orgPasses = await verxio.getOrganizationLoyaltyPasses(creatorAddress);
+// Update user wallet
+verxio.setUserWallet(newWalletAdapter);
 ```
 
-### With Database Support
-```typescript
-// Initialize with database
-const verxio = new VerxioProtocol({
-  network: 'devnet',
-  programAuthority: new PublicKey('YOUR_AUTHORITY_KEY'),
-  organizationName: "Your Organization",
-  passMetadataUri: "https://your-metadata-uri.com",
-  database: {
-    type: 'mongodb',
-    config: {
-      uri: "your-database-uri"
-    }
-  }
-});
+### Create Loyalty Program
 
-// Create a loyalty program
-const programId = await verxio.createProgram({
-  organizationName: "Your Organization",
-  metadataUri: "https://...",
-  symbol: "LOYAL",
+```typescript
+const program = await verxio.createProgram({
+  organizationName: "Coffee Rewards",
+  metadataUri: "https://arweave.net/...",
   tiers: [
-    { 
-      name: "Bronze", 
-      xpRequired: 500, 
-      rewards: ["2% cashback"] 
+    {
+      name: "Bronze",
+      xpRequired: 500,
+      rewards: ["2% cashback"]
     },
-    { 
-      name: "Silver", 
-      xpRequired: 1000, 
-      rewards: ["5% cashback"] 
+    {
+      name: "Silver",
+      xpRequired: 1000,
+      rewards: ["5% cashback"]
     }
   ],
   pointsPerAction: {
-    "purchase": 10,
-    "review": 5
+    "purchase": 100,
+    "review": 50
   }
 });
 
-// Issue loyalty pass to user
-const userWallet = new PublicKey('USER_WALLET_ADDRESS');
-const passAddress = await verxio.issueLoyaltyPass(userWallet);
+console.log(program);
+// {
+//   programId: string,      // Collection address
+//   signature: string,      // Transaction signature
+//   collectionPrivateKey: string  // Collection signer private key
+// }
+```
 
-// Award points for actions
-await verxio.awardPoints(passAddress, "purchase", 2); // With 2x multiplier
+### Issue Loyalty Pass
 
-// Handle pass transfers
-await verxio.requestTransfer(
-  passAddress,
-  oldOwner,
-  newOwner
+```typescript
+const pass = await verxio.issueLoyaltyPass(
+  new PublicKey('RECIPIENT_ADDRESS'),
+  "Coffee Rewards Pass",
+  "https://arweave.net/..."
 );
 
-// Organization approves transfer
+console.log(pass);
+// {
+//   signer: ReturnType<typeof generateSigner>,  // Pass signer
+//   signature: string                           // Transaction signature
+// }
+```
+
+### Award Points
+
+```typescript
+const result = await verxio.awardPoints(
+  new PublicKey('PASS_ADDRESS'),
+  "purchase",           // Action name
+  passSigner,          // Pass signer from issueLoyaltyPass
+  2                    // Optional: Point multiplier (default: 1)
+);
+
+console.log(result);
+// {
+//   points: number,    // New total points
+//   signature: string  // Transaction signature
+// }
+```
+
+### Get Pass Data
+
+```typescript
+const data = await verxio.getAssetData(new PublicKey('PASS_ADDRESS'));
+
+console.log(data);
+// {
+//   xp: number,
+//   lastAction: string | null,
+//   actionHistory: Array<{
+//     type: string,
+//     points: number,
+//     timestamp: number,
+//     newTotal: number
+//   }>,
+//   currentTier: string,
+//   tierUpdatedAt: number,
+//   rewards: string[]
+// }
+```
+
+### Transfer Pass
+
+```typescript
 await verxio.approveTransfer(
-  passAddress,
-  oldOwner,
-  newOwner
+  new PublicKey('PASS_ADDRESS'),
+  new PublicKey('NEW_OWNER_ADDRESS')
+);
+```
+
+### Query Methods
+
+```typescript
+// Get all loyalty passes owned by a wallet
+const passes = await verxio.getWalletLoyaltyPasses(
+  new PublicKey('WALLET_ADDRESS')
 );
 
-// Inventory Management
-// Create inventory for user
-await verxio.createInventory(userId);
+// Get program's points per action
+const pointsPerAction = await verxio.getPointsPerAction();
+// Returns: Record<string, number>
 
-// Add NFT to inventory
-await verxio.addNFTToInventory(
-  userId,
-  nftAddress,
-  {
-    type: 'loyalty-pass',
-    programId: programId.toString(),
-    xp: 0
-  }
-);
-
-// Remove NFT from inventory
-await verxio.removeNFTFromInventory(userId, nftAddress);
-
-// Get user's inventory
-const inventory = await verxio.getInventory(userId);
-
-// Get inventory by wallet address
-const walletInventory = await verxio.getWalletInventory(userWallet);
-
-// Check if user has loyalty pass
-const hasPass = await verxio.hasLoyaltyPass(userId, programId);
-
-// Get all user's loyalty passes
-const passes = await verxio.getUserLoyaltyPasses(userId);
-}
+// Get program's tiers
+const tiers = await verxio.getProgramTiers();
+// Returns: Array<{
+//   name: string,
+//   xpRequired: number,
+//   rewards: string[]
+// }>
 ```
 
-## Database Support
+## Network Support
 
-The protocol supports multiple database backends:
-
-### MongoDB
-```typescript
-{
-  type: 'mongodb',
-  config: {
-    uri: "mongodb://...",
-    options: {}
-  }
-}
-```
-
-### Supabase
-```typescript
-{
-  type: 'supabase',
-  config: {
-    uri: "https://your-project.supabase.co",
-    options: {
-      apiKey: "your-api-key"
-    }
-  }
-}
-```
-
-### Firebase
-```typescript
-{
-  type: 'firebase',
-  config: {
-    uri: "your-project-id",
-    options: {
-      firebaseConfig: {
-        // Your Firebase config object
-      }
-    }
-  }
-}
-```
-
-## Protocol Analytics
+The protocol supports multiple networks out of the box:
 
 ```typescript
-// Get protocol-wide statistics
-const stats = await verxio.getProtocolStats();
-console.log(stats);
-// {
-//   totalPrograms: 100,
-//   totalLoyaltyPasses: 5000,
-//   totalXPAwarded: 1000000,
-//   uniqueUsers: 2500
-// }
-
-// Get user's global XP and stats
-const userStats = await verxio.getGlobalUserStats(userId);
-console.log(userStats);
-// {
-//   userId: "user123",
-//   totalXP: 15000,
-//   programsParticipated: 5,
-//   loyaltyPasses: 8,
-//   lastUpdated: Date
-// }
-
-// Get top users by global XP
-const topUsers = await verxio.getTopUsers(10);
-console.log(topUsers);
-// Array of GlobalUserStats sorted by totalXP
+const NETWORKS = {
+  mainnet: "https://api.mainnet-beta.solana.com",
+  devnet: "https://api.devnet.solana.com",
+  "sonic-mainnet": "https://api.mainnet-alpha.sonic.game",
+  "sonic-testnet": "https://api.testnet.sonic.game"
+};
 ```
 
-This implementation:
-1. Tracks protocol-wide statistics (programs, passes, XP, users)
-2. Maintains global XP balance for users across all programs
-3. Allows querying top users by XP
-4. Updates stats automatically when relevant actions occur
-5. Makes analytics available both with and without database (returns zero values when no database)
+You can also provide a custom RPC URL during initialization.
 
-Would you like me to add the database adapter implementations for MongoDB, Supabase, and Firebase as well?
+## Error Handling
+
+The protocol uses descriptive error messages. Always wrap calls in try-catch:
+
+```typescript
+try {
+  await verxio.issueLoyaltyPass(recipient, name, uri);
+} catch (error) {
+  console.error(`Failed to issue pass: ${error}`);
+}
+```
 
 ## License
 

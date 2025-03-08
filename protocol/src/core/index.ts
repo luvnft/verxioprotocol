@@ -90,25 +90,6 @@ export class VerxioProtocol {
     this.umi.use(signerIdentity(walletSigner));
   }
 
-  // Add method to initialize from existing program
-  // public static async fromExistingProgram(
-  //   network: Network,
-  //   programAuthority: PublicKey,
-  //   programId: string,
-  //   collectionPrivateKey: string,
-  //   rpcUrl?: string
-  // ): Promise<VerxioProtocol> {
-  //   const protocol = new VerxioProtocol(network, programAuthority, rpcUrl);
-
-  //   // Set up collection from existing program
-  //   const collectionKeypair = Keypair.fromSecretKey(
-  //     bs58.decode(collectionPrivateKey)
-  //   );
-  //   protocol.setCollectionAddress(new PublicKey(programId));
-  //   protocol.setCollectionSigner(fromWeb3JsKeypair(collectionKeypair));
-
-  //   return protocol;
-  // }
 
   /**
    * Creates a new loyalty program with tiers and point actions
@@ -458,6 +439,38 @@ export class VerxioProtocol {
       return tiers;
     } catch (error) {
       throw new Error(`Failed to fetch program tiers: ${error}`);
+    }
+  }
+
+  /**
+   * Get program details including name and metadata
+   */
+  async getProgramDetails(): Promise<{
+    name: string;
+    uri: string;
+    collectionAddress: string;
+    updateAuthority: string;
+    numMinted: number;
+    transferAuthority: string;
+    creator: string;
+  }> {
+    if (!this.collectionAddress) {
+      throw new Error("Collection not initialized");
+    }
+
+    try {
+      const collection = await fetchCollection(this.umi, this.toUmiPublicKey(this.collectionAddress));
+      return {
+        name: collection.name,
+        uri: collection.uri,
+        collectionAddress: collection.publicKey,
+        updateAuthority: collection.updateAuthority,
+        numMinted: collection.numMinted,
+        transferAuthority: collection.permanentTransferDelegate?.authority.address?.toString()!,
+        creator: collection.attributes?.attributeList.find(attr => attr.key === "creator")?.value!,
+      };
+    } catch (error) {
+      throw new Error(`Failed to fetch program details: ${error}`);
     }
   }
 }

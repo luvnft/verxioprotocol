@@ -14,7 +14,7 @@ async function testNewProgramCreation() {
   const umiKeypair = fromWeb3JsKeypair(solanaKeypair);
 
   const authorityKey = new PublicKey(
-    "FFvPUNGYsQa4vjLAcCJ4zx8vZ4BSqQoCbMMyG3VNuEnd"
+    "AUTHORITY_KEY"
   );
 
   console.log("\n=== Testing New Program Creation ===\n");

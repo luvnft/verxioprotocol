@@ -8,6 +8,8 @@ import { ActionPanel } from './ActionPanel';
 import { createSignerFromWalletAdapter } from '@metaplex-foundation/umi-signer-wallet-adapters';
 import { signerIdentity } from '@metaplex-foundation/umi';
 import { generateSigner } from '@metaplex-foundation/umi';
+import { toast, ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 interface Tier {
   name: string;
@@ -54,23 +56,33 @@ export function LoyaltyProgram() {
     rewards: ['']
   });
 
+
   // Add useEffect to handle wallet changes
   useEffect(() => {
     if (publicKey && wallet?.adapter && connected) {
       const protocol = new VerxioProtocol(
         network,
-        programId ? new PublicKey(programId) : publicKey,
+        publicKey, // Use publicKey as authority when creating program
         wallet.adapter
       );
 
-      // If we have a programId, set it as the collection address and initialize collection signer
+      // If we have a programId, use it as the authority for pass operations
       if (programId) {
         protocol.setCollectionAddress(new PublicKey(programId));
         const collectionSigner = generateSigner(protocol.umi);
         protocol.setCollectionSigner(collectionSigner);
+        // Update protocol with program authority for pass operations
+        const newProtocol = new VerxioProtocol(
+          network,
+          new PublicKey(programId), // Use programId as authority for pass operations
+          wallet.adapter
+        );
+        newProtocol.setCollectionAddress(new PublicKey(programId));
+        newProtocol.setCollectionSigner(collectionSigner);
+        setVerxio(newProtocol);
+      } else {
+        setVerxio(protocol);
       }
-
-      setVerxio(protocol);
     } else {
       setVerxio(null);
     }
@@ -106,9 +118,15 @@ export function LoyaltyProgram() {
   };
 
   const createProgram = async () => {
-    if (!verxio || !programName) return;
+    console.log('Create program button clicked');
+    if (!verxio || !programName) {
+      console.log('Missing verxio or program name:', { verxio: !!verxio, programName });
+      return;
+    }
     setLoading(true);
     try {
+
+      toast.info('Creating new loyalty program via createProgram() method');
       const result = await verxio.createProgram({
         organizationName: programName,
         metadataUri: metadataUri,
@@ -116,18 +134,17 @@ export function LoyaltyProgram() {
         pointsPerAction: actions,
       });
 
-      // Store program ID and signature
       setProgramId(result.programId);
       setProgramSignature(result.signature);
-
-      // Set collection address and initialize a new collection signer
       verxio.setCollectionAddress(new PublicKey(result.programId));
       const collectionSigner = generateSigner(verxio.umi);
       verxio.setCollectionSigner(collectionSigner);
 
+      toast.success('Successfully created new loyalty program');
       setStep('pass');
     } catch (error) {
       console.error('Error creating program:', error);
+      toast.error('Failed to create loyalty program');
     }
     setLoading(false);
   };
@@ -139,6 +156,7 @@ export function LoyaltyProgram() {
     }
     setLoading(true);
     try {
+      toast.info('Creating loyalty pass via issueLoyaltyPass() method');
       const result = await verxio.issueLoyaltyPass(
         publicKey,
         `${programName} Loyalty Pass`,
@@ -147,11 +165,22 @@ export function LoyaltyProgram() {
       setUserPass(result.signer.publicKey);
       setPassSigner(result.signer);
       setPassSignature(result.signature);
+
+      toast.success('Successfully created loyalty pass');
       setStep('details');
     } catch (error) {
-      console.error('Error creating pass:', error);
+      toast.error('Failed to create loyalty pass');
     }
     setLoading(false);
+  };
+
+  const copyToClipboard = async (text: string, message: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      toast.success('Successfully copied to clipboard');
+    } catch (err) {
+      toast.error('Failed to copy to clipboard');
+    }
   };
 
   // Wallet Connect View
@@ -256,6 +285,7 @@ export function LoyaltyProgram() {
 
   return (
     <div className="max-w-5xl mx-auto px-4 py-8">
+      <ToastContainer position="top-right" autoClose={5000} />
       <div className="glass-panel shadow-2xl shadow-zinc-900/20 rounded-xl p-8">
         {/* Progress Steps */}
         <div className="mb-8">
@@ -372,7 +402,7 @@ export function LoyaltyProgram() {
                           </div>
                           <div>
                             <span className="text-zinc-900"><span className="text-blue-600 font-medium">{tier.xpRequired} XP</span> unlocks</span>
-                            <span className="text-zinc-900 ml-1">{tier.rewards.join(', ')}</span>
+                            <span className="text-zinc-900 ml-1">{tier.rewards.join(', ').toLowerCase()}</span>
                           </div>
                         </div>
                         {index !== 0 && (
@@ -442,7 +472,7 @@ export function LoyaltyProgram() {
                             </svg>
                           </div>
                           <div>
-                            <span className="text-zinc-900">Complete {name} to gain</span>
+                            <span className="text-zinc-900">Complete {name.toLowerCase()} action to gain</span>
                             <span className="text-blue-600 font-medium ml-1">{points} points</span>
                           </div>
                         </div>
@@ -536,7 +566,7 @@ export function LoyaltyProgram() {
                           <p className="font-mono text-zinc-900 break-all text-sm">{programId}</p>
                         </div>
                         <button 
-                          onClick={() => navigator.clipboard.writeText(programId || '')}
+                          onClick={() => copyToClipboard(programId || '', 'Program ID copied to clipboard!')}
                           className="p-2.5 text-zinc-600 hover:text-blue-600 transition-colors bg-white rounded-lg border border-zinc-300"
                           title="Copy Program ID"
                         >
@@ -558,7 +588,7 @@ export function LoyaltyProgram() {
                           className="flex-1 px-4 py-2.5 rounded-lg border border-zinc-300 bg-white text-zinc-900 text-sm"
                         />
                         <button
-                          onClick={() => navigator.clipboard.writeText(`${window.location.origin}/mint/${programId}`)}
+                          onClick={() => copyToClipboard(`${window.location.origin}/mint/${programId}`, 'Shareable link copied to clipboard!')}
                           className="px-4 py-2.5 bg-white text-zinc-900 rounded-lg hover:bg-zinc-50 transition-colors text-sm font-medium border border-zinc-300"
                         >
                           Copy Link
