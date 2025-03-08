@@ -1,6 +1,6 @@
 # Verxio Protocol
 
-A protocol for creating and managing loyalty programs on Solana using MPL Core.
+Reward Protocol for creating and managing loyalty programs on Solana and SVM
 
 ## Features
 

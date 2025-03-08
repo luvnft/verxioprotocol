@@ -9,7 +9,7 @@ export function Hero() {
       </p>
       <div className="flex flex-col sm:flex-row justify-center gap-3 sm:gap-4 px-4">
         <a href="#" className="w-full sm:w-auto bg-[#FFEB3B] text-black px-6 py-3 rounded-lg font-medium hover:bg-[#FFE100] transition-colors">
-          Join Waitlist
+        Try in Sandbox
         </a>
         <a href="#" className="w-full sm:w-auto text-white border border-white/20 px-6 py-3 rounded-lg hover:bg-white/5 transition-colors">
           Watch Demo →

@@ -1,7 +1,7 @@
 {
-  "name": "@verxio/protocol",
-  "version": "0.1.0",
-  "description": "Verxio Protocol - Web3 Community Rewards Protocol",
+  "name": "@verxioprotocol/core",
+  "version": "0.0.2",
+  "description": "Reward Protocol for creating and managing loyalty programs on Solana and SVM",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "files": [

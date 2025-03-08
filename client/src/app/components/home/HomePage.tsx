@@ -26,10 +26,10 @@ export default function HomePage() {
           </div>
           <div className="flex items-center gap-3 md:gap-4">
             <Link href="#" className="text-white bg-white/10 px-4 py-2 rounded-lg hover:bg-white/20 transition-colors">
-              Request Demo
+              Watch Demo
             </Link>
-            <Link href="#" className="bg-[#FFEB3B] text-black px-4 py-2 rounded-lg hover:bg-[#FFE100] transition-colors">
-              Join Waitlist
+            <Link href="https://www.npmjs.com/package/@verxioprotocol/core" className="bg-[#FFEB3B] text-black px-4 py-2 rounded-lg hover:bg-[#FFE100] transition-colors">
+              View Doc
             </Link>
           </div>
         </nav>

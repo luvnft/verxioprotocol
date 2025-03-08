@@ -3,10 +3,8 @@
 import { useWallet } from '@solana/wallet-adapter-react';
 import { PublicKey } from '@solana/web3.js';
 import { useState, useEffect } from 'react';
-import { VerxioProtocol } from '../../../../protocol/src/core/index';
+import { VerxioProtocol } from '@verxioprotocol/core';
 import { ActionPanel } from './ActionPanel';
-import { createSignerFromWalletAdapter } from '@metaplex-foundation/umi-signer-wallet-adapters';
-import { signerIdentity } from '@metaplex-foundation/umi';
 import { generateSigner } from '@metaplex-foundation/umi';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';

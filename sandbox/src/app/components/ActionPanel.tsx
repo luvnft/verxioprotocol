@@ -3,7 +3,7 @@
 import { PublicKey } from '@solana/web3.js';
 import { generateSigner } from '@metaplex-foundation/umi';
 import { useEffect, useState } from 'react';
-import { VerxioProtocol } from '../../../../protocol/src/core/index';
+import { VerxioProtocol } from '@verxioprotocol/core';
 import { TierProgression } from './TierProgression';
 import { EXPLORER_URLS } from './LoyaltyProgram';
 import { NetworkOption } from './LoyaltyProgram';

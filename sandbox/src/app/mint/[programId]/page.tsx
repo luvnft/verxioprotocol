@@ -4,7 +4,7 @@ import { useWallet } from '@solana/wallet-adapter-react';
 import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
 import { PublicKey } from '@solana/web3.js';
 import { useEffect, useState } from 'react';
-import { VerxioProtocol } from '../../../../../protocol/src/core/index';
+import { VerxioProtocol } from '@verxioprotocol/core';
 import { useParams } from 'next/navigation';
 import { Providers } from '../../providers';
 import Link from 'next/link';
