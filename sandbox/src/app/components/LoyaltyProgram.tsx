@@ -3,7 +3,12 @@
 import { useWallet } from '@solana/wallet-adapter-react';
 import { PublicKey } from '@solana/web3.js';
 import { useState, useEffect } from 'react';
-import { VerxioProtocol } from '@verxioprotocol/core';
+import { 
+  VerxioContext,
+  initializeVerxio,
+  createLoyaltyProgram,
+  issueLoyaltyPass
+} from '../../../../protocol/src/core';
 import { ActionPanel } from './ActionPanel';
 import { generateSigner } from '@metaplex-foundation/umi';
 import { toast, ToastContainer } from 'react-toastify';
@@ -29,10 +34,11 @@ export const EXPLORER_URLS: Record<NetworkOption, string> = {
 
 export function LoyaltyProgram() {
   const { publicKey, wallet, connected } = useWallet();
-  const [verxio, setVerxio] = useState<VerxioProtocol | null>(null);
+  const [verxio, setVerxio] = useState<VerxioContext | null>(null);
   type StepType = 'program' | 'pass' | 'details';
   const [step, setStep] = useState<StepType>('program');
   const [network, setNetwork] = useState<NetworkOption>('devnet');
+  const [targetAddress, setTargetAddress] = useState<string>('');
   const [programId, setProgramId] = useState<string | null>(null);
   const [userPass, setUserPass] = useState<string | null>(null);
   const [passSigner, setPassSigner] = useState<ReturnType<typeof generateSigner> | null>(null);
@@ -58,29 +64,17 @@ export function LoyaltyProgram() {
   // Add useEffect to handle wallet changes
   useEffect(() => {
     if (publicKey && wallet?.adapter && connected) {
-      const protocol = new VerxioProtocol(
+      const context = initializeVerxio(
         network,
-        publicKey, // Use publicKey as authority when creating program
+        publicKey,
         wallet.adapter
       );
 
-      // If we have a programId, use it as the authority for pass operations
       if (programId) {
-        protocol.setCollectionAddress(new PublicKey(programId));
-        const collectionSigner = generateSigner(protocol.umi);
-        protocol.setCollectionSigner(collectionSigner);
-        // Update protocol with program authority for pass operations
-        const newProtocol = new VerxioProtocol(
-          network,
-          new PublicKey(programId), // Use programId as authority for pass operations
-          wallet.adapter
-        );
-        newProtocol.setCollectionAddress(new PublicKey(programId));
-        newProtocol.setCollectionSigner(collectionSigner);
-        setVerxio(newProtocol);
-      } else {
-        setVerxio(protocol);
+        context.collectionAddress = new PublicKey(programId);
       }
+
+      setVerxio(context);
     } else {
       setVerxio(null);
     }
@@ -116,28 +110,22 @@ export function LoyaltyProgram() {
   };
 
   const createProgram = async () => {
-    console.log('Create program button clicked');
-    if (!verxio || !programName) {
-      console.log('Missing verxio or program name:', { verxio: !!verxio, programName });
-      return;
-    }
+    if (!verxio || !programName) return;
     setLoading(true);
     try {
-
       toast.info('Creating new loyalty program via createProgram() method');
-      const result = await verxio.createProgram({
+      const result = await createLoyaltyProgram(verxio, {
         organizationName: programName,
         metadataUri: metadataUri,
         tiers,
         pointsPerAction: actions,
       });
 
-      setProgramId(result.programId);
+      setProgramId(result.LoyaltyProgramId);
       setProgramSignature(result.signature);
-      verxio.setCollectionAddress(new PublicKey(result.programId));
-      const collectionSigner = generateSigner(verxio.umi);
-      verxio.setCollectionSigner(collectionSigner);
-
+      if (verxio) {
+        verxio.collectionAddress = new PublicKey(result.LoyaltyProgramId);
+      }
       toast.success('Successfully created new loyalty program');
       setStep('pass');
     } catch (error) {
@@ -155,7 +143,9 @@ export function LoyaltyProgram() {
     setLoading(true);
     try {
       toast.info('Creating loyalty pass via issueLoyaltyPass() method');
-      const result = await verxio.issueLoyaltyPass(
+      const result = await issueLoyaltyPass(
+        verxio,
+        verxio.collectionAddress!,
         publicKey,
         `${programName} Loyalty Pass`,
         metadataUri
@@ -579,18 +569,31 @@ export function LoyaltyProgram() {
                     <div>
                       <label className="block text-sm font-medium text-zinc-900 mb-2">Shareable Link</label>
                       <div className="flex items-center space-x-2">
-                        <input
-                          type="text"
-                          readOnly
-                          value={`${window.location.origin}/mint/${programId}`}
-                          className="flex-1 px-4 py-2.5 rounded-lg border border-zinc-300 bg-white text-zinc-900 text-sm"
-                        />
+                        <div className="flex-1 px-4 py-2.5 rounded-lg border border-zinc-300 bg-white">
+                          <p className="font-mono text-zinc-900 break-all text-sm">{`${window.location.origin}/mint/${programId}`}</p>
+                        </div>
                         <button
                           onClick={() => copyToClipboard(`${window.location.origin}/mint/${programId}`, 'Shareable link copied to clipboard!')}
-                          className="px-4 py-2.5 bg-white text-zinc-900 rounded-lg hover:bg-zinc-50 transition-colors text-sm font-medium border border-zinc-300"
+                          className="p-2.5 text-zinc-600 hover:text-blue-600 transition-colors bg-white rounded-lg border border-zinc-300"
+                          title="Copy Link"
                         >
-                          Copy Link
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                            <path d="M8 3a1 1 0 011-1h2a1 1 0 110 2H9a1 1 0 01-1-1z" />
+                            <path d="M6 3a2 2 0 00-2 2v11a2 2 0 002 2h8a2 2 0 002-2V5a2 2 0 00-2-2 3 3 0 01-3 3H9a3 3 0 01-3-3z" />
+                          </svg>
                         </button>
+                        <a
+                          href={`${window.location.origin}/mint/${programId}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="p-2.5 text-zinc-600 hover:text-blue-600 transition-colors bg-white rounded-lg border border-zinc-300"
+                          title="Visit Link"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                            <path d="M11 3a1 1 0 100 2h2.586l-6.293 6.293a1 1 0 101.414 1.414L15 6.414V9a1 1 0 102 0V4a1 1 0 00-1-1h-5z" />
+                            <path d="M5 5a2 2 0 00-2 2v8a2 2 0 002 2h8a2 2 0 002-2v-3a1 1 0 10-2 0v3H5V7h3a1 1 0 000-2H5z" />
+                          </svg>
+                        </a>
                       </div>
                     </div>
 
@@ -615,24 +618,6 @@ export function LoyaltyProgram() {
                 </div>
               </div>
             </div>
-
-            <button
-              onClick={createLoyaltyPass}
-              disabled={loading}
-              className="w-full px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm font-medium"
-            >
-              {loading ? (
-                <div className="flex items-center justify-center space-x-2">
-                  <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"/>
-                  </svg>
-                  <span>Creating Pass...</span>
-                </div>
-              ) : (
-                'Create Loyalty Pass'
-              )}
-            </button>
           </div>
         )}
 
@@ -642,6 +627,7 @@ export function LoyaltyProgram() {
             passAddress={new PublicKey(userPass)}
             passSigner={passSigner}
             network={network}
+            targetAddress={new PublicKey(targetAddress)}
           />
         )}
       </div>

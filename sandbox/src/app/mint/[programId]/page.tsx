@@ -4,7 +4,14 @@ import { useWallet } from '@solana/wallet-adapter-react';
 import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
 import { PublicKey } from '@solana/web3.js';
 import { useEffect, useState } from 'react';
-import { VerxioProtocol } from '@verxioprotocol/core';
+import { 
+  VerxioContext,
+  initializeVerxio,
+  getProgramDetails,
+  getProgramTiers,
+  getPointsPerAction,
+  issueLoyaltyPass
+} from '../../../../../protocol/src/core';
 import { useParams } from 'next/navigation';
 import { Providers } from '../../providers';
 import Link from 'next/link';
@@ -32,60 +39,60 @@ interface ProgramDetails {
 function MintPageContent() {
   const { programId } = useParams();
   const { publicKey, wallet } = useWallet();
-  const [verxio, setVerxio] = useState<VerxioProtocol | null>(null);
+  const [verxio, setVerxio] = useState<VerxioContext | null>(null);
   const [loading, setLoading] = useState(false);
   const [programDetails, setProgramDetails] = useState<ProgramDetails | null>(null);
   const [network, setNetwork] = useState<'devnet' | 'mainnet' | 'sonic-mainnet' | 'sonic-testnet'>('devnet');
+  const [targetAddress, setTargetAddress] = useState<string>('');
   const [mintedPass, setMintedPass] = useState<{
     address: PublicKey;
     signer: ReturnType<typeof generateSigner>;
   } | null>(null);
 
   useEffect(() => {
+
     if (programId && publicKey && wallet?.adapter) {
       const initializeProtocol = async () => {
         try {
-          toast.info('Verxio Protocol: Fetching program details via getProgramDetails()');
-
-          const tempProtocol = new VerxioProtocol(
+          // Create initial context
+          const context = initializeVerxio(
             network,
-            new PublicKey(programId),
-            wallet.adapter
-          );
-          tempProtocol.setCollectionAddress(new PublicKey(programId));
-          const details = await tempProtocol.getProgramDetails();
-
-          // Initialize protocol with the program creator's authority
-          const protocol = new VerxioProtocol(
-            network,
-            new PublicKey(details.creator),
+            publicKey,
             wallet.adapter
           );
 
-          protocol.setCollectionAddress(new PublicKey(programId));
-          const collectionSigner = generateSigner(protocol.umi);
-          protocol.setCollectionSigner(collectionSigner);
-
+          // Set up wallet signer first
           const walletSigner = createSignerFromWalletAdapter(wallet.adapter);
-          protocol.umi.use(signerIdentity(walletSigner));
-          
-          setVerxio(protocol);
+          context.umi.use(signerIdentity(walletSigner));
 
-          toast.info('Verxio Protocol: Fetching program tiers via getProgramTiers()');
-          const tiers = await protocol.getProgramTiers();
-          
-          toast.info('Verxio Protocol: Fetching points per action via getPointsPerAction()');
-          const pointsPerAction = await protocol.getPointsPerAction();
-          
-          setProgramDetails({
-            ...details,
-            tiers,
-            pointsPerAction,
-          });
+          // Set collection address
+          const collectionPubkey = new PublicKey(programId);
+          context.collectionAddress = collectionPubkey;
 
-          toast.success('Verxio Protocol: Successfully initialized with program details, tiers, and points configuration');
+          // Store context in state
+          setVerxio(context);
+
+          try {
+            // Now fetch program details
+            const details = await getProgramDetails(context);
+            const tiers = await getProgramTiers(context);
+            const pointsPerAction = await getPointsPerAction(context);
+            
+            setProgramDetails({
+              ...details,
+              tiers,
+              pointsPerAction,
+            });
+
+            toast.success('Successfully loaded program details');
+          } catch (error) {
+            console.error('Error fetching program details:', error);
+            toast.error('Failed to load program details. Please try again.');
+          }
+
         } catch (error) {
-          toast.error('Verxio Protocol: Failed to initialize protocol and fetch program data');
+          console.error('Protocol initialization error:', error);
+          toast.error('Failed to initialize protocol');
         }
       };
 
@@ -95,12 +102,28 @@ function MintPageContent() {
 
   const mintPass = async () => {
     if (!verxio || !publicKey || !programDetails) return;
+    
+    if (!targetAddress) {
+      toast.error('Please enter a target address');
+      return;
+    }
+
+    let targetPubkey: PublicKey;
+    try {
+      targetPubkey = new PublicKey(targetAddress);
+    } catch (error) {
+      toast.error('Invalid target address');
+      return;
+    }
+
     setLoading(true);
     try {
-      toast.info('Verxio Protocol: Initiating loyalty pass issuance via issueLoyaltyPass()');
+      toast.info('Initiating loyalty pass issuance via issueLoyaltyPass()');
 
-      const result = await verxio.issueLoyaltyPass(
-        publicKey,
+      const result = await issueLoyaltyPass(
+        verxio,
+        verxio.collectionAddress!,
+        targetPubkey,
         `${programDetails.name} Loyalty Pass`,
         programDetails.uri
       );
@@ -110,9 +133,10 @@ function MintPageContent() {
         signer: result.signer
       });
 
-      toast.success('Verxio Protocol: Successfully minted loyalty pass');
+      toast.success('Successfully minted loyalty pass');
     } catch (error) {
-      toast.error('Verxio Protocol: Failed to mint loyalty pass');
+      console.error('Error minting pass:', error);
+      toast.error('Failed to mint loyalty pass');
     }
     setLoading(false);
   };
@@ -201,6 +225,23 @@ function MintPageContent() {
           {/* Program Details */}
           {programDetails && !mintedPass && (
             <div className="space-y-6">
+              {/* Add address input field */}
+              <div className="bg-gray-800/50 rounded-lg p-6 border border-gray-700">
+                <h3 className="text-lg font-semibold text-gray-300 mb-4">Recipient Address</h3>
+                <div className="space-y-2">
+                  <input
+                    type="text"
+                    value={targetAddress}
+                    onChange={(e) => setTargetAddress(e.target.value)}
+                    placeholder="Enter the address to mint the pass to..."
+                    className="w-full px-4 py-2 bg-gray-900/50 border border-gray-600 rounded-lg text-gray-200 placeholder-gray-500 focus:outline-none focus:border-blue-500 transition-colors"
+                  />
+                  <p className="text-sm text-gray-500">
+                    The user address to recveive the loyalty pass and points
+                  </p>
+                </div>
+              </div>
+
               <div className="grid grid-cols-2 gap-6">
                 <div className="bg-gray-800/50 rounded-lg p-6 border border-gray-700">
                   <h3 className="text-lg font-semibold text-gray-300 mb-4">Available Actions</h3>
@@ -246,6 +287,7 @@ function MintPageContent() {
               passAddress={mintedPass.address}
               passSigner={mintedPass.signer}
               network={network}
+              targetAddress={new PublicKey(targetAddress)}
             />
           ) : (
             <button

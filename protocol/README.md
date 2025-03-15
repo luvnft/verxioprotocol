@@ -14,9 +14,9 @@ Reward Protocol for creating and managing loyalty programs on Solana and SVM
 ## Installation
 
 ```bash
-npm install verxio-protocol
+npm install @verxioprotocol/core
 # or
-yarn add verxio-protocol
+yarn add @verxioprotocol/core
 ```
 
 ## Usage
@@ -24,27 +24,24 @@ yarn add verxio-protocol
 ### Initialize Protocol
 
 ```typescript
-import { VerxioProtocol } from 'verxio-protocol';
+import { initializeVerxio } from '@verxioprotocol/core';
 import { PublicKey } from '@solana/web3.js';
 import { WalletAdapter } from '@solana/wallet-adapter-base';
 
 // Initialize protocol with default RPC
-const verxio = new VerxioProtocol(
+const context = initializeVerxio(
   'devnet', // Network: 'devnet' | 'mainnet' | 'sonic-mainnet' | 'sonic-testnet'
   new PublicKey('PROGRAM_AUTHORITY'), // Program authority public key
   walletAdapter // Optional: Wallet adapter for transactions
 );
 
 // Or initialize with custom RPC URL
-const verxioWithCustomRPC = new VerxioProtocol(
+const contextWithCustomRPC = initializeVerxio(
   'devnet',
   new PublicKey('PROGRAM_AUTHORITY'),
   walletAdapter,
   'https://your-custom-rpc.com' // Optional: Custom RPC URL
 );
-
-// Update user wallet
-verxio.setUserWallet(newWalletAdapter);
 ```
 
 Each network has a default RPC URL:
@@ -60,19 +57,19 @@ const DEFAULT_RPC_URLS = {
 ### Create Loyalty Program
 
 ```typescript
-const program = await verxio.createProgram({
+const result = await createLoyaltyProgram(context, {
   organizationName: "Coffee Rewards",
   metadataUri: "https://arweave.net/...",
   tiers: [
-    {
-      name: "Bronze",
-      xpRequired: 500,
-      rewards: ["2% cashback"]
+    { 
+      name: "Bronze", 
+      xpRequired: 500, 
+      rewards: ["2% cashback"] 
     },
-    {
-      name: "Silver",
-      xpRequired: 1000,
-      rewards: ["5% cashback"]
+    { 
+      name: "Silver", 
+      xpRequired: 1000, 
+      rewards: ["5% cashback"] 
     }
   ],
   pointsPerAction: {
@@ -81,19 +78,21 @@ const program = await verxio.createProgram({
   }
 });
 
-console.log(program);
+console.log(result);
 // {
-//   programId: string,      // Collection address
-//   signature: string,      // Transaction signature
-//   collectionPrivateKey: string  // Collection signer private key
+//   LoyaltyProgramId: string,      // Collection address
+//   signature: string,             // Transaction signature
+//   collectionPrivateKey: string   // Collection signer private key
 // }
 ```
 
 ### Issue Loyalty Pass
 
 ```typescript
-const result = await verxio.issueLoyaltyPass(
-  new PublicKey('RECIPIENT_ADDRESS'),
+const result = await issueLoyaltyPass(
+  context,
+  collectionAddress,  // PublicKey of the program
+  recipient,          // PublicKey of the recipient
   "Coffee Rewards Pass",
   "https://arweave.net/..."
 );
@@ -108,11 +107,12 @@ console.log(result);
 ### Award Points
 
 ```typescript
-const result = await verxio.awardPoints(
-  new PublicKey('PASS_ADDRESS'),
-  "purchase",           // Action name
-  passSigner,          // Pass signer from issueLoyaltyPass
-  2                    // Optional: Point multiplier (default: 1)
+const result = await awardLoyaltyPoints(
+  context,
+  passAddress,        // PublicKey of the pass
+  "purchase",         // Action name
+  passSigner,         // Pass signer from issueLoyaltyPass
+  1                   // Optional: Point multiplier (default: 1)
 );
 
 console.log(result);
@@ -122,10 +122,27 @@ console.log(result);
 // }
 ```
 
+### Revoke Points
+
+```typescript
+const result = await revokeLoyaltyPoints(
+  context,
+  passAddress,        // PublicKey of the pass
+  pointsToReduce,     // Number of points to reduce
+  passSigner         // Pass signer from issueLoyaltyPass
+);
+
+console.log(result);
+// {
+//   points: number,    // New total points after reduction
+//   signature: string  // Transaction signature
+// }
+```
+
 ### Get Pass Data
 
 ```typescript
-const data = await verxio.getAssetData(new PublicKey('PASS_ADDRESS'));
+const data = await getAssetData(context, passAddress);
 
 console.log(data);
 // {
@@ -135,7 +152,8 @@ console.log(data);
 //     type: string,
 //     points: number,
 //     timestamp: number,
-//     newTotal: number
+//     newTotal: number,
+//     signature?: string
 //   }>,
 //   currentTier: string,
 //   tierUpdatedAt: number,
@@ -146,7 +164,7 @@ console.log(data);
 ### Get Program Details
 
 ```typescript
-const details = await verxio.getProgramDetails();
+const details = await getProgramDetails(context);
 
 console.log(details);
 // {
@@ -163,9 +181,10 @@ console.log(details);
 ### Transfer Pass
 
 ```typescript
-await verxio.approveTransfer(
-  new PublicKey('PASS_ADDRESS'),
-  new PublicKey('NEW_OWNER_ADDRESS')
+await approveTransfer(
+  context,
+  passAddress,    // PublicKey of the pass
+  toAddress       // PublicKey of the new owner
 );
 ```
 
@@ -173,16 +192,17 @@ await verxio.approveTransfer(
 
 ```typescript
 // Get all loyalty passes owned by a wallet
-const passes = await verxio.getWalletLoyaltyPasses(
-  new PublicKey('WALLET_ADDRESS')
+const passes = await getWalletLoyaltyPasses(
+  context,
+  walletAddress  // PublicKey of the wallet
 );
 
 // Get program's points per action
-const pointsPerAction = await verxio.getPointsPerAction();
+const pointsPerAction = await getPointsPerAction(context);
 // Returns: Record<string, number>
 
 // Get program's tiers
-const tiers = await verxio.getProgramTiers();
+const tiers = await getProgramTiers(context);
 // Returns: Array<{
 //   name: string,
 //   xpRequired: number,
@@ -190,28 +210,13 @@ const tiers = await verxio.getProgramTiers();
 // }>
 ```
 
-## Network Support
-
-The protocol supports multiple networks out of the box:
-
-```typescript
-const NETWORKS = {
-  mainnet: "https://api.mainnet-beta.solana.com",
-  devnet: "https://api.devnet.solana.com",
-  "sonic-mainnet": "https://api.mainnet-alpha.sonic.game",
-  "sonic-testnet": "https://api.testnet.sonic.game"
-};
-```
-
-You can also provide a custom RPC URL during initialization.
-
 ## Error Handling
 
 The protocol uses descriptive error messages. Always wrap calls in try-catch:
 
 ```typescript
 try {
-  await verxio.issueLoyaltyPass(recipient, name, uri);
+  await issueLoyaltyPass(context, collectionAddress, recipient, name, uri);
 } catch (error) {
   console.error(`Failed to issue pass: ${error}`);
 }
