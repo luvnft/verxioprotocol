@@ -10,3 +10,31 @@ cd verxioprotocol
 # Install dependencies
 pnpm install
 ```
+
+## Development
+
+Format code:
+
+```shell
+pnpm fmt
+```
+
+Run tests:
+
+```shell
+pnpm test
+```
+
+Build the project:
+
+```shell
+pnpm build
+```
+
+## CI
+
+Run all CI checks:
+
+```shell
+pnpm ci
+```
