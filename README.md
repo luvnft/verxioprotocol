@@ -30,7 +30,7 @@ import { initializeVerxio, createUmi } from '@verxioprotocol/core'
 import { publicKey } from '@metaplex-foundation/umi'
 
 // Create UMI instance
-const umi = createUmi('https://api.devnet.solana.com')
+const umi = createUmi('https://mainnet.rpc.sonic.so')
 
 // Initialize protocol
 const context = initializeVerxio(
