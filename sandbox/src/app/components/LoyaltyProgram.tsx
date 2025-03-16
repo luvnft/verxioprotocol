@@ -8,12 +8,11 @@ import {
   createLoyaltyProgram,
   issueLoyaltyPass
 } from '@verxioprotocol/core';
-import { KeypairSigner } from '@metaplex-foundation/umi';
+import { KeypairSigner, publicKey as createUmiPublicKey } from '@metaplex-foundation/umi';
+import { createUmi } from "@metaplex-foundation/umi-bundle-defaults";
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { ActionPanel } from './ActionPanel';
-import { createUmi } from '@metaplex-foundation/umi-bundle-defaults';
-import { publicKey as createUmiPublicKey } from '@metaplex-foundation/umi';
 
 interface Tier {
   name: string;
