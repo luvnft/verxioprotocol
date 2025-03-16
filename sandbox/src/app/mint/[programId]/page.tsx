@@ -21,7 +21,7 @@ import { toast } from 'react-toastify';
 import { createUmi } from '@metaplex-foundation/umi-bundle-defaults';
 import { publicKey as createUmiPublicKey } from '@metaplex-foundation/umi';
 import { PublicKey as UmiPublicKey } from '@metaplex-foundation/umi';
-import { RPC_URLS } from '../../constants/rpc';
+import { RPC_URLS } from '../../components/LoyaltyProgram';
 
 interface ProgramDetails {
   name: string;
