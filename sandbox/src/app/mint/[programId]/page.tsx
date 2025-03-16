@@ -21,13 +21,7 @@ import { toast } from 'react-toastify';
 import { createUmi } from '@metaplex-foundation/umi-bundle-defaults';
 import { publicKey as createUmiPublicKey } from '@metaplex-foundation/umi';
 import { PublicKey as UmiPublicKey } from '@metaplex-foundation/umi';
-
-export const RPC_URLS: Record<'devnet' | 'mainnet' | 'sonic-mainnet' | 'sonic-testnet', string> = {
-  'devnet': 'https://api.devnet.solana.com',
-  'mainnet': 'https://api.mainnet-beta.solana.com',
-  'sonic-mainnet': 'https://mainnet.rpc.sonic.so',
-  'sonic-testnet': 'https://testnet.rpc.sonic.so'
-};
+import { RPC_URLS } from '../../constants/rpc';
 
 interface ProgramDetails {
   name: string;
