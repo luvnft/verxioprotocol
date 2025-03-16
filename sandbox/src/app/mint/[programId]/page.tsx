@@ -55,7 +55,6 @@ function MintPageContent() {
   const [mintedPass, setMintedPass] = useState<MintedPass | null>(null);
 
   useEffect(() => {
-
     if (programId && publicKey && wallet?.adapter) {
       const initializeProtocol = async () => {
         try {
@@ -68,7 +67,7 @@ function MintPageContent() {
             umi,
             umiPubKey
           );
-
+          
           // Set up wallet signer first
           const walletSigner = createSignerFromWalletAdapter(wallet.adapter);
           context.umi.use(signerIdentity(walletSigner));
