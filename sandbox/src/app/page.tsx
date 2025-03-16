@@ -1,8 +1,8 @@
-"use client";
+'use client'
 
-import { WalletMultiButton } from "@solana/wallet-adapter-react-ui";
-import { Providers } from "./providers";
-import { LoyaltyProgram } from "./components/LoyaltyProgram";
+import { WalletMultiButton } from '@solana/wallet-adapter-react-ui'
+import { Providers } from './providers'
+import { LoyaltyProgram } from './components/LoyaltyProgram'
 
 export default function Home() {
   return (
@@ -19,5 +19,5 @@ export default function Home() {
         </div>
       </main>
     </Providers>
-  );
+  )
 }

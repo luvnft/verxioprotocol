@@ -1,5 +1,5 @@
-import { Hero } from "./components/Hero";
-import Link from "next/link";
+import { Hero } from './components/Hero'
+import Link from 'next/link'
 
 export default function HomePage() {
   return (
@@ -28,7 +28,10 @@ export default function HomePage() {
             <Link href="#" className="text-white bg-white/10 px-4 py-2 rounded-lg hover:bg-white/20 transition-colors">
               Watch Demo
             </Link>
-            <Link href="https://www.npmjs.com/package/@verxioprotocol/core" className="bg-[#FFEB3B] text-black px-4 py-2 rounded-lg hover:bg-[#FFE100] transition-colors">
+            <Link
+              href="https://www.npmjs.com/package/@verxioprotocol/core"
+              className="bg-[#FFEB3B] text-black px-4 py-2 rounded-lg hover:bg-[#FFE100] transition-colors"
+            >
               View Doc
             </Link>
           </div>
@@ -36,8 +39,10 @@ export default function HomePage() {
 
         {/* Feature Banner */}
         <div className="flex justify-center mt-4 px-4">
-          <Link href="#" 
-             className="inline-flex items-center gap-2 bg-[#1A1A1A] text-white px-4 py-2 rounded-full text-sm md:text-base hover:bg-[#252525] transition-colors">
+          <Link
+            href="#"
+            className="inline-flex items-center gap-2 bg-[#1A1A1A] text-white px-4 py-2 rounded-full text-sm md:text-base hover:bg-[#252525] transition-colors"
+          >
             <span className="bg-[#4CAF50] text-xs px-2 py-0.5 rounded">New</span>
             <span>Core NFT Experience Points →</span>
           </Link>
@@ -46,5 +51,5 @@ export default function HomePage() {
         <Hero />
       </div>
     </main>
-  );
-} 
+  )
+}

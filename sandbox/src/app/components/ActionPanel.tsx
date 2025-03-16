@@ -1,142 +1,125 @@
-'use client';
+'use client'
 
-import { PublicKey } from '@metaplex-foundation/umi';
-import { KeypairSigner } from '@metaplex-foundation/umi';
-import { useEffect, useState } from 'react';
-import { 
-  VerxioContext, 
-  getAssetData, 
-  getPointsPerAction, 
+import { PublicKey } from '@metaplex-foundation/umi'
+import { KeypairSigner } from '@metaplex-foundation/umi'
+import { useEffect, useState } from 'react'
+import {
+  VerxioContext,
+  getAssetData,
+  getPointsPerAction,
   getProgramTiers,
   awardLoyaltyPoints,
-  revokeLoyaltyPoints 
-} from '@verxioprotocol/core';
-import { TierProgression } from './TierProgression';
-import { NetworkOption } from './LoyaltyProgram';
-import { toast } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
+  revokeLoyaltyPoints,
+} from '@verxioprotocol/core'
+import { TierProgression } from './TierProgression'
+import { NetworkOption } from './LoyaltyProgram'
+import { toast } from 'react-toastify'
+import 'react-toastify/dist/ReactToastify.css'
 
 interface ActionPanelProps {
-  verxio: VerxioContext;
-  passAddress: PublicKey;
-  passSigner: KeypairSigner;
-  network: NetworkOption;
-  targetAddress: PublicKey;
+  verxio: VerxioContext
+  passAddress: PublicKey
+  passSigner: KeypairSigner
+  network: NetworkOption
+  targetAddress: PublicKey
 }
 
 export function ActionPanel({ verxio, passAddress, passSigner, network, targetAddress }: ActionPanelProps) {
   const [data, setData] = useState<{
-    xp: number;
-    lastAction: string | null;
+    xp: number
+    lastAction: string | null
     actionHistory: Array<{
-      type: string;
-      points: number;
-      timestamp: number;
-      newTotal: number;
-      signature?: string;
-    }>;
-    currentTier: string;
-    tierUpdatedAt: number;
-    rewards: string[];
-    actions: Record<string, number>;
-  } | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [loadingAction, setLoadingAction] = useState<string | null>(null);
-  const [programTiers, setProgramTiers] = useState<any[]>([]);
-  const [pointsToReduce, setPointsToReduce] = useState<number>(0);
+      type: string
+      points: number
+      timestamp: number
+      newTotal: number
+      signature?: string
+    }>
+    currentTier: string
+    tierUpdatedAt: number
+    rewards: string[]
+    actions: Record<string, number>
+  } | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [loadingAction, setLoadingAction] = useState<string | null>(null)
+  const [programTiers, setProgramTiers] = useState<any[]>([])
+  const [pointsToReduce, setPointsToReduce] = useState<number>(0)
 
   const loadData = async () => {
-    setLoading(true);
+    setLoading(true)
     try {
-      const assetData = await getAssetData(verxio, passAddress);
-      const programActions = await getPointsPerAction(verxio);
-      const tiers = await getProgramTiers(verxio);
-      setData(assetData ? { ...assetData, actions: programActions } : null);
-      setProgramTiers(tiers);
+      const assetData = await getAssetData(verxio, passAddress)
+      const programActions = await getPointsPerAction(verxio)
+      const tiers = await getProgramTiers(verxio)
+      setData(assetData ? { ...assetData, actions: programActions } : null)
+      setProgramTiers(tiers)
     } catch (error) {
-      console.error('Error loading pass data:', error);
+      console.error('Error loading pass data:', error)
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
 
   useEffect(() => {
-    loadData();
-  }, [passAddress]);
+    loadData()
+  }, [passAddress])
 
   const performAction = async (action: string) => {
-    setLoadingAction(action);
+    setLoadingAction(action)
     try {
-      toast.info(`Awarding points via awardPoints() for ${action}`);
-      
-      const result = await awardLoyaltyPoints(
-        verxio,
-        passAddress,
-        action,
-        passSigner
-      );
-      
+      toast.info(`Awarding points via awardPoints() for ${action}`)
+
+      const result = await awardLoyaltyPoints(verxio, passAddress, action, passSigner)
+
       // Update the action history immediately with the signature
       if (data && data.actionHistory) {
         // Find the most recent action (which should be the one we just performed)
-        const lastAction = data.actionHistory[data.actionHistory.length - 1];
+        const lastAction = data.actionHistory[data.actionHistory.length - 1]
         if (lastAction && lastAction.type === action) {
-          lastAction.signature = result.signature;
+          lastAction.signature = result.signature
         }
       }
-      
-      toast.success(`Successfully awarded points for ${action}`);
-      await loadData(); // Reload all data to get updated XP and other changes
+
+      toast.success(`Successfully awarded points for ${action}`)
+      await loadData() // Reload all data to get updated XP and other changes
     } catch (error) {
-      console.error(`Error performing ${action}:`, error);
-      toast.error(`Failed to award points for ${action}`);
+      console.error(`Error performing ${action}:`, error)
+      toast.error(`Failed to award points for ${action}`)
     }
-    setLoadingAction(null);
-  };
+    setLoadingAction(null)
+  }
 
   const reducePoints = async () => {
-    setLoading(true);
+    setLoading(true)
     try {
-      toast.info(`Reducing ${pointsToReduce} points via reducePoints() method`);
-      
-      const result = await revokeLoyaltyPoints(
-        verxio,
-        passAddress,
-        pointsToReduce,
-        passSigner
-      );
-      
-      toast.success(`Successfully reduced ${pointsToReduce} points`);
-      await loadData(); // Reload data to show updated XP
+      toast.info(`Reducing ${pointsToReduce} points via reducePoints() method`)
+
+      const result = await revokeLoyaltyPoints(verxio, passAddress, pointsToReduce, passSigner)
+
+      toast.success(`Successfully reduced ${pointsToReduce} points`)
+      await loadData() // Reload data to show updated XP
     } catch (error) {
-      console.error('Error reducing points:', error);
-      toast.error('Failed to reduce points');
+      console.error('Error reducing points:', error)
+      toast.error('Failed to reduce points')
     }
-    setLoading(false);
-  };
+    setLoading(false)
+  }
 
   if (loading || !data) {
     return (
       <div className="glass-panel">
         <div className="flex flex-col items-center justify-center py-12">
           <div className="icon-container">
-            <svg 
-              className="animate-spin h-8 w-8 text-blue-600 mb-4" 
-              xmlns="http://www.w3.org/2000/svg" 
-              fill="none" 
+            <svg
+              className="animate-spin h-8 w-8 text-blue-600 mb-4"
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
               viewBox="0 0 24 24"
             >
-              <circle 
-                className="opacity-25" 
-                cx="12" 
-                cy="12" 
-                r="10" 
-                stroke="currentColor" 
-                strokeWidth="4"
-              />
-              <path 
-                className="opacity-75" 
-                fill="currentColor" 
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+              <path
+                className="opacity-75"
+                fill="currentColor"
                 d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
               />
             </svg>
@@ -144,7 +127,7 @@ export function ActionPanel({ verxio, passAddress, passSigner, network, targetAd
           <p className="text-gray-600 text-lg">Loading pass information...</p>
         </div>
       </div>
-    );
+    )
   }
 
   return (
@@ -158,7 +141,7 @@ export function ActionPanel({ verxio, passAddress, passSigner, network, targetAd
               <h2 className="text-xl font-semibold text-zinc-900">Your Progress</h2>
               <p className="text-sm text-zinc-600 mt-1">Track your loyalty journey</p>
             </div>
-            
+
             <div className="flex-grow flex flex-col justify-center items-center text-center space-y-4">
               <div className="w-32 h-32 rounded-full bg-blue-50 border-4 border-blue-100 flex items-center justify-center">
                 <span className="text-4xl font-bold text-blue-600">{data.xp} XP</span>
@@ -178,11 +161,7 @@ export function ActionPanel({ verxio, passAddress, passSigner, network, targetAd
         </div>
 
         {/* Tier Progression */}
-        <TierProgression
-          currentXP={data.xp}
-          currentTier={data.currentTier}
-          tiers={programTiers}
-        />
+        <TierProgression currentXP={data.xp} currentTier={data.currentTier} tiers={programTiers} />
       </div>
 
       {/* Available Actions */}
@@ -190,9 +169,9 @@ export function ActionPanel({ verxio, passAddress, passSigner, network, targetAd
         <h3 className="text-lg font-semibold text-zinc-900 mb-4">Available Actions</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {Object.entries(data.actions).map(([action, points]) => (
-              <button
-                key={action}
-                onClick={() => performAction(action)}
+            <button
+              key={action}
+              onClick={() => performAction(action)}
               disabled={loadingAction === action}
               className="flex items-center justify-between p-4 bg-zinc-50 border border-zinc-200 rounded-lg 
                 hover:bg-zinc-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
@@ -200,9 +179,18 @@ export function ActionPanel({ verxio, passAddress, passSigner, network, targetAd
               <span className="text-zinc-900 capitalize">
                 {loadingAction === action ? (
                   <div className="flex items-center space-x-2">
-                    <svg className="animate-spin h-4 w-4 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"/>
+                    <svg
+                      className="animate-spin h-4 w-4 text-blue-600"
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                    >
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                      <path
+                        className="opacity-75"
+                        fill="currentColor"
+                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                      />
                     </svg>
                     <span>Processing...</span>
                   </div>
@@ -211,10 +199,10 @@ export function ActionPanel({ verxio, passAddress, passSigner, network, targetAd
                 )}
               </span>
               <span className="text-sm text-blue-600 font-medium">+{points} XP</span>
-              </button>
-            ))}
-          </div>
+            </button>
+          ))}
         </div>
+      </div>
 
       {/* Point Reduction Section (Only visible to program authority) */}
       <div className="bg-white rounded-lg border border-zinc-200 p-6">
@@ -236,9 +224,18 @@ export function ActionPanel({ verxio, passAddress, passSigner, network, targetAd
             >
               {loading ? (
                 <div className="flex items-center space-x-2">
-                  <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"/>
+                  <svg
+                    className="animate-spin h-4 w-4"
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                  >
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                    />
                   </svg>
                   <span>Reducing...</span>
                 </div>
@@ -253,7 +250,7 @@ export function ActionPanel({ verxio, passAddress, passSigner, network, targetAd
       {/* Action History */}
       <div className="bg-white rounded-lg border border-zinc-200 p-6">
         <h3 className="text-lg font-semibold text-zinc-900 mb-4">Action History</h3>
-          <div className="space-y-3">
+        <div className="space-y-3">
           {data.actionHistory.length === 0 ? (
             <div className="text-center py-8">
               <p className="text-zinc-600">No actions performed yet</p>
@@ -271,11 +268,11 @@ export function ActionPanel({ verxio, passAddress, passSigner, network, targetAd
                     {new Date(action.timestamp).toLocaleTimeString()}
                   </p>
                 </div>
-                <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-                  action.type.toLowerCase() === 'revoke' 
-                    ? 'bg-red-50 text-red-600' 
-                    : 'bg-blue-50 text-blue-600'
-                }`}>
+                <span
+                  className={`px-3 py-1 rounded-full text-sm font-medium ${
+                    action.type.toLowerCase() === 'revoke' ? 'bg-red-50 text-red-600' : 'bg-blue-50 text-blue-600'
+                  }`}
+                >
                   {action.type.toLowerCase() === 'revoke' ? '' : '+'}
                   {action.points} XP
                 </span>
@@ -285,5 +282,5 @@ export function ActionPanel({ verxio, passAddress, passSigner, network, targetAd
         </div>
       </div>
     </div>
-  );
+  )
 }
