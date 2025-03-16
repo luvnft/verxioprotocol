@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "pnpm -r --workspace-concurrency 1 test:ci"
   },
   "author": "Verxio Protocol",
   "license": "MIT",

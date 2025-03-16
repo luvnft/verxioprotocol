@@ -9,7 +9,8 @@
   ],
   "scripts": {
     "build": "tsc",
-    "test": "jest",
+    "test": "vitest",
+    "test:ci": "vitest run",
     "prepare": "npm run build",
     "dev": "tsc --watch",
     "start": "ts-node src/test.ts"
@@ -24,12 +25,11 @@
   "author": "Verxio Protocol",
   "license": "MIT",
   "devDependencies": {
-    "@types/jest": "^29.5.12",
     "@types/node": "^20.11.24",
-    "jest": "^29.7.0",
-    "ts-jest": "^29.1.2",
     "ts-node": "^10.9.2",
-    "typescript": "^5.3.3"
+    "typescript": "^5.3.3",
+    "vite-tsconfig-paths": "^5.1.4",
+    "vitest": "^3.0.8"
   },
   "dependencies": {
     "@metaplex-foundation/mpl-core": "^1.2.0",
