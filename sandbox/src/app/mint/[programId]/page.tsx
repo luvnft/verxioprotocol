@@ -2,7 +2,6 @@
 
 import { useWallet } from '@solana/wallet-adapter-react';
 import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
-import { PublicKey } from '@solana/web3.js';
 import { useEffect, useState } from 'react';
 import { 
   VerxioContext,
@@ -11,14 +10,24 @@ import {
   getProgramTiers,
   getPointsPerAction,
   issueLoyaltyPass
-} from '../../../../../protocol/src/core';
+} from '@verxioprotocol/core';
 import { useParams } from 'next/navigation';
 import { Providers } from '../../providers';
 import Link from 'next/link';
-import { generateSigner, signerIdentity } from '@metaplex-foundation/umi';
+import {  KeypairSigner, signerIdentity } from '@metaplex-foundation/umi';
 import { createSignerFromWalletAdapter } from '@metaplex-foundation/umi-signer-wallet-adapters';
 import { ActionPanel } from '../../components/ActionPanel';
 import { toast } from 'react-toastify';
+import { createUmi } from '@metaplex-foundation/umi-bundle-defaults';
+import { publicKey as createUmiPublicKey } from '@metaplex-foundation/umi';
+import { PublicKey as UmiPublicKey } from '@metaplex-foundation/umi';
+
+export const RPC_URLS: Record<'devnet' | 'mainnet' | 'sonic-mainnet' | 'sonic-testnet', string> = {
+  'devnet': 'https://api.devnet.solana.com',
+  'mainnet': 'https://api.mainnet-beta.solana.com',
+  'sonic-mainnet': 'https://mainnet.rpc.sonic.so',
+  'sonic-testnet': 'https://testnet.rpc.sonic.so'
+};
 
 interface ProgramDetails {
   name: string;
@@ -36,6 +45,11 @@ interface ProgramDetails {
   pointsPerAction: Record<string, number>;
 }
 
+interface MintedPass {
+  address: UmiPublicKey;
+  signer: KeypairSigner;
+}
+
 function MintPageContent() {
   const { programId } = useParams();
   const { publicKey, wallet } = useWallet();
@@ -44,21 +58,21 @@ function MintPageContent() {
   const [programDetails, setProgramDetails] = useState<ProgramDetails | null>(null);
   const [network, setNetwork] = useState<'devnet' | 'mainnet' | 'sonic-mainnet' | 'sonic-testnet'>('devnet');
   const [targetAddress, setTargetAddress] = useState<string>('');
-  const [mintedPass, setMintedPass] = useState<{
-    address: PublicKey;
-    signer: ReturnType<typeof generateSigner>;
-  } | null>(null);
+  const [mintedPass, setMintedPass] = useState<MintedPass | null>(null);
 
   useEffect(() => {
 
     if (programId && publicKey && wallet?.adapter) {
       const initializeProtocol = async () => {
         try {
+          // Create UMI instance
+          const umi = createUmi(RPC_URLS[network]);
+          const umiPubKey = createUmiPublicKey(publicKey.toBase58());
+          
           // Create initial context
           const context = initializeVerxio(
-            network,
-            publicKey,
-            wallet.adapter
+            umi,
+            umiPubKey
           );
 
           // Set up wallet signer first
@@ -66,8 +80,7 @@ function MintPageContent() {
           context.umi.use(signerIdentity(walletSigner));
 
           // Set collection address
-          const collectionPubkey = new PublicKey(programId);
-          context.collectionAddress = collectionPubkey;
+          context.collectionAddress = createUmiPublicKey(programId as string);
 
           // Store context in state
           setVerxio(context);
@@ -108,28 +121,22 @@ function MintPageContent() {
       return;
     }
 
-    let targetPubkey: PublicKey;
     try {
-      targetPubkey = new PublicKey(targetAddress);
-    } catch (error) {
-      toast.error('Invalid target address');
-      return;
-    }
+      // Validate target address
+      const targetUmiPubkey = createUmiPublicKey(targetAddress);
 
-    setLoading(true);
-    try {
+      setLoading(true);
       toast.info('Initiating loyalty pass issuance via issueLoyaltyPass()');
 
-      const result = await issueLoyaltyPass(
-        verxio,
-        verxio.collectionAddress!,
-        targetPubkey,
-        `${programDetails.name} Loyalty Pass`,
-        programDetails.uri
-      );
+      const result = await issueLoyaltyPass(verxio, {
+        collectionAddress: verxio.collectionAddress!,
+        recipient: targetUmiPubkey,
+        passName: `${programDetails.name} Loyalty Pass`,
+        passMetadataUri: programDetails.uri
+      });
 
       setMintedPass({
-        address: new PublicKey(result.signer.publicKey),
+        address: createUmiPublicKey(result.signer.publicKey),
         signer: result.signer
       });
 
@@ -287,7 +294,7 @@ function MintPageContent() {
               passAddress={mintedPass.address}
               passSigner={mintedPass.signer}
               network={network}
-              targetAddress={new PublicKey(targetAddress)}
+              targetAddress={createUmiPublicKey(targetAddress)}
             />
           ) : (
             <button

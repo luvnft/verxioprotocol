@@ -1,6 +1,11 @@
-import { PublicKey } from '@solana/web3.js';
+import { KeypairSigner, Umi, PublicKey as UmiPublicKey } from '@metaplex-foundation/umi';
 
-export type Network = 'mainnet' | 'devnet' | 'sonic-mainnet' | 'sonic-testnet';
+// Initialize verxio context
+export interface VerxioContext {
+  umi: Umi;
+  programAuthority: UmiPublicKey;
+  collectionAddress?: UmiPublicKey;
+}
 
 // Program data interface for creation
 export interface LoyaltyProgramData {
@@ -12,9 +17,16 @@ export interface LoyaltyProgramData {
     rewards: string[];
   }>;
   pointsPerAction: Record<string, number>;
-  network: Network;
-  programAuthority: PublicKey;
-  rpcUrl?: string;
+  programAuthority: UmiPublicKey;
+  collectionSigner?: KeypairSigner
 }
 
+// Configuration for issuing a loyalty pass
+export interface IssueLoyaltyPassConfig {
+  collectionAddress: UmiPublicKey;
+  recipient: UmiPublicKey;
+  passName: string;
+  passMetadataUri: string;
+  assetSigner?: KeypairSigner;
+}
 

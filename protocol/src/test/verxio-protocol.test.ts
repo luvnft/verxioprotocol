@@ -1,5 +1,6 @@
 import { keypairIdentity } from "@metaplex-foundation/umi";
 import { fromWeb3JsKeypair } from '@metaplex-foundation/umi-web3js-adapters';
+import { publicKey } from "@metaplex-foundation/umi";
 import { Keypair } from '@solana/web3.js';
 import { beforeAll, describe, expect, it } from 'vitest'
 
@@ -9,7 +10,7 @@ import { getVerxioContext } from "./helpers/get-verxio-context";
 
 const feePayerSolana = Keypair.fromSecretKey(Uint8Array.from(FIXTURE_FEE_PAYER))
 const feePayerUmi = fromWeb3JsKeypair(feePayerSolana)
-const programAuthority = feePayerSolana.publicKey
+const programAuthority = publicKey(feePayerSolana.publicKey.toBase58())
 
 describe('verxio protocol', () => {
     beforeAll(() => {
@@ -34,8 +35,7 @@ describe('verxio protocol', () => {
 
         // ASSERT
         expect(result).toBeTruthy();
-        expect(result.LoyaltyProgramId).toBeTruthy();
+        expect(result.signer).toBeTruthy();
         expect(result.signature).toBeTruthy();
-        expect(result.collectionPrivateKey).toBeTruthy();
     })
 })

@@ -1,5 +1,6 @@
-import { PublicKey, Commitment, Connection } from "@solana/web3.js";
-import { generateSigner, publicKey, Umi } from "@metaplex-foundation/umi";
+import { generateSigner, KeypairSigner, publicKey, Umi } from "@metaplex-foundation/umi";
+import { base58 } from '@metaplex-foundation/umi/serializers';
+import { PublicKey as UmiPublicKey } from "@metaplex-foundation/umi";
 import { 
   createCollection,  
   create, 
@@ -12,16 +13,7 @@ import {
   fetchCollection,
   fetchAssetsByOwner
 } from "@metaplex-foundation/mpl-core";
-import { 
-  Network,
-  LoyaltyProgramData
-} from "../types";
-import { PublicKey as UmiPublicKey } from "@metaplex-foundation/umi";
-import { createUmi } from "@metaplex-foundation/umi-bundle-defaults";
-import { createSignerFromWalletAdapter } from "@metaplex-foundation/umi-signer-wallet-adapters";
-import { signerIdentity } from "@metaplex-foundation/umi";
-import bs58 from "bs58";
-import { WalletAdapter } from '@solana/wallet-adapter-base';
+import { LoyaltyProgramData, IssueLoyaltyPassConfig, VerxioContext } from "../types";
 
 // Constants
 const DEFAULT_TIER = {
@@ -54,32 +46,7 @@ const ATTRIBUTE_KEYS = {
   XP: "xp"
 } as const;
 
-const DEFAULT_RPC_URLS: Record<Network, string> = {
-  mainnet: "https://api.mainnet-beta.solana.com",
-  devnet: "https://api.devnet.solana.com",
-  "sonic-mainnet": "https://api.mainnet-alpha.sonic.game",
-  "sonic-testnet": "https://api.testnet.sonic.game",
-};
-
-// Types
-export interface VerxioContext {
-  umi: Umi;
-  network: Network;
-  programAuthority: PublicKey;
-  userWallet?: WalletAdapter;
-  collectionAddress?: PublicKey;
-}
-
 // Helper Functions
-const toUmiPublicKey = (key: PublicKey): UmiPublicKey => {
-  return publicKey(key.toBase58()) as UmiPublicKey;
-};
-
-const validateWalletState = (context: VerxioContext) => {
-  if (!context.userWallet) {
-    throw new Error("User wallet not set");
-  }
-};
 
 const validateCollectionState = (context: VerxioContext) => {
   if (!context.collectionAddress) {
@@ -89,7 +56,7 @@ const validateCollectionState = (context: VerxioContext) => {
 
 const getCollectionAttribute = async (context: VerxioContext, attributeKey: string): Promise<any> => {
   validateCollectionState(context);
-  const collection = await fetchCollection(context.umi, toUmiPublicKey(context.collectionAddress!));
+  const collection = await fetchCollection(context.umi, context.collectionAddress!);
   const attribute = collection.attributes?.attributeList.find(attr => attr.key === attributeKey)?.value;
   return attribute ? JSON.parse(attribute) : null;
 };
@@ -113,8 +80,8 @@ const calculateNewTier = async (context: VerxioContext, xp: number): Promise<{
 
 const updatePassData = async (
   context: VerxioContext,
-  passAddress: PublicKey,
-  signer: ReturnType<typeof generateSigner>,
+  passAddress: UmiPublicKey,
+  signer: KeypairSigner,
   appDataPlugin: any,
   updates: {
     xp: number;
@@ -148,67 +115,48 @@ const updatePassData = async (
       ],
       rewards: updates.newTier.rewards
     })),
-    asset: publicKey(passAddress),
-    collection: toUmiPublicKey(context.collectionAddress!),
+    asset: passAddress,
+    collection: context.collectionAddress!,
   }).sendAndConfirm(context.umi);
 
   return {
     points: updates.xp,
-    signature: bs58.encode(tx.signature)
+    signature: base58.deserialize(tx.signature)[0]
   };
 };
 
 // Main Functions
-export const initializeVerxio = (
-  network: Network, 
-  programAuthority: PublicKey, 
-  userWallet?: WalletAdapter,
-  rpcUrl?: string
-): VerxioContext => {
-  const commitment: Commitment = 'processed';   
-  const finalRpcUrl = rpcUrl || DEFAULT_RPC_URLS[network];
-  const connection = new Connection(finalRpcUrl, {
-    commitment,
-    wsEndpoint: finalRpcUrl
-  });
-  const umi = createUmi(connection);
-
-  if (userWallet) {
-    const walletSigner = createSignerFromWalletAdapter(userWallet);
-    umi.use(signerIdentity(walletSigner));
-  }
-
+export function initializeVerxio(
+  umi: Umi,
+  programAuthority: UmiPublicKey
+): VerxioContext {
   return {
     umi,
-    network,
     programAuthority,
-    userWallet
   };
-};
+}
 
-export const createLoyaltyProgram = async (
+export async function createLoyaltyProgram(
   context: VerxioContext,
-  data: Omit<LoyaltyProgramData, 'network' | 'programAuthority' | 'rpcUrl'>
+  config: LoyaltyProgramData
 ): Promise<{
-  LoyaltyProgramId: string;
+  signer: KeypairSigner;
   signature: string;
-  collectionPrivateKey: string;
-}> => {
+}> {
   try {
-    const collectionSigner = generateSigner(context.umi);
-    const collectionPublicKey = new PublicKey(collectionSigner.publicKey);
+    const signer = config.collectionSigner ?? generateSigner(context.umi);
 
     const tx = await createCollection(context.umi, {
-      name: data.organizationName,
-      uri: data.metadataUri,
-      collection: collectionSigner,
+      name: config.organizationName,
+      uri: config.metadataUri,
+      collection: signer,
       plugins: [
         {
           type: PLUGIN_TYPES.ATTRIBUTES,
           attributeList: [
             { key: ATTRIBUTE_KEYS.PROGRAM_TYPE, value: "loyalty" },
-            { key: ATTRIBUTE_KEYS.TIERS, value: JSON.stringify(data.tiers) },
-            { key: ATTRIBUTE_KEYS.POINTS_PER_ACTION, value: JSON.stringify(data.pointsPerAction) },
+            { key: ATTRIBUTE_KEYS.TIERS, value: JSON.stringify(config.tiers) },
+            { key: ATTRIBUTE_KEYS.POINTS_PER_ACTION, value: JSON.stringify(config.pointsPerAction) },
             { key: ATTRIBUTE_KEYS.CREATOR, value: context.programAuthority.toString() },
           ],
         },
@@ -216,60 +164,51 @@ export const createLoyaltyProgram = async (
           type: PLUGIN_TYPES.PERMANENT_TRANSFER_DELEGATE,
           authority: { 
             type: "Address",
-            address: toUmiPublicKey(context.programAuthority),
+            address: context.programAuthority,
           } as PluginAuthority,
         },
       ],
     }).sendAndConfirm(context.umi);
 
     return {
-      LoyaltyProgramId: collectionPublicKey.toString(),
-      signature: bs58.encode(tx.signature),
-      collectionPrivateKey: bs58.encode(collectionSigner.secretKey),
+      signer,
+      signature: base58.deserialize(tx.signature)[0]
     };
   } catch (error) {
     throw new Error(`Failed to create loyalty program: ${error}`);
   }
-};
+}
 
-export const issueLoyaltyPass = async (
+export async function issueLoyaltyPass(
   context: VerxioContext,
-  collectionAddress: PublicKey,
-  recipient: PublicKey,
-  passName: string,
-  passMetadataUri: string
+  config: IssueLoyaltyPassConfig
 ): Promise<{
-  signer: ReturnType<typeof generateSigner>;
+  signer: KeypairSigner;
   signature: string;
-}> => {
-  validateWalletState(context);
-
+}> {
   try {
-    const assetSigner = generateSigner(context.umi);
-    const walletSigner = createSignerFromWalletAdapter(context.userWallet!);
-    context.umi.use(signerIdentity(walletSigner));
-    
+    const signer = config.assetSigner ?? generateSigner(context.umi);
     const createTx = await create(context.umi, {
-      asset: assetSigner,
-      name: passName,
-      uri: passMetadataUri,
-      owner: toUmiPublicKey(recipient),
+      asset: signer,
+      name: config.passName,
+      uri: config.passMetadataUri,
+      owner: config.recipient,
       collection: {
-        publicKey: toUmiPublicKey(collectionAddress),
+        publicKey: config.collectionAddress,
       },
       plugins: [
         {
           type: PLUGIN_TYPES.APP_DATA,
           dataAuthority: { 
             type: "Address",
-            address: assetSigner.publicKey,
+            address: signer.publicKey,
           },
           schema: ExternalPluginAdapterSchema.Json,
         },
         {
           type: PLUGIN_TYPES.ATTRIBUTES,
           attributeList: [
-            { key: ATTRIBUTE_KEYS.TYPE, value: `${passName} loyalty pass` },
+            { key: ATTRIBUTE_KEYS.TYPE, value: `${config.passName} loyalty pass` },
           ],
         },
       ],
@@ -280,35 +219,33 @@ export const issueLoyaltyPass = async (
         type: PLUGIN_TYPES.APP_DATA,
         dataAuthority: {
           type: "Address",
-          address: assetSigner.publicKey,
+          address: signer.publicKey,
         },
       },
-      authority: assetSigner,
+      authority: signer,
       data: new TextEncoder().encode(JSON.stringify(DEFAULT_PASS_DATA)),
-      asset: publicKey(assetSigner.publicKey),
-      collection: toUmiPublicKey(collectionAddress),
+      asset: publicKey(signer.publicKey),
+      collection: config.collectionAddress,
     }).sendAndConfirm(context.umi);
 
     return {
-      signer: assetSigner,
-      signature: bs58.encode(createTx.signature)
+      signer,
+      signature: base58.deserialize(createTx.signature)[0]
     };
   } catch (error) {
     throw new Error(`Failed to issue loyalty pass: ${error}`);
   }
-};
+}
 
-export const awardLoyaltyPoints = async (
+export async function awardLoyaltyPoints(
   context: VerxioContext,
-  passAddress: PublicKey, 
+  passAddress: UmiPublicKey, 
   action: string, 
-  signer: ReturnType<typeof generateSigner>,
+  signer: KeypairSigner,
   multiplier: number = 1
-): Promise<{ points: number; signature: string }> => {
-  validateWalletState(context);
-
+): Promise<{ points: number; signature: string }> {
   try {
-    const asset = await fetchAsset(context.umi, toUmiPublicKey(passAddress));
+    const asset = await fetchAsset(context.umi, passAddress);
     const appDataPlugin = asset.appDatas?.[0];
     
     if (!appDataPlugin) {
@@ -334,18 +271,16 @@ export const awardLoyaltyPoints = async (
   } catch (error) {
     throw new Error(`Failed to award points: ${error}`);
   }
-};
+}
 
-export const revokeLoyaltyPoints = async (
+export async function revokeLoyaltyPoints(
   context: VerxioContext,
-  passAddress: PublicKey, 
+  passAddress: UmiPublicKey, 
   points: number,
-  signer: ReturnType<typeof generateSigner>,
-): Promise<{ points: number; signature: string }> => {
-  validateWalletState(context);
-
+  signer: KeypairSigner
+): Promise<{ points: number; signature: string }> {
   try {
-    const asset = await fetchAsset(context.umi, toUmiPublicKey(passAddress));
+    const asset = await fetchAsset(context.umi, passAddress);
     const appDataPlugin = asset.appDatas?.[0];
     
     if (!appDataPlugin) {
@@ -366,11 +301,11 @@ export const revokeLoyaltyPoints = async (
   } catch (error) {
     throw new Error(`Failed to reduce points: ${error}`);
   }
-};
+}
 
-export const getAssetData = async (
+export async function getAssetData(
   context: VerxioContext,
-  passAddress: PublicKey
+  passAddress: UmiPublicKey
 ): Promise<{
   xp: number;
   lastAction: string | null;
@@ -383,9 +318,9 @@ export const getAssetData = async (
   currentTier: string;
   tierUpdatedAt: number;
   rewards: string[];
-} | null> => {
+} | null> {
   try {
-    const asset = await fetchAsset(context.umi, toUmiPublicKey(passAddress));
+    const asset = await fetchAsset(context.umi, passAddress);
     const appDataPlugin = asset.appDatas?.find((p: any) => p.type === PLUGIN_TYPES.APP_DATA);
 
     if (!appDataPlugin || !appDataPlugin.data) {
@@ -396,40 +331,40 @@ export const getAssetData = async (
   } catch (error) {
     throw new Error(`Failed to fetch asset data: ${error}`);
   }
-};
+}
 
-export const approveTransfer = async (
+export async function approveTransfer(
   context: VerxioContext,
-  passAddress: PublicKey,
-  toAddress: PublicKey
-): Promise<void> => {
+  passAddress: UmiPublicKey,
+  toAddress: UmiPublicKey
+): Promise<void> {
   validateCollectionState(context);
 
   try {
     await transferV1(context.umi, {
-      asset: toUmiPublicKey(passAddress),
-      newOwner: toUmiPublicKey(toAddress),
-      collection: toUmiPublicKey(context.collectionAddress!),
+      asset: passAddress,
+      newOwner: toAddress,
+      collection: context.collectionAddress!,
     }).sendAndConfirm(context.umi);
   } catch (error) {
     throw new Error(`Failed to approve transfer: ${error}`);
   }
-};
+}
 
-export const getWalletLoyaltyPasses = async (
+export async function getWalletLoyaltyPasses(
   context: VerxioContext,
-  walletAddress: PublicKey
-): Promise<AssetV1[]> => {
+  walletAddress: UmiPublicKey
+): Promise<AssetV1[]> {
   try {
-    return await fetchAssetsByOwner(context.umi, toUmiPublicKey(walletAddress));
+    return await fetchAssetsByOwner(context.umi, walletAddress);
   } catch (error) {
     throw new Error(`Failed to fetch wallet loyalty passes: ${error}`);
   }
-};
+}
 
-export const getPointsPerAction = async (
+export async function getPointsPerAction(
   context: VerxioContext
-): Promise<Record<string, number>> => {
+): Promise<Record<string, number>> {
   validateCollectionState(context);
 
   try {
@@ -437,15 +372,15 @@ export const getPointsPerAction = async (
   } catch (error) {
     throw new Error(`Failed to fetch points per action: ${error}`);
   }
-};
+}
 
-export const getProgramTiers = async (
+export async function getProgramTiers(
   context: VerxioContext
 ): Promise<Array<{
   name: string;
   xpRequired: number;
   rewards: string[];
-}>> => {
+}>> {
   validateCollectionState(context);
 
   try {
@@ -453,9 +388,9 @@ export const getProgramTiers = async (
   } catch (error) {
     throw new Error(`Failed to fetch program tiers: ${error}`);
   }
-};
+}
 
-export const getProgramDetails = async (
+export async function getProgramDetails(
   context: VerxioContext
 ): Promise<{
   name: string;
@@ -465,11 +400,11 @@ export const getProgramDetails = async (
   numMinted: number;
   transferAuthority: string;
   creator: string;
-}> => {
+}> {
   validateCollectionState(context);
 
   try {
-    const collection = await fetchCollection(context.umi, toUmiPublicKey(context.collectionAddress!));
+    const collection = await fetchCollection(context.umi, context.collectionAddress!);
     return {
       name: collection.name,
       uri: collection.uri,
@@ -482,4 +417,4 @@ export const getProgramDetails = async (
   } catch (error) {
     throw new Error(`Failed to fetch program details: ${error}`);
   }
-};
+}

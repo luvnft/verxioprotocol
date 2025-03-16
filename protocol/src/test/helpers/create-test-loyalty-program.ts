@@ -1,9 +1,11 @@
-import { createLoyaltyProgram, VerxioContext } from "@/core";
+import { createLoyaltyProgram } from "@/core";
+import { VerxioContext } from "@/types";
 
 export async function createTestLoyaltyProgram(context: VerxioContext) {
-    return await createLoyaltyProgram(context,{
+    return await createLoyaltyProgram(context, {
         organizationName: "My Loyalty Program",
         metadataUri: "https://arweave.net/123abc",
+        programAuthority: context.programAuthority,
         tiers: [
             { name: "Grind", xpRequired: 0, rewards: ["nothing for you!"] },
             { name: "Bronze", xpRequired: 500, rewards: ["2% cashback"] },

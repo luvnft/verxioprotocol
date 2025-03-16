@@ -1,7 +1,7 @@
 'use client';
 
-import { PublicKey } from '@solana/web3.js';
-import { generateSigner } from '@metaplex-foundation/umi';
+import { PublicKey } from '@metaplex-foundation/umi';
+import { KeypairSigner } from '@metaplex-foundation/umi';
 import { useEffect, useState } from 'react';
 import { 
   VerxioContext, 
@@ -10,7 +10,7 @@ import {
   getProgramTiers,
   awardLoyaltyPoints,
   revokeLoyaltyPoints 
-} from '../../../../protocol/src/core';
+} from '@verxioprotocol/core';
 import { TierProgression } from './TierProgression';
 import { NetworkOption } from './LoyaltyProgram';
 import { toast } from 'react-toastify';
@@ -19,7 +19,7 @@ import 'react-toastify/dist/ReactToastify.css';
 interface ActionPanelProps {
   verxio: VerxioContext;
   passAddress: PublicKey;
-  passSigner: ReturnType<typeof generateSigner>;
+  passSigner: KeypairSigner;
   network: NetworkOption;
   targetAddress: PublicKey;
 }
