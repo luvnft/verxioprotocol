@@ -48,27 +48,27 @@ const ATTRIBUTE_KEYS = {
 
 // Helper Functions
 
-const validateCollectionState = (context: VerxioContext) => {
+function validateCollectionState(context: VerxioContext) {
   if (!context.collectionAddress) {
     throw new Error('Collection not initialized')
   }
 }
 
-const getCollectionAttribute = async (context: VerxioContext, attributeKey: string): Promise<any> => {
+async function getCollectionAttribute(context: VerxioContext, attributeKey: string): Promise<any> {
   validateCollectionState(context)
   const collection = await fetchCollection(context.umi, context.collectionAddress!)
   const attribute = collection.attributes?.attributeList.find((attr) => attr.key === attributeKey)?.value
   return attribute ? JSON.parse(attribute) : null
 }
 
-const calculateNewTier = async (
+async function calculateNewTier(
   context: VerxioContext,
   xp: number,
 ): Promise<{
   name: string
   xpRequired: number
   rewards: string[]
-}> => {
+}> {
   const tiers = (await getCollectionAttribute(context, ATTRIBUTE_KEYS.TIERS)) || []
   return tiers.reduce((acc: any, tier: any) => {
     if (xp >= tier.xpRequired && (!acc || tier.xpRequired > acc.xpRequired)) {
@@ -78,7 +78,7 @@ const calculateNewTier = async (
   }, DEFAULT_TIER)
 }
 
-const updatePassData = async (
+async function updatePassData(
   context: VerxioContext,
   passAddress: UmiPublicKey,
   signer: KeypairSigner,
@@ -90,7 +90,7 @@ const updatePassData = async (
     currentData: any
     newTier: any
   },
-): Promise<{ points: number; signature: string }> => {
+): Promise<{ points: number; signature: string }> {
   const tx = await writeData(context.umi, {
     key: {
       type: PLUGIN_TYPES.APP_DATA,
