@@ -4,9 +4,20 @@
   "description": "",
   "main": "index.js",
   "scripts": {
+    "fmt": "prettier --write .",
+    "fmt:check": "prettier --check .",
     "test": "pnpm -r --workspace-concurrency 1 test:ci"
   },
   "author": "Verxio Protocol",
   "license": "MIT",
-  "packageManager": "pnpm@10.4.1"
+  "packageManager": "pnpm@10.4.1",
+  "devDependencies": {
+    "lefthook": "^1.11.3",
+    "prettier": "^3.5.3"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "lefthook"
+    ]
+  }
 }
