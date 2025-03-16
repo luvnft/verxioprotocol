@@ -99,8 +99,8 @@ const result = await issueLoyaltyPass(
 
 console.log(result);
 // {
-//   signer: ReturnType<typeof generateSigner>,  // Pass signer
-//   signature: string                           // Transaction signature
+//   signer: KeypairSigner  // Pass signer
+//   signature: string     // Transaction signature
 // }
 ```
 

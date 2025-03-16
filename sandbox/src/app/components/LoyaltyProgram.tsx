@@ -1,18 +1,18 @@
 'use client';
 
 import { useWallet } from '@solana/wallet-adapter-react';
-import { PublicKey } from '@solana/web3.js';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { 
   VerxioContext,
   initializeVerxio,
   createLoyaltyProgram,
   issueLoyaltyPass
-} from '../../../../protocol/src/core';
-import { ActionPanel } from './ActionPanel';
-import { generateSigner } from '@metaplex-foundation/umi';
+} from '@verxioprotocol/core';
+import { KeypairSigner, publicKey as createUmiPublicKey } from '@metaplex-foundation/umi';
+import { createUmi } from "@metaplex-foundation/umi-bundle-defaults";
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import { ActionPanel } from './ActionPanel';
 
 interface Tier {
   name: string;
@@ -25,11 +25,11 @@ interface PointsPerAction {
 }
 
 export type NetworkOption = 'devnet' | 'mainnet' | 'sonic-mainnet' | 'sonic-testnet';
-export const EXPLORER_URLS: Record<NetworkOption, string> = {
-  'devnet': 'https://explorer.solana.com/tx/{address}?cluster=devnet',
-  'mainnet': 'https://explorer.solana.com/tx/{address}',
-  'sonic-mainnet': 'https://explorer.sonic.game/tx/{address}',
-  'sonic-testnet': 'https://explorer.sonic.game/tx/{address}?cluster=testnet.v1'
+export const RPC_URLS: Record<NetworkOption, string> = {
+  'devnet': 'https://api.devnet.solana.com',
+  'mainnet': 'https://api.mainnet-beta.solana.com',
+  'sonic-mainnet': 'https://mainnet.rpc.sonic.so',
+  'sonic-testnet': 'https://testnet.rpc.sonic.so'
 };
 
 export function LoyaltyProgram() {
@@ -41,7 +41,7 @@ export function LoyaltyProgram() {
   const [targetAddress, setTargetAddress] = useState<string>('');
   const [programId, setProgramId] = useState<string | null>(null);
   const [userPass, setUserPass] = useState<string | null>(null);
-  const [passSigner, setPassSigner] = useState<ReturnType<typeof generateSigner> | null>(null);
+  const [passSigner, setPassSigner] = useState<KeypairSigner | null>(null);
   const [loading, setLoading] = useState(false);
   const [programSignature, setProgramSignature] = useState<string | null>(null);
   const [passSignature, setPassSignature] = useState<string | null>(null);
@@ -60,25 +60,29 @@ export function LoyaltyProgram() {
     rewards: ['']
   });
 
+  // Create UMI instance based on selected network
+  const umi = useMemo(() => {
+    return createUmi(RPC_URLS[network]);
+  }, [network]);
 
-  // Add useEffect to handle wallet changes
+  // Update useEffect to use memoized umi
   useEffect(() => {
     if (publicKey && wallet?.adapter && connected) {
+      const umiPubKey = createUmiPublicKey(publicKey.toBase58());
       const context = initializeVerxio(
-        network,
-        publicKey,
-        wallet.adapter
+        umi,
+        umiPubKey
       );
 
       if (programId) {
-        context.collectionAddress = new PublicKey(programId);
+        context.collectionAddress = createUmiPublicKey(programId);
       }
 
       setVerxio(context);
     } else {
       setVerxio(null);
     }
-  }, [publicKey, wallet, connected, network, programId]);
+  }, [publicKey, wallet, connected, network, programId, umi]);
 
   const addTier = () => {
     if (newTier.name && newTier.xpRequired >= 0) {
@@ -106,7 +110,7 @@ export function LoyaltyProgram() {
   };
 
   const getExplorerUrl = (signature: string) => {
-    return EXPLORER_URLS[network].replace('{address}', signature);
+    return RPC_URLS[network].replace('{address}', signature);
   };
 
   const createProgram = async () => {
@@ -119,12 +123,14 @@ export function LoyaltyProgram() {
         metadataUri: metadataUri,
         tiers,
         pointsPerAction: actions,
+        programAuthority: verxio.programAuthority
       });
 
-      setProgramId(result.LoyaltyProgramId);
+      const collectionAddress = result.signer.publicKey.toString();
+      setProgramId(collectionAddress);
       setProgramSignature(result.signature);
       if (verxio) {
-        verxio.collectionAddress = new PublicKey(result.LoyaltyProgramId);
+        verxio.collectionAddress = createUmiPublicKey(collectionAddress);
       }
       toast.success('Successfully created new loyalty program');
       setStep('pass');
@@ -143,13 +149,14 @@ export function LoyaltyProgram() {
     setLoading(true);
     try {
       toast.info('Creating loyalty pass via issueLoyaltyPass() method');
-      const result = await issueLoyaltyPass(
-        verxio,
-        verxio.collectionAddress!,
-        publicKey,
-        `${programName} Loyalty Pass`,
-        metadataUri
-      );
+      const config = {
+        collectionAddress: verxio.collectionAddress!,
+        recipient: createUmiPublicKey(publicKey.toBase58()),
+        passName: `${programName} Loyalty Pass`,
+        passMetadataUri: metadataUri
+      };
+      const result = await issueLoyaltyPass(verxio, config);
+      
       setUserPass(result.signer.publicKey);
       setPassSigner(result.signer);
       setPassSignature(result.signature);
@@ -624,10 +631,10 @@ export function LoyaltyProgram() {
         {step === 'details' && userPass && verxio && passSigner && (
           <ActionPanel
             verxio={verxio}
-            passAddress={new PublicKey(userPass)}
+            passAddress={createUmiPublicKey(userPass)}
             passSigner={passSigner}
             network={network}
-            targetAddress={new PublicKey(targetAddress)}
+            targetAddress={createUmiPublicKey(targetAddress)}
           />
         )}
       </div>
