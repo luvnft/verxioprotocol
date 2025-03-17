@@ -1,7 +1,5 @@
 {
-  "name": "verxioprotocol",
-  "version": "1.0.0",
-  "description": "",
+  "name": "@verxioprotocol/source",
   "main": "index.js",
   "scripts": {
     "build": "pnpm -r --workspace-concurrency 1 build",
