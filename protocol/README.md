@@ -29,8 +29,8 @@ pnpm add @verxioprotocol/core
 import { initializeVerxio, createUmi } from '@verxioprotocol/core'
 import { publicKey } from '@metaplex-foundation/umi'
 
-// Create UMI instance
-const umi = createUmi('https://api.devnet.solana.com')
+// Create UMI instance (Solana & SVM supported)
+const umi = createUmi('RPC_URL')
 
 // Initialize protocol
 const context = initializeVerxio(

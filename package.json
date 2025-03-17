@@ -1,6 +1,6 @@
 {
-  "name": "verxioprotocol",
-  "version": "1.0.0",
+  "name": "@verxioprotocol/core",
+  "version": "1.0.1",
   "description": "",
   "main": "index.js",
   "scripts": {

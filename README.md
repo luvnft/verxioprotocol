@@ -29,8 +29,8 @@ pnpm add @verxioprotocol/core
 import { initializeVerxio, createUmi } from '@verxioprotocol/core'
 import { publicKey } from '@metaplex-foundation/umi'
 
-// Create UMI instance
-const umi = createUmi('https://mainnet.rpc.sonic.so')
+// Create UMI instance (Solana & SVM supported)
+const umi = createUmi('RPC_URL')
 
 // Initialize protocol
 const context = initializeVerxio(
@@ -252,19 +252,6 @@ Build the project:
 ```shell
 pnpm build
 ```
-
-## CI
-
-Run all CI checks:
-
-```shell
-pnpm ci
-```
-
-## Dependencies
-
-- @metaplex-foundation/umi
-- @metaplex-foundation/mpl-core
 
 ## License
 
