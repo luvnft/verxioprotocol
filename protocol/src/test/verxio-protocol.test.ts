@@ -28,7 +28,7 @@ describe('verxio protocol', () => {
   it('should create a new loyalty program', async () => {
     try {
       console.log('Starting loyalty program creation test...')
-      
+
       // ARRANGE
       console.log('Setting up context...')
       const ctx = getVerxioContext({ programAuthority })
