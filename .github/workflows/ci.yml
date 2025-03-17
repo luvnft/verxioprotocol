@@ -11,6 +11,12 @@ on:
 jobs:
   ci:
     runs-on: ubuntu-latest
+    services:
+      test-validator:
+        image: ghcr.io/samui-build/samui-test-validator:latest
+        ports:
+          - 8899:8899
+          - 8900:8900
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4

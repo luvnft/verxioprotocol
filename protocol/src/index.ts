@@ -1,6 +1,6 @@
 export * from './lib/constants'
+export * from './lib/create-loyalty-program'
 export * from './lib/index'
-export * from './types/create-loyalty-program-config'
 export * from './types/issue-loyalty-pass-config'
 export * from './types/loyalty-program-tier'
 export * from './types/verxio-context'

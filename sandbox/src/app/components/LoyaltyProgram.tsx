@@ -116,7 +116,7 @@ export function LoyaltyProgram() {
         programAuthority: verxio.programAuthority,
       })
 
-      const collectionAddress = result.signer.publicKey.toString()
+      const collectionAddress = result.collection.publicKey.toString()
       setProgramId(collectionAddress)
       setProgramSignature(result.signature)
       if (verxio) {
