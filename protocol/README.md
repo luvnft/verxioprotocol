@@ -35,7 +35,7 @@ const umi = createUmi('https://api.devnet.solana.com')
 // Initialize protocol
 const context = initializeVerxio(
   umi,
-  publicKey('PROGRAM_AUTHORITY') // Program authority public key
+  publicKey('PROGRAM_AUTHORITY'), // Program authority public key
 )
 ```
 
@@ -78,7 +78,7 @@ const result = await issueLoyaltyPass(context, {
   collectionAddress: context.collectionAddress,
   recipient: publicKey('RECIPIENT_ADDRESS'),
   passName: 'Coffee Rewards Pass',
-  passMetadataUri: 'https://arweave.net/...'
+  passMetadataUri: 'https://arweave.net/...',
 })
 
 console.log(result)
@@ -93,10 +93,10 @@ console.log(result)
 ```typescript
 const result = await awardLoyaltyPoints(
   context,
-  passAddress,     // UMI PublicKey of the pass
-  'purchase',      // Action name
-  passSigner,      // KeypairSigner from issueLoyaltyPass
-  1                // Optional: Point multiplier (default: 1)
+  passAddress, // UMI PublicKey of the pass
+  'purchase', // Action name
+  passSigner, // KeypairSigner from issueLoyaltyPass
+  1, // Optional: Point multiplier (default: 1)
 )
 
 console.log(result)
@@ -111,9 +111,9 @@ console.log(result)
 ```typescript
 const result = await revokeLoyaltyPoints(
   context,
-  passAddress,     // UMI PublicKey of the pass
-  pointsToReduce,  // Number of points to reduce
-  passSigner      // KeypairSigner from issueLoyaltyPass
+  passAddress, // UMI PublicKey of the pass
+  pointsToReduce, // Number of points to reduce
+  passSigner, // KeypairSigner from issueLoyaltyPass
 )
 
 console.log(result)
@@ -166,8 +166,8 @@ console.log(details)
 ```typescript
 await approveTransfer(
   context,
-  passAddress,  // UMI PublicKey of the pass
-  toAddress     // UMI PublicKey of the new owner
+  passAddress, // UMI PublicKey of the pass
+  toAddress, // UMI PublicKey of the new owner
 )
 ```
 
@@ -177,7 +177,7 @@ await approveTransfer(
 // Get all loyalty passes owned by a wallet
 const passes = await getWalletLoyaltyPasses(
   context,
-  walletAddress  // UMI PublicKey of the wallet
+  walletAddress, // UMI PublicKey of the wallet
 )
 
 // Get program's points per action
@@ -199,9 +199,9 @@ The `VerxioContext` interface defines the protocol's context:
 
 ```typescript
 interface VerxioContext {
-  umi: Umi;
-  programAuthority: PublicKey;
-  collectionAddress?: PublicKey;
+  umi: Umi
+  programAuthority: PublicKey
+  collectionAddress?: PublicKey
 }
 ```
 
@@ -215,7 +215,7 @@ try {
     collectionAddress,
     recipient,
     passName,
-    passMetadataUri
+    passMetadataUri,
   })
 } catch (error) {
   console.error(`Failed to issue pass: ${error}`)
