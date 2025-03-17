@@ -1,7 +1,5 @@
 {
-  "name": "@verxioprotocol/core",
-  "version": "0.0.3",
-  "description": "Reward Protocol for creating and managing loyalty programs on Solana and SVM",
+  "name": "@verxioprotocol/source",
   "main": "index.js",
   "scripts": {
     "build": "pnpm -r --workspace-concurrency 1 build",
