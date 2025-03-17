@@ -1,6 +1,6 @@
 {
   "name": "@verxioprotocol/core",
- "version": "0.0.3",
+  "version": "0.0.3",
   "description": "Reward Protocol for creating and managing loyalty programs on Solana and SVM",
   "main": "index.js",
   "scripts": {
