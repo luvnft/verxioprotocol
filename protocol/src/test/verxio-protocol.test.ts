@@ -14,28 +14,41 @@ const programAuthority = publicKey(feePayerSolana.publicKey.toBase58())
 
 describe('verxio protocol', () => {
   beforeAll(() => {
-    // here we can run any global setup code we might need
+    console.log('Setting up test environment...')
+    console.log('Program Authority:', programAuthority.toString())
   })
 
   it('should create a new VerxioProtocol instance', () => {
-    // ARRANGE
-    // ACT
+    console.log('Creating VerxioProtocol instance...')
     const ctx = getVerxioContext({ programAuthority })
-    // ASSERT
     expect(ctx).toBeDefined()
+    console.log('VerxioProtocol instance created successfully')
   })
 
   it('should create a new loyalty program', async () => {
-    // ARRANGE
-    const ctx = getVerxioContext({ programAuthority })
-    ctx.umi.use(keypairIdentity(feePayerUmi))
+    try {
+      console.log('Starting loyalty program creation test...')
+      
+      // ARRANGE
+      console.log('Setting up context...')
+      const ctx = getVerxioContext({ programAuthority })
+      ctx.umi.use(keypairIdentity(feePayerUmi))
+      console.log('Context setup complete')
 
-    // ACT
-    const result = await createTestLoyaltyProgram(ctx)
+      // ACT
+      console.log('Creating test loyalty program...')
+      const result = await createTestLoyaltyProgram(ctx)
+      console.log('Program creation complete')
 
-    // ASSERT
-    expect(result).toBeTruthy()
-    expect(result.signer).toBeTruthy()
-    expect(result.signature).toBeTruthy()
+      // ASSERT
+      console.log('Verifying results...')
+      expect(result).toBeTruthy()
+      expect(result.signer).toBeTruthy()
+      expect(result.signature).toBeTruthy()
+      console.log('Test completed successfully')
+    } catch (error) {
+      console.error('Test failed with error:', error)
+      throw error
+    }
   })
 })
