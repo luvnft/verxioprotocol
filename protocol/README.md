@@ -1,6 +1,6 @@
 # Verxio Protocol
 
-Reward Protocol for creating and managing loyalty programs on Solana and SVM
+Reward Protocol for creating and managing loyalty programs on Solana and SVM.
 
 ## Features
 
@@ -8,8 +8,8 @@ Reward Protocol for creating and managing loyalty programs on Solana and SVM
 - Issue loyalty passes as NFTs
 - Track user XP and tier progression
 - Support for transferable loyalty passes (with organization approval)
-- Automatic wallet and network handling
 - Built-in support for multiple networks (Solana, Sonic)
+- Automatic tier progression based on XP
 
 ## Installation
 
@@ -17,6 +17,8 @@ Reward Protocol for creating and managing loyalty programs on Solana and SVM
 npm install @verxioprotocol/core
 # or
 yarn add @verxioprotocol/core
+# or
+pnpm add @verxioprotocol/core
 ```
 
 ## Usage
@@ -24,35 +26,17 @@ yarn add @verxioprotocol/core
 ### Initialize Protocol
 
 ```typescript
-import { initializeVerxio } from '@verxioprotocol/core'
-import { PublicKey } from '@solana/web3.js'
-import { WalletAdapter } from '@solana/wallet-adapter-base'
+import { initializeVerxio, createUmi } from '@verxioprotocol/core'
+import { publicKey } from '@metaplex-foundation/umi'
 
-// Initialize protocol with default RPC
+// Create UMI instance
+const umi = createUmi('https://api.devnet.solana.com')
+
+// Initialize protocol
 const context = initializeVerxio(
-  'devnet', // Network: 'devnet' | 'mainnet' | 'sonic-mainnet' | 'sonic-testnet'
-  new PublicKey('PROGRAM_AUTHORITY'), // Program authority public key
-  walletAdapter, // Optional: Wallet adapter for transactions
+  umi,
+  publicKey('PROGRAM_AUTHORITY'), // Program authority public key
 )
-
-// Or initialize with custom RPC URL
-const contextWithCustomRPC = initializeVerxio(
-  'devnet',
-  new PublicKey('PROGRAM_AUTHORITY'),
-  walletAdapter,
-  'https://your-custom-rpc.com', // Optional: Custom RPC URL
-)
-```
-
-Each network has a default RPC URL:
-
-```typescript
-const DEFAULT_RPC_URLS = {
-  mainnet: 'https://api.mainnet-beta.solana.com',
-  devnet: 'https://api.devnet.solana.com',
-  'sonic-mainnet': 'https://api.mainnet-alpha.sonic.game',
-  'sonic-testnet': 'https://api.testnet.sonic.game',
-}
 ```
 
 ### Create Loyalty Program
@@ -61,6 +45,7 @@ const DEFAULT_RPC_URLS = {
 const result = await createLoyaltyProgram(context, {
   organizationName: 'Coffee Rewards',
   metadataUri: 'https://arweave.net/...',
+  programAuthority: context.programAuthority,
   tiers: [
     {
       name: 'Bronze',
@@ -81,27 +66,25 @@ const result = await createLoyaltyProgram(context, {
 
 console.log(result)
 // {
-//   LoyaltyProgramId: string,      // Collection address
-//   signature: string,             // Transaction signature
-//   collectionPrivateKey: string   // Collection signer private key
+//   signer: KeypairSigner,    // Collection signer
+//   signature: string         // Transaction signature
 // }
 ```
 
 ### Issue Loyalty Pass
 
 ```typescript
-const result = await issueLoyaltyPass(
-  context,
-  collectionAddress, // PublicKey of the program
-  recipient, // PublicKey of the recipient
-  'Coffee Rewards Pass',
-  'https://arweave.net/...',
-)
+const result = await issueLoyaltyPass(context, {
+  collectionAddress: context.collectionAddress,
+  recipient: publicKey('RECIPIENT_ADDRESS'),
+  passName: 'Coffee Rewards Pass',
+  passMetadataUri: 'https://arweave.net/...',
+})
 
 console.log(result)
 // {
-//   signer: KeypairSigner  // Pass signer
-//   signature: string     // Transaction signature
+//   signer: KeypairSigner,  // Pass signer
+//   signature: string       // Transaction signature
 // }
 ```
 
@@ -110,9 +93,9 @@ console.log(result)
 ```typescript
 const result = await awardLoyaltyPoints(
   context,
-  passAddress, // PublicKey of the pass
+  passAddress, // UMI PublicKey of the pass
   'purchase', // Action name
-  passSigner, // Pass signer from issueLoyaltyPass
+  passSigner, // KeypairSigner from issueLoyaltyPass
   1, // Optional: Point multiplier (default: 1)
 )
 
@@ -128,9 +111,9 @@ console.log(result)
 ```typescript
 const result = await revokeLoyaltyPoints(
   context,
-  passAddress, // PublicKey of the pass
+  passAddress, // UMI PublicKey of the pass
   pointsToReduce, // Number of points to reduce
-  passSigner, // Pass signer from issueLoyaltyPass
+  passSigner, // KeypairSigner from issueLoyaltyPass
 )
 
 console.log(result)
@@ -153,8 +136,7 @@ console.log(data)
 //     type: string,
 //     points: number,
 //     timestamp: number,
-//     newTotal: number,
-//     signature?: string
+//     newTotal: number
 //   }>,
 //   currentTier: string,
 //   tierUpdatedAt: number,
@@ -184,8 +166,8 @@ console.log(details)
 ```typescript
 await approveTransfer(
   context,
-  passAddress, // PublicKey of the pass
-  toAddress, // PublicKey of the new owner
+  passAddress, // UMI PublicKey of the pass
+  toAddress, // UMI PublicKey of the new owner
 )
 ```
 
@@ -195,7 +177,7 @@ await approveTransfer(
 // Get all loyalty passes owned by a wallet
 const passes = await getWalletLoyaltyPasses(
   context,
-  walletAddress, // PublicKey of the wallet
+  walletAddress, // UMI PublicKey of the wallet
 )
 
 // Get program's points per action
@@ -211,17 +193,39 @@ const tiers = await getProgramTiers(context)
 // }>
 ```
 
+## Context Management
+
+The `VerxioContext` interface defines the protocol's context:
+
+```typescript
+interface VerxioContext {
+  umi: Umi
+  programAuthority: PublicKey
+  collectionAddress?: PublicKey
+}
+```
+
 ## Error Handling
 
 The protocol uses descriptive error messages. Always wrap calls in try-catch:
 
 ```typescript
 try {
-  await issueLoyaltyPass(context, collectionAddress, recipient, name, uri)
+  await issueLoyaltyPass(context, {
+    collectionAddress,
+    recipient,
+    passName,
+    passMetadataUri,
+  })
 } catch (error) {
   console.error(`Failed to issue pass: ${error}`)
 }
 ```
+
+## Dependencies
+
+- @metaplex-foundation/umi
+- @metaplex-foundation/mpl-core
 
 ## License
 
