@@ -1,9 +1,9 @@
-import { createLoyaltyProgram } from '@/core'
-import { VerxioContext } from '@/types'
+import { createLoyaltyProgram } from '@/lib'
+import { VerxioContext } from '@/types/verxio-context'
 
 export async function createTestLoyaltyProgram(context: VerxioContext) {
   return await createLoyaltyProgram(context, {
-    organizationName: 'My Loyalty Program',
+    organizationName: 'Test Loyalty Program',
     metadataUri: 'https://arweave.net/123abc',
     programAuthority: context.programAuthority,
     tiers: [

@@ -1,58 +1,23 @@
-import { generateSigner, KeypairSigner, publicKey, Umi } from '@metaplex-foundation/umi'
-import { base58 } from '@metaplex-foundation/umi/serializers'
-import { PublicKey as UmiPublicKey } from '@metaplex-foundation/umi'
+import { generateSigner, KeypairSigner, publicKey, PublicKey as UmiPublicKey, Umi } from '@metaplex-foundation/umi'
 import {
-  createCollection,
+  AssetV1,
   create,
-  fetchAsset,
+  createCollection,
   ExternalPluginAdapterSchema,
+  fetchAsset,
+  fetchAssetsByOwner,
+  fetchCollection,
   PluginAuthority,
   transferV1,
   writeData,
-  AssetV1,
-  fetchCollection,
-  fetchAssetsByOwner,
 } from '@metaplex-foundation/mpl-core'
-import { LoyaltyProgramData, IssueLoyaltyPassConfig, VerxioContext } from '../types'
-
-// Constants
-const DEFAULT_TIER = {
-  name: 'Grind',
-  xpRequired: 0,
-  rewards: ['nothing for you!'],
-}
-
-const DEFAULT_PASS_DATA = {
-  xp: 0,
-  lastAction: null,
-  actionHistory: [],
-  currentTier: DEFAULT_TIER.name,
-  tierUpdatedAt: Date.now(),
-  rewards: DEFAULT_TIER.rewards,
-}
-
-const PLUGIN_TYPES = {
-  ATTRIBUTES: 'Attributes',
-  APP_DATA: 'AppData',
-  PERMANENT_TRANSFER_DELEGATE: 'PermanentTransferDelegate',
-} as const
-
-const ATTRIBUTE_KEYS = {
-  PROGRAM_TYPE: 'programType',
-  TIERS: 'tiers',
-  POINTS_PER_ACTION: 'pointsPerAction',
-  CREATOR: 'creator',
-  TYPE: 'type',
-  XP: 'xp',
-} as const
-
-// Helper Functions
-
-function validateCollectionState(context: VerxioContext) {
-  if (!context.collectionAddress) {
-    throw new Error('Collection not initialized')
-  }
-}
+import { toBase58 } from '@/utils/to-base58'
+import { ATTRIBUTE_KEYS, DEFAULT_PASS_DATA, DEFAULT_TIER, PLUGIN_TYPES } from './constants'
+import { validateCollectionState } from '@/utils/validate-collection-state'
+import { VerxioContext } from '@/types/verxio-context'
+import { IssueLoyaltyPassConfig } from '@/types/issue-loyalty-pass-config'
+import { CreateLoyaltyProgramConfig } from '@/types/create-loyalty-program-config'
+import { LoyaltyProgramTier } from '@/types/loyalty-program-tier'
 
 async function getCollectionAttribute(context: VerxioContext, attributeKey: string): Promise<any> {
   validateCollectionState(context)
@@ -61,14 +26,7 @@ async function getCollectionAttribute(context: VerxioContext, attributeKey: stri
   return attribute ? JSON.parse(attribute) : null
 }
 
-async function calculateNewTier(
-  context: VerxioContext,
-  xp: number,
-): Promise<{
-  name: string
-  xpRequired: number
-  rewards: string[]
-}> {
+async function calculateNewTier(context: VerxioContext, xp: number): Promise<LoyaltyProgramTier> {
   const tiers = (await getCollectionAttribute(context, ATTRIBUTE_KEYS.TIERS)) || []
   return tiers.reduce((acc: any, tier: any) => {
     if (xp >= tier.xpRequired && (!acc || tier.xpRequired > acc.xpRequired)) {
@@ -122,7 +80,7 @@ async function updatePassData(
 
   return {
     points: updates.xp,
-    signature: base58.deserialize(tx.signature)[0],
+    signature: toBase58(tx.signature),
   }
 }
 
@@ -133,10 +91,9 @@ export function initializeVerxio(umi: Umi, programAuthority: UmiPublicKey): Verx
     programAuthority,
   }
 }
-
 export async function createLoyaltyProgram(
   context: VerxioContext,
-  config: LoyaltyProgramData,
+  config: CreateLoyaltyProgramConfig,
 ): Promise<{
   signer: KeypairSigner
   signature: string
@@ -170,7 +127,7 @@ export async function createLoyaltyProgram(
 
     return {
       signer,
-      signature: base58.deserialize(tx.signature)[0],
+      signature: toBase58(tx.signature),
     }
   } catch (error) {
     throw new Error(`Failed to create loyalty program: ${error}`)
@@ -186,7 +143,7 @@ export async function issueLoyaltyPass(
 }> {
   try {
     const signer = config.assetSigner ?? generateSigner(context.umi)
-    const createTx = await create(context.umi, {
+    const tx = await create(context.umi, {
       asset: signer,
       name: config.passName,
       uri: config.passMetadataUri,
@@ -226,7 +183,7 @@ export async function issueLoyaltyPass(
 
     return {
       signer,
-      signature: base58.deserialize(createTx.signature)[0],
+      signature: toBase58(tx.signature),
     }
   } catch (error) {
     throw new Error(`Failed to issue loyalty pass: ${error}`)
@@ -365,13 +322,7 @@ export async function getPointsPerAction(context: VerxioContext): Promise<Record
   }
 }
 
-export async function getProgramTiers(context: VerxioContext): Promise<
-  Array<{
-    name: string
-    xpRequired: number
-    rewards: string[]
-  }>
-> {
+export async function getProgramTiers(context: VerxioContext): Promise<LoyaltyProgramTier[]> {
   validateCollectionState(context)
 
   try {

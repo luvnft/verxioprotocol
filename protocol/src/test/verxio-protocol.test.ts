@@ -1,6 +1,5 @@
-import { keypairIdentity } from '@metaplex-foundation/umi'
+import { keypairIdentity, publicKey } from '@metaplex-foundation/umi'
 import { fromWeb3JsKeypair } from '@metaplex-foundation/umi-web3js-adapters'
-import { publicKey } from '@metaplex-foundation/umi'
 import { Keypair } from '@solana/web3.js'
 import { beforeAll, describe, expect, it } from 'vitest'
 
