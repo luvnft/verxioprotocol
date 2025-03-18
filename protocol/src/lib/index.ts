@@ -2,12 +2,10 @@ import { generateSigner, KeypairSigner, publicKey, PublicKey as UmiPublicKey, Um
 import {
   AssetV1,
   create,
-  createCollection,
   ExternalPluginAdapterSchema,
   fetchAsset,
   fetchAssetsByOwner,
   fetchCollection,
-  PluginAuthority,
   transferV1,
   writeData,
 } from '@metaplex-foundation/mpl-core'
@@ -16,7 +14,6 @@ import { ATTRIBUTE_KEYS, DEFAULT_PASS_DATA, DEFAULT_TIER, PLUGIN_TYPES } from '.
 import { validateCollectionState } from '@/utils/validate-collection-state'
 import { VerxioContext } from '@/types/verxio-context'
 import { IssueLoyaltyPassConfig } from '@/types/issue-loyalty-pass-config'
-import { CreateLoyaltyProgramConfig } from '@/types/create-loyalty-program-config'
 import { LoyaltyProgramTier } from '@/types/loyalty-program-tier'
 
 async function getCollectionAttribute(context: VerxioContext, attributeKey: string): Promise<any> {
@@ -89,48 +86,6 @@ export function initializeVerxio(umi: Umi, programAuthority: UmiPublicKey): Verx
   return {
     umi,
     programAuthority,
-  }
-}
-export async function createLoyaltyProgram(
-  context: VerxioContext,
-  config: CreateLoyaltyProgramConfig,
-): Promise<{
-  signer: KeypairSigner
-  signature: string
-}> {
-  try {
-    const signer = config.collectionSigner ?? generateSigner(context.umi)
-
-    const tx = await createCollection(context.umi, {
-      name: config.organizationName,
-      uri: config.metadataUri,
-      collection: signer,
-      plugins: [
-        {
-          type: PLUGIN_TYPES.ATTRIBUTES,
-          attributeList: [
-            { key: ATTRIBUTE_KEYS.PROGRAM_TYPE, value: 'loyalty' },
-            { key: ATTRIBUTE_KEYS.TIERS, value: JSON.stringify(config.tiers) },
-            { key: ATTRIBUTE_KEYS.POINTS_PER_ACTION, value: JSON.stringify(config.pointsPerAction) },
-            { key: ATTRIBUTE_KEYS.CREATOR, value: context.programAuthority.toString() },
-          ],
-        },
-        {
-          type: PLUGIN_TYPES.PERMANENT_TRANSFER_DELEGATE,
-          authority: {
-            type: 'Address',
-            address: context.programAuthority,
-          } as PluginAuthority,
-        },
-      ],
-    }).sendAndConfirm(context.umi)
-
-    return {
-      signer,
-      signature: toBase58(tx.signature),
-    }
-  } catch (error) {
-    throw new Error(`Failed to create loyalty program: ${error}`)
   }
 }
 

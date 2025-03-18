@@ -6,7 +6,8 @@
     "ci": "pnpm fmt:check && pnpm test && pnpm build",
     "fmt": "prettier --write .",
     "fmt:check": "prettier --check .",
-    "test": "pnpm -r --workspace-concurrency 1 test:ci"
+    "test": "pnpm -r --workspace-concurrency 1 test:ci",
+    "validator": "docker run -it -p 8899:8899 -p 8900:8900 --rm --name samui-test-validator ghcr.io/samui-build/samui-test-validator:latest"
   },
   "author": "Verxio Protocol",
   "license": "MIT",
