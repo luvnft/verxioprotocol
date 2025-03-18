@@ -1,4 +1,4 @@
-import { generateSigner, keypairIdentity, publicKey } from '@metaplex-foundation/umi'
+import { generateSigner, keypairIdentity } from '@metaplex-foundation/umi'
 import { beforeAll, describe, expect, it } from 'vitest'
 import {
   createTestLoyaltyProgramConfig,
@@ -6,7 +6,6 @@ import {
 } from './helpers/create-test-loyalty-program'
 import { getTestContext } from './helpers/get-test-context'
 import { ensureFeePayerBalance } from './helpers/ensure-fee-payer-balance'
-import { VerxioContext } from '../types/verxio-context'
 import { createLoyaltyProgram, CreateLoyaltyProgramConfig } from '../lib/create-loyalty-program'
 
 const { feePayer, context } = getTestContext()
