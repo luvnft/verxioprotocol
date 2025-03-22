@@ -9,14 +9,11 @@ const nextConfig: NextConfig = {
       '@': path.resolve(__dirname, '../protocol/src'),
       '@/lib': path.resolve(__dirname, '../protocol/src/lib'),
       '@/utils': path.resolve(__dirname, '../protocol/src/utils'),
-      '@/types': path.resolve(__dirname, '../protocol/src/types')
+      '@/types': path.resolve(__dirname, '../protocol/src/types'),
     }
 
     // Handle protocol's path aliases
-    config.resolve.modules = [
-      path.resolve(__dirname, '../protocol/src'),
-      'node_modules'
-    ]
+    config.resolve.modules = [path.resolve(__dirname, '../protocol/src'), 'node_modules']
 
     // Ensure proper module resolution
     config.resolve.extensions = ['.ts', '.tsx', '.js', '.jsx']
