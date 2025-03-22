@@ -137,7 +137,10 @@ describe('create-loyalty-program', { sequential: true }, () => {
 
         // ACT
         try {
-          await createLoyaltyProgram(context, { ...brokenConfig, tiers: undefined } as unknown as CreateLoyaltyProgramConfig)
+          await createLoyaltyProgram(context, {
+            ...brokenConfig,
+            tiers: undefined,
+          } as unknown as CreateLoyaltyProgramConfig)
         } catch (error) {
           // ASSERT
           expect(error).toBeDefined()
