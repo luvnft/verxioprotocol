@@ -125,8 +125,8 @@ function MintPageContent() {
       })
 
       setMintedPass({
-        address: createUmiPublicKey(result.signer.publicKey),
-        signer: result.signer,
+        address: createUmiPublicKey(result.asset.publicKey),
+        signer: result.asset,
       })
 
       toast.success('Successfully minted loyalty pass')
