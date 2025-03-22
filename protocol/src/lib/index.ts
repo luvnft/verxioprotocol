@@ -8,7 +8,7 @@ import {
   writeData,
 } from '@metaplex-foundation/mpl-core'
 import { toBase58 } from '@/utils/to-base58'
-import { ATTRIBUTE_KEYS, DEFAULT_PASS_DATA, DEFAULT_TIER, PLUGIN_TYPES } from './constants'
+import { ATTRIBUTE_KEYS, DEFAULT_TIER, PLUGIN_TYPES } from './constants'
 import { validateCollectionState } from '@/utils/validate-collection-state'
 import { VerxioContext } from '@/types/verxio-context'
 import { LoyaltyProgramTier } from '@/types/loyalty-program-tier'
@@ -83,36 +83,6 @@ export function initializeVerxio(umi: Umi, programAuthority: UmiPublicKey): Verx
   return {
     umi,
     programAuthority,
-  }
-}
-
-export async function revokeLoyaltyPoints(
-  context: VerxioContext,
-  passAddress: UmiPublicKey,
-  points: number,
-  signer: KeypairSigner,
-): Promise<{ points: number; signature: string }> {
-  try {
-    const asset = await fetchAsset(context.umi, passAddress)
-    const appDataPlugin = asset.appDatas?.[0]
-
-    if (!appDataPlugin) {
-      throw new Error('AppData plugin not found')
-    }
-
-    const currentData = appDataPlugin.data || DEFAULT_PASS_DATA
-    const newXp = Math.max(0, currentData.xp - points)
-    const newTier = await calculateNewTier(context, newXp)
-
-    return updatePassData(context, passAddress, signer, appDataPlugin, {
-      xp: newXp,
-      action: 'revoke',
-      points: -points,
-      currentData,
-      newTier,
-    })
-  } catch (error) {
-    throw new Error(`Failed to reduce points: ${error}`)
   }
 }
 

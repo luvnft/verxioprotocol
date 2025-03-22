@@ -5,10 +5,11 @@ import { getTestContext } from './helpers/get-test-context'
 import { ensureFeePayerBalance } from './helpers/ensure-fee-payer-balance'
 import { issueLoyaltyPass } from '../lib/issue-loyalty-pass'
 import { awardLoyaltyPoints } from '../lib/award-loyalty-points'
+import { revokeLoyaltyPoints } from '../lib/revoke-loyalty-points'
 
 const { feePayer, context } = getTestContext()
 
-describe('award-loyalty-points', () => {
+describe('revoke-loyalty-points', () => {
   beforeAll(async () => {
     await ensureFeePayerBalance(context.umi, { account: feePayer.publicKey, amount: 1 })
     context.umi.use(keypairIdentity(feePayer))
@@ -33,90 +34,74 @@ describe('award-loyalty-points', () => {
       assetSigner: passSigner,
     })
     loyaltyPass = passResult.asset
+
+    // Award some initial points
+    await awardLoyaltyPoints(context, {
+      passAddress: loyaltyPass.publicKey,
+      action: 'purchase',
+      signer: passSigner,
+      multiplier: 100, // Award enough points for testing
+    })
   })
 
   describe('expected usage', () => {
-    it('should award points for a valid action', async () => {
+    it('should revoke points for a valid amount', async () => {
       expect.assertions(3)
       if (!loyaltyPass || !passSigner) throw new Error('Test setup failed')
 
       // ARRANGE
       const config = {
         passAddress: loyaltyPass.publicKey,
-        action: 'purchase',
+        pointsToRevoke: 50,
         signer: passSigner,
       }
 
       // ACT
-      const result = await awardLoyaltyPoints(context, config)
+      const result = await revokeLoyaltyPoints(context, config)
 
       // ASSERT
       expect(result).toBeTruthy()
-      expect(result.points).toBeGreaterThan(0)
+      expect(result.points).toBeLessThan(100) // Should have less points than before
       expect(result.signature).toBeTruthy()
     })
 
-    it('should apply multiplier to points', async () => {
+    it('should not allow points to go below 0', async () => {
       expect.assertions(3)
       if (!loyaltyPass || !passSigner) throw new Error('Test setup failed')
 
       // ARRANGE
       const config = {
         passAddress: loyaltyPass.publicKey,
-        action: 'purchase',
+        pointsToRevoke: 200, // Try to revoke more points than available
         signer: passSigner,
-        multiplier: 2,
       }
 
       // ACT
-      const result = await awardLoyaltyPoints(context, config)
+      const result = await revokeLoyaltyPoints(context, config)
 
       // ASSERT
       expect(result).toBeTruthy()
-      expect(result.points).toBeGreaterThan(0)
+      expect(result.points).toBe(0) // Should not go below 0
       expect(result.signature).toBeTruthy()
     })
 
-    it('should accumulate points across multiple actions', async () => {
+    it('should update tier when points are reduced below threshold', async () => {
       expect.assertions(4)
       if (!loyaltyPass || !passSigner) throw new Error('Test setup failed')
 
       // ARRANGE
       const config = {
         passAddress: loyaltyPass.publicKey,
-        action: 'purchase',
+        pointsToRevoke: 90, // Revoke most points to drop tier
         signer: passSigner,
       }
 
       // ACT
-      const firstResult = await awardLoyaltyPoints(context, config)
-      const secondResult = await awardLoyaltyPoints(context, config)
-
-      // ASSERT
-      expect(firstResult).toBeTruthy()
-      expect(secondResult).toBeTruthy()
-      expect(secondResult.points).toBeGreaterThan(firstResult.points)
-      expect(secondResult.signature).toBeTruthy()
-    })
-
-    it('should update tier when points threshold is reached', async () => {
-      expect.assertions(4)
-      if (!loyaltyPass || !passSigner) throw new Error('Test setup failed')
-
-      // ARRANGE
-      const config = {
-        passAddress: loyaltyPass.publicKey,
-        action: 'purchase',
-        signer: passSigner,
-        multiplier: 1000, // Large multiplier to ensure tier update
-      }
-
-      // ACT
-      const result = await awardLoyaltyPoints(context, config)
+      const result = await revokeLoyaltyPoints(context, config)
 
       // ASSERT
       expect(result).toBeTruthy()
-      expect(result.points).toBeGreaterThan(0)
+      expect(result.points).toBeLessThan(100)
       expect(result.signature).toBeTruthy()
       // Note: Tier verification would require fetching the pass data
       // This is covered in the getAssetData tests
@@ -131,38 +116,38 @@ describe('award-loyalty-points', () => {
       // ARRANGE
       const invalidConfig = {
         passAddress: generateSigner(context.umi).publicKey,
-        action: 'purchase',
+        pointsToRevoke: 50,
         signer: passSigner,
       }
 
       // ACT & ASSERT
       try {
-        await awardLoyaltyPoints(context, invalidConfig)
+        await revokeLoyaltyPoints(context, invalidConfig)
         expect(true).toBe(false) // Should not reach here
       } catch (error) {
         expect(error).toBeDefined()
-        expect(error.message).toContain('Failed to award points')
+        expect(error.message).toContain('Failed to revoke points')
       }
     })
 
-    it('should throw an error if action is not defined in points per action', async () => {
+    it('should throw an error if points to revoke is not a positive number', async () => {
       expect.assertions(2)
       if (!loyaltyPass || !passSigner) throw new Error('Test setup failed')
 
       // ARRANGE
       const invalidConfig = {
         passAddress: loyaltyPass.publicKey,
-        action: 'invalid_action',
+        pointsToRevoke: 0,
         signer: passSigner,
       }
 
       // ACT & ASSERT
       try {
-        await awardLoyaltyPoints(context, invalidConfig)
+        await revokeLoyaltyPoints(context, invalidConfig)
         expect(true).toBe(false) // Should not reach here
       } catch (error) {
         expect(error).toBeDefined()
-        expect(error.message).toContain('Failed to award points')
+        expect(error.message).toContain('Points to revoke must be a positive number')
       }
     })
 
@@ -174,17 +159,17 @@ describe('award-loyalty-points', () => {
       const invalidSigner = generateSigner(context.umi)
       const invalidConfig = {
         passAddress: loyaltyPass.publicKey,
-        action: 'purchase',
+        pointsToRevoke: 50,
         signer: invalidSigner,
       }
 
       // ACT & ASSERT
       try {
-        await awardLoyaltyPoints(context, invalidConfig)
+        await revokeLoyaltyPoints(context, invalidConfig)
         expect(true).toBe(false) // Should not reach here
       } catch (error) {
         expect(error).toBeDefined()
-        expect(error.message).toContain('Failed to award points')
+        expect(error.message).toContain('Failed to revoke points')
       }
     })
   })
