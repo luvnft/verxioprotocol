@@ -11,7 +11,7 @@
   },
   "author": "Verxio Protocol",
   "license": "MIT",
-  "packageManager": "pnpm@10.6.3",
+  "packageManager": "pnpm@10.6.5",
   "devDependencies": {
     "lefthook": "^1.11.3",
     "prettier": "^3.5.3"
