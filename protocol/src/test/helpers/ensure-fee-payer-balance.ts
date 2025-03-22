@@ -2,6 +2,7 @@ import { PublicKey, sol, Umi } from '@metaplex-foundation/umi'
 
 export async function ensureFeePayerBalance(umi: Umi, { account, amount }: { account: PublicKey; amount: number }) {
   const balance = await getFeePayerBalance(umi, { account })
+  console.log('balance', balance)
 
   if (balance >= amount) {
     return

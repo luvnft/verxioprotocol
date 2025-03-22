@@ -2,5 +2,5 @@ pre-commit:
   parallel: true
   commands:
     prettier:
-      glob: '*.{js,ts,jsx,tsx}'
-      run: npx prettier --write {staged_files}
+      glob: '{sandbox,protocol}/**/*.{js,ts,jsx,tsx}'
+      run: npx prettier --write "{staged_files}"

@@ -137,7 +137,10 @@ describe('create-loyalty-program', { sequential: true }, () => {
 
         // ACT
         try {
-          await createLoyaltyProgram(context, { ...brokenConfig, tiers: undefined } as CreateLoyaltyProgramConfig)
+          await createLoyaltyProgram(context, {
+            ...brokenConfig,
+            tiers: undefined,
+          } as unknown as CreateLoyaltyProgramConfig)
         } catch (error) {
           // ASSERT
           expect(error).toBeDefined()
@@ -180,7 +183,7 @@ describe('create-loyalty-program', { sequential: true }, () => {
           await createLoyaltyProgram(context, {
             ...brokenConfig,
             pointsPerAction: undefined,
-          } as CreateLoyaltyProgramConfig)
+          } as unknown as CreateLoyaltyProgramConfig)
         } catch (error) {
           // ASSERT
           expect(error).toBeDefined()
