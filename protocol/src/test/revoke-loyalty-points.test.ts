@@ -38,7 +38,7 @@ describe('revoke-loyalty-points', () => {
     // Award some initial points
     await awardLoyaltyPoints(context, {
       passAddress: loyaltyPass.publicKey,
-      action: 'purchase',
+      action: 'swap',
       signer: passSigner,
       multiplier: 100, // Award enough points for testing
     })
@@ -61,7 +61,7 @@ describe('revoke-loyalty-points', () => {
 
       // ASSERT
       expect(result).toBeTruthy()
-      expect(result.points).toBeLessThan(100) // Should have less points than before
+      expect(result.points).toBeLessThan(60000) // Should have less points than before (60000 - 50)
       expect(result.signature).toBeTruthy()
     })
 
@@ -72,7 +72,7 @@ describe('revoke-loyalty-points', () => {
       // ARRANGE
       const config = {
         passAddress: loyaltyPass.publicKey,
-        pointsToRevoke: 200, // Try to revoke more points than available
+        pointsToRevoke: 100000, // Try to revoke more points than available (we have ~60000)
         signer: passSigner,
       }
 
@@ -92,7 +92,7 @@ describe('revoke-loyalty-points', () => {
       // ARRANGE
       const config = {
         passAddress: loyaltyPass.publicKey,
-        pointsToRevoke: 90, // Revoke most points to drop tier
+        pointsToRevoke: 59950, // Revoke more points to ensure we drop below 100 (we have ~60000)
         signer: passSigner,
       }
 
@@ -101,10 +101,9 @@ describe('revoke-loyalty-points', () => {
 
       // ASSERT
       expect(result).toBeTruthy()
-      expect(result.points).toBeLessThan(100)
+      expect(result.points).toBeLessThan(100) // Should have very few points left
       expect(result.signature).toBeTruthy()
-      // Note: Tier verification would require fetching the pass data
-      // This is covered in the getAssetData tests
+      expect(result.newTier.name).toBe('Grind') // Should be in the lowest tier after revoking most points
     })
   })
 

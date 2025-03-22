@@ -3,6 +3,7 @@ import { KeypairSigner, PublicKey } from '@metaplex-foundation/umi'
 import { fetchAsset } from '@metaplex-foundation/mpl-core'
 import { getCollectionAttribute, calculateNewTier, updatePassData } from './index'
 import { ATTRIBUTE_KEYS } from './constants'
+import { LoyaltyProgramTier } from '../types/loyalty-program-tier'
 
 export interface RevokeLoyaltyPointsConfig {
   passAddress: PublicKey
@@ -16,13 +17,19 @@ export async function revokeLoyaltyPoints(
 ): Promise<{
   points: number
   signature: string
+  newTier: LoyaltyProgramTier
 }> {
   assertValidRevokeLoyaltyPointsConfig(config)
   try {
     // Fetch the asset data
-    const asset = await fetchAsset(context.umi, config.passAddress)
+    let asset
+    try {
+      asset = await fetchAsset(context.umi, config.passAddress)
+    } catch (error) {
+      throw new Error('Failed to revoke points: Pass not found')
+    }
     if (!asset) {
-      throw new Error('Pass not found')
+      throw new Error('Failed to revoke points: Pass not found')
     }
 
     // Get the collection attribute to verify ownership
@@ -36,46 +43,43 @@ export async function revokeLoyaltyPoints(
     if (!appDataPlugin) {
       throw new Error('AppData plugin not found')
     }
-    const currentData = JSON.parse(new TextDecoder().decode(appDataPlugin.data))
+    const currentData = appDataPlugin.data || {}
     const currentPoints = currentData.xp || 0
 
     // Calculate new points (ensure we don't go below 0)
     const newPoints = Math.max(0, currentPoints - config.pointsToRevoke)
 
     // Calculate new tier based on updated points
-    const newTier = calculateNewTier(context, newPoints)
-
-    // Update the pass data
-    const updatedData = {
-      ...currentData,
-      xp: newPoints,
-      currentTier: newTier,
-      tierUpdatedAt: Date.now(),
-      actionHistory: [
-        ...(currentData.actionHistory || []),
-        {
-          type: 'revoke',
-          points: -config.pointsToRevoke,
-          timestamp: Date.now(),
-          newTotal: newPoints,
-        },
-      ],
-    }
+    const newTier = await calculateNewTier(context, newPoints)
 
     // Update the pass data on-chain
-    const result = await updatePassData(context, config.passAddress, config.signer, appDataPlugin, {
-      xp: newPoints,
-      action: 'revoke',
-      points: -config.pointsToRevoke,
-      currentData,
-      newTier,
-    })
+    try {
+      const result = await updatePassData(context, config.passAddress, config.signer, appDataPlugin, {
+        xp: newPoints,
+        action: 'revoke',
+        points: -config.pointsToRevoke,
+        currentData,
+        newTier,
+      })
 
-    return {
-      points: newPoints,
-      signature: result.signature,
+      return {
+        points: newPoints,
+        signature: result.signature,
+        newTier,
+      }
+    } catch (error: any) {
+      console.error('Error in updatePassData:', error)
+      if (error.message?.includes('Invalid Authority')) {
+        throw new Error('Failed to revoke points: Signer is not the pass owner')
+      }
+      throw error
     }
   } catch (error) {
+    // If it's already an Error object, rethrow it
+    if (error instanceof Error) {
+      throw error
+    }
+    // Otherwise wrap it in a new Error
     throw new Error(`Failed to revoke points: ${error}`)
   }
 }
