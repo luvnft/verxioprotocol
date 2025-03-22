@@ -18,7 +18,7 @@ describe('verxio context', () => {
     it('should throw an error if the context is undefined', async () => {
       expect.assertions(2)
       // ARRANGE
-      const brokenContext = undefined as VerxioContext
+      const brokenContext = undefined as unknown as VerxioContext
 
       // ACT
       try {
