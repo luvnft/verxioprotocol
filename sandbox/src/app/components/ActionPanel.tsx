@@ -72,9 +72,9 @@ export function ActionPanel({ verxio, passAddress, passSigner, network, targetAd
       const result = await awardLoyaltyPoints(verxio, {
         passAddress,
         action,
-        signer: passSigner
+        signer: passSigner,
       })
-      
+
       // Update the action history immediately with the signature
       if (data && data.actionHistory) {
         // Find the most recent action (which should be the one we just performed)

@@ -42,4 +42,4 @@ export async function awardLoyaltyPoints(
   } catch (error) {
     throw new Error(`Failed to award points: ${error}`)
   }
-} 
+}

@@ -179,4 +179,4 @@ describe('award-loyalty-points', () => {
       }
     })
   })
-}) 
+})
