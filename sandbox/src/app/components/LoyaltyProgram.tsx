@@ -147,8 +147,8 @@ export function LoyaltyProgram() {
       }
       const result = await issueLoyaltyPass(verxio, config)
 
-      setUserPass(result.signer.publicKey)
-      setPassSigner(result.signer)
+      setUserPass(result.asset.publicKey)
+      setPassSigner(result.asset)
       setPassSignature(result.signature)
 
       toast.success('Successfully created loyalty pass')
