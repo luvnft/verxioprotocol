@@ -120,7 +120,7 @@ describe('award-loyalty-points', () => {
       expect(result).toBeTruthy()
       expect(result.points).toBeGreaterThan(0)
       expect(result.signature).toBeTruthy()
-      
+
       // Verify the tier was updated by checking the pass data
       const asset = await fetchAsset(context.umi, loyaltyPass.publicKey)
       const appDataPlugin = asset.appDatas?.[0]

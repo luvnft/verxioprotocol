@@ -22,7 +22,7 @@ export async function awardLoyaltyPoints(
     } catch (error) {
       throw new Error('Failed to award points: Pass not found')
     }
-    
+
     const appDataPlugin = asset.appDatas?.[0]
     if (!appDataPlugin) {
       throw new Error('AppData plugin not found')
@@ -31,8 +31,12 @@ export async function awardLoyaltyPoints(
     const currentData = appDataPlugin.data || {}
     const currentXp = currentData.xp || 0
     const pointsPerAction = await getCollectionAttribute(context, ATTRIBUTE_KEYS.POINTS_PER_ACTION)
-    
-    if (!pointsPerAction || Object.keys(pointsPerAction).length === 0 || Object.values(pointsPerAction).every(v => v === 0)) {
+
+    if (
+      !pointsPerAction ||
+      Object.keys(pointsPerAction).length === 0 ||
+      Object.values(pointsPerAction).every((v) => v === 0)
+    ) {
       throw new Error('Points per action configuration not found')
     }
 
