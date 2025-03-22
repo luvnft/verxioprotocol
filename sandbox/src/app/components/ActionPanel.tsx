@@ -98,7 +98,11 @@ export function ActionPanel({ verxio, passAddress, passSigner, network, targetAd
     try {
       toast.info(`Reducing ${pointsToReduce} points via reducePoints() method`)
 
-      const result = await revokeLoyaltyPoints(verxio, passAddress, pointsToReduce, passSigner)
+      const result = await revokeLoyaltyPoints(verxio, {
+        passAddress,
+        pointsToRevoke: pointsToReduce,
+        signer: passSigner,
+      })
 
       toast.success(`Successfully reduced ${pointsToReduce} points`)
       await loadData() // Reload data to show updated XP
