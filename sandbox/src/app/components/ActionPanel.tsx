@@ -69,8 +69,12 @@ export function ActionPanel({ verxio, passAddress, passSigner, network, targetAd
     try {
       toast.info(`Awarding points via awardPoints() for ${action}`)
 
-      const result = await awardLoyaltyPoints(verxio, passAddress, action, passSigner)
-
+      const result = await awardLoyaltyPoints(verxio, {
+        passAddress,
+        action,
+        signer: passSigner
+      })
+      
       // Update the action history immediately with the signature
       if (data && data.actionHistory) {
         // Find the most recent action (which should be the one we just performed)
