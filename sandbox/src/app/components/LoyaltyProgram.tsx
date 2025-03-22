@@ -131,34 +131,6 @@ export function LoyaltyProgram() {
     setLoading(false)
   }
 
-  const createLoyaltyPass = async () => {
-    if (!verxio || !publicKey || !programName) return
-    if (!wallet?.adapter.connected) {
-      await wallet?.adapter.connect()
-    }
-    setLoading(true)
-    try {
-      toast.info('Creating loyalty pass via issueLoyaltyPass() method')
-      const config = {
-        collectionAddress: verxio.collectionAddress!,
-        recipient: createUmiPublicKey(publicKey.toBase58()),
-        passName: `${programName} Loyalty Pass`,
-        passMetadataUri: metadataUri,
-      }
-      const result = await issueLoyaltyPass(verxio, config)
-
-      setUserPass(result.asset.publicKey)
-      setPassSigner(result.asset)
-      setPassSignature(result.signature)
-
-      toast.success('Successfully created loyalty pass')
-      setStep('details')
-    } catch (error) {
-      toast.error('Failed to create loyalty pass')
-    }
-    setLoading(false)
-  }
-
   const copyToClipboard = async (text: string, message: string) => {
     try {
       await navigator.clipboard.writeText(text)
