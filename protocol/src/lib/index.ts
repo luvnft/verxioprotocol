@@ -1,8 +1,6 @@
-import { generateSigner, KeypairSigner, publicKey, PublicKey as UmiPublicKey, Umi } from '@metaplex-foundation/umi'
+import { KeypairSigner, PublicKey as UmiPublicKey, Umi } from '@metaplex-foundation/umi'
 import {
   AssetV1,
-  create,
-  ExternalPluginAdapterSchema,
   fetchAsset,
   fetchAssetsByOwner,
   fetchCollection,
@@ -13,7 +11,6 @@ import { toBase58 } from '@/utils/to-base58'
 import { ATTRIBUTE_KEYS, DEFAULT_PASS_DATA, DEFAULT_TIER, PLUGIN_TYPES } from './constants'
 import { validateCollectionState } from '@/utils/validate-collection-state'
 import { VerxioContext } from '@/types/verxio-context'
-import { IssueLoyaltyPassConfig } from '@/types/issue-loyalty-pass-config'
 import { LoyaltyProgramTier } from '@/types/loyalty-program-tier'
 
 async function getCollectionAttribute(context: VerxioContext, attributeKey: string): Promise<any> {
@@ -86,62 +83,6 @@ export function initializeVerxio(umi: Umi, programAuthority: UmiPublicKey): Verx
   return {
     umi,
     programAuthority,
-  }
-}
-
-export async function issueLoyaltyPass(
-  context: VerxioContext,
-  config: IssueLoyaltyPassConfig,
-): Promise<{
-  signer: KeypairSigner
-  signature: string
-}> {
-  try {
-    const signer = config.assetSigner ?? generateSigner(context.umi)
-    const tx = await create(context.umi, {
-      asset: signer,
-      name: config.passName,
-      uri: config.passMetadataUri,
-      owner: config.recipient,
-      collection: {
-        publicKey: config.collectionAddress,
-      },
-      plugins: [
-        {
-          type: PLUGIN_TYPES.APP_DATA,
-          dataAuthority: {
-            type: 'Address',
-            address: signer.publicKey,
-          },
-          schema: ExternalPluginAdapterSchema.Json,
-        },
-        {
-          type: PLUGIN_TYPES.ATTRIBUTES,
-          attributeList: [{ key: ATTRIBUTE_KEYS.TYPE, value: `${config.passName} loyalty pass` }],
-        },
-      ],
-    }).sendAndConfirm(context.umi)
-
-    await writeData(context.umi, {
-      key: {
-        type: PLUGIN_TYPES.APP_DATA,
-        dataAuthority: {
-          type: 'Address',
-          address: signer.publicKey,
-        },
-      },
-      authority: signer,
-      data: new TextEncoder().encode(JSON.stringify(DEFAULT_PASS_DATA)),
-      asset: publicKey(signer.publicKey),
-      collection: config.collectionAddress,
-    }).sendAndConfirm(context.umi)
-
-    return {
-      signer,
-      signature: toBase58(tx.signature),
-    }
-  } catch (error) {
-    throw new Error(`Failed to issue loyalty pass: ${error}`)
   }
 }
 
