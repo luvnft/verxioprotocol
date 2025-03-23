@@ -66,8 +66,8 @@ const result = await createLoyaltyProgram(context, {
 
 console.log(result)
 // {
-//   signer: KeypairSigner,    // Collection signer
-//   signature: string         // Transaction signature
+//   collection: KeypairSigner,  // Collection signer
+//   signature: string          // Transaction signature
 // }
 ```
 
@@ -79,25 +79,25 @@ const result = await issueLoyaltyPass(context, {
   recipient: publicKey('RECIPIENT_ADDRESS'),
   passName: 'Coffee Rewards Pass',
   passMetadataUri: 'https://arweave.net/...',
+  assetSigner: generateSigner(context.umi), // Optional: Provide a signer for the pass
 })
 
 console.log(result)
 // {
-//   signer: KeypairSigner,  // Pass signer
-//   signature: string       // Transaction signature
+//   asset: KeypairSigner,  // Pass signer
+//   signature: string      // Transaction signature
 // }
 ```
 
 ### Award Points
 
 ```typescript
-const result = await awardLoyaltyPoints(
-  context,
-  passAddress, // UMI PublicKey of the pass
-  'purchase', // Action name
-  passSigner, // KeypairSigner from issueLoyaltyPass
-  1, // Optional: Point multiplier (default: 1)
-)
+const result = await awardLoyaltyPoints(context, {
+  passAddress: publicKey('PASS_ADDRESS'),
+  action: 'purchase',
+  signer: passSigner, // KeypairSigner from issueLoyaltyPass
+  multiplier: 1, // Optional: Point multiplier (default: 1)
+})
 
 console.log(result)
 // {
@@ -109,12 +109,11 @@ console.log(result)
 ### Revoke Points
 
 ```typescript
-const result = await revokeLoyaltyPoints(
-  context,
-  passAddress, // UMI PublicKey of the pass
-  pointsToReduce, // Number of points to reduce
-  passSigner, // KeypairSigner from issueLoyaltyPass
-)
+const result = await revokeLoyaltyPoints(context, {
+  passAddress: publicKey('PASS_ADDRESS'),
+  pointsToRevoke: 50,
+  signer: passSigner, // KeypairSigner from issueLoyaltyPass
+})
 
 console.log(result)
 // {

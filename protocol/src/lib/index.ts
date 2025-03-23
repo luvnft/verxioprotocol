@@ -8,19 +8,19 @@ import {
   writeData,
 } from '@metaplex-foundation/mpl-core'
 import { toBase58 } from '@/utils/to-base58'
-import { ATTRIBUTE_KEYS, DEFAULT_PASS_DATA, DEFAULT_TIER, PLUGIN_TYPES } from './constants'
+import { ATTRIBUTE_KEYS, DEFAULT_TIER, PLUGIN_TYPES } from './constants'
 import { validateCollectionState } from '@/utils/validate-collection-state'
 import { VerxioContext } from '@/types/verxio-context'
 import { LoyaltyProgramTier } from '@/types/loyalty-program-tier'
 
-async function getCollectionAttribute(context: VerxioContext, attributeKey: string): Promise<any> {
+export async function getCollectionAttribute(context: VerxioContext, attributeKey: string): Promise<any> {
   validateCollectionState(context)
   const collection = await fetchCollection(context.umi, context.collectionAddress!)
   const attribute = collection.attributes?.attributeList.find((attr) => attr.key === attributeKey)?.value
   return attribute ? JSON.parse(attribute) : null
 }
 
-async function calculateNewTier(context: VerxioContext, xp: number): Promise<LoyaltyProgramTier> {
+export async function calculateNewTier(context: VerxioContext, xp: number): Promise<LoyaltyProgramTier> {
   const tiers = (await getCollectionAttribute(context, ATTRIBUTE_KEYS.TIERS)) || []
   return tiers.reduce((acc: any, tier: any) => {
     if (xp >= tier.xpRequired && (!acc || tier.xpRequired > acc.xpRequired)) {
@@ -30,7 +30,7 @@ async function calculateNewTier(context: VerxioContext, xp: number): Promise<Loy
   }, DEFAULT_TIER)
 }
 
-async function updatePassData(
+export async function updatePassData(
   context: VerxioContext,
   passAddress: UmiPublicKey,
   signer: KeypairSigner,
@@ -83,72 +83,6 @@ export function initializeVerxio(umi: Umi, programAuthority: UmiPublicKey): Verx
   return {
     umi,
     programAuthority,
-  }
-}
-
-export async function awardLoyaltyPoints(
-  context: VerxioContext,
-  passAddress: UmiPublicKey,
-  action: string,
-  signer: KeypairSigner,
-  multiplier: number = 1,
-): Promise<{ points: number; signature: string }> {
-  try {
-    const asset = await fetchAsset(context.umi, passAddress)
-    const appDataPlugin = asset.appDatas?.[0]
-
-    if (!appDataPlugin) {
-      throw new Error('AppData plugin not found')
-    }
-
-    const currentData = appDataPlugin.data || DEFAULT_PASS_DATA
-    const currentXp = currentData.xp || 0
-
-    const pointsPerAction = (await getCollectionAttribute(context, ATTRIBUTE_KEYS.POINTS_PER_ACTION)) || {}
-    const points = (pointsPerAction[action] || 0) * multiplier
-    const newXp = currentXp + points
-
-    const newTier = await calculateNewTier(context, newXp)
-
-    return updatePassData(context, passAddress, signer, appDataPlugin, {
-      xp: newXp,
-      action,
-      points,
-      currentData,
-      newTier,
-    })
-  } catch (error) {
-    throw new Error(`Failed to award points: ${error}`)
-  }
-}
-
-export async function revokeLoyaltyPoints(
-  context: VerxioContext,
-  passAddress: UmiPublicKey,
-  points: number,
-  signer: KeypairSigner,
-): Promise<{ points: number; signature: string }> {
-  try {
-    const asset = await fetchAsset(context.umi, passAddress)
-    const appDataPlugin = asset.appDatas?.[0]
-
-    if (!appDataPlugin) {
-      throw new Error('AppData plugin not found')
-    }
-
-    const currentData = appDataPlugin.data || DEFAULT_PASS_DATA
-    const newXp = Math.max(0, currentData.xp - points)
-    const newTier = await calculateNewTier(context, newXp)
-
-    return updatePassData(context, passAddress, signer, appDataPlugin, {
-      xp: newXp,
-      action: 'revoke',
-      points: -points,
-      currentData,
-      newTier,
-    })
-  } catch (error) {
-    throw new Error(`Failed to reduce points: ${error}`)
   }
 }
 

@@ -69,7 +69,11 @@ export function ActionPanel({ verxio, passAddress, passSigner, network, targetAd
     try {
       toast.info(`Awarding points via awardPoints() for ${action}`)
 
-      const result = await awardLoyaltyPoints(verxio, passAddress, action, passSigner)
+      const result = await awardLoyaltyPoints(verxio, {
+        passAddress,
+        action,
+        signer: passSigner,
+      })
 
       // Update the action history immediately with the signature
       if (data && data.actionHistory) {
@@ -94,7 +98,11 @@ export function ActionPanel({ verxio, passAddress, passSigner, network, targetAd
     try {
       toast.info(`Reducing ${pointsToReduce} points via reducePoints() method`)
 
-      const result = await revokeLoyaltyPoints(verxio, passAddress, pointsToReduce, passSigner)
+      const result = await revokeLoyaltyPoints(verxio, {
+        passAddress,
+        pointsToRevoke: pointsToReduce,
+        signer: passSigner,
+      })
 
       toast.success(`Successfully reduced ${pointsToReduce} points`)
       await loadData() // Reload data to show updated XP
