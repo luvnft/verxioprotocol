@@ -10,6 +10,7 @@ Reward Protocol for creating and managing loyalty programs on Solana and SVM.
 - Support for transferable loyalty passes (with organization approval)
 - Built-in support for multiple networks (Solana, Sonic)
 - Automatic tier progression based on XP
+- Update loyalty program tiers and points per action
 
 ## Installation
 
@@ -68,6 +69,54 @@ console.log(result)
 // {
 //   collection: KeypairSigner,  // Collection signer
 //   signature: string          // Transaction signature
+// }
+```
+
+### Update Loyalty Program
+
+```typescript
+// Update points per action
+const result = await updateLoyaltyProgram(context, {
+  collectionAddress: publicKey('COLLECTION_ADDRESS'),
+  programAuthority: context.programAuthority,
+  newPointsPerAction: {
+    purchase: 150, // Update existing action
+    referral: 200, // Add new action
+  },
+})
+
+// Update tiers
+const result = await updateLoyaltyProgram(context, {
+  collectionAddress: publicKey('COLLECTION_ADDRESS'),
+  programAuthority: context.programAuthority,
+  newTiers: [
+    { name: 'Grind', xpRequired: 0, rewards: ['nothing for you!'] }, // Grind tier must exist
+    { name: 'Bronze', xpRequired: 400, rewards: ['free item'] }, // Update existing tier
+    { name: 'Silver', xpRequired: 1000, rewards: ['5% cashback'] },
+    { name: 'Gold', xpRequired: 2000, rewards: ['10% cashback'] },
+    { name: 'Platinum', xpRequired: 5000, rewards: ['20% cashback'] }, // Add new tier
+  ],
+})
+
+// Update both tiers and points per action
+const result = await updateLoyaltyProgram(context, {
+  collectionAddress: publicKey('COLLECTION_ADDRESS'),
+  programAuthority: context.programAuthority,
+  newTiers: [
+    { name: 'Grind', xpRequired: 0, rewards: ['nothing for you!'] },
+    { name: 'Bronze', xpRequired: 400, rewards: ['free item'] },
+    { name: 'Silver', xpRequired: 1000, rewards: ['5% cashback'] },
+    { name: 'Gold', xpRequired: 2000, rewards: ['10% cashback'] },
+  ],
+  newPointsPerAction: {
+    purchase: 150,
+    referral: 200,
+  },
+})
+
+console.log(result)
+// {
+//   signature: string  // Transaction signature
 // }
 ```
 
