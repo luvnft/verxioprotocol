@@ -27,7 +27,8 @@ pnpm add @verxioprotocol/core
 ### Initialize Protocol
 
 ```typescript
-import { initializeVerxio, createUmi } from '@verxioprotocol/core'
+import { initializeVerxio } from '@verxioprotocol/core'
+import { createUmi } from '@metaplex-foundation/umi-bundle-defaults'
 import { publicKey } from '@metaplex-foundation/umi'
 
 // Create UMI instance (Solana & SVM supported)
@@ -38,6 +39,9 @@ const context = initializeVerxio(
   umi,
   publicKey('PROGRAM_AUTHORITY'), // Program authority public key
 )
+
+// Set Signer
+context.umi.use(keypairIdentity('FEE_PAYER'))
 ```
 
 ### Create Loyalty Program
