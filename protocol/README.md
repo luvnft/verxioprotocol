@@ -34,7 +34,7 @@ import { publicKey } from '@metaplex-foundation/umi'
 // Create UMI instance (Solana & SVM supported)
 const umi = createUmi('RPC_URL')
 
-// Initialize protocol
+// Initialize program
 const context = initializeVerxio(
   umi,
   publicKey('PROGRAM_AUTHORITY'), // Program authority public key
