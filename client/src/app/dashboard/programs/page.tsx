@@ -8,7 +8,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 
 export default function ProgramsPage() {
   // This would come from your backend/blockchain
-  const programs = [] // Replace with actual programs data
+  const programs: any[] = [] // Replace with actual programs data
 
   return (
     <div className="space-y-6">
