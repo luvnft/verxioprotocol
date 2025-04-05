@@ -72,7 +72,12 @@
     font-family: var(--font-orbitron), system-ui, sans-serif;
   }
 
-  h1, h2, h3, h4, h5, h6 {
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
     font-family: var(--font-orbitron), system-ui, sans-serif;
   }
 
@@ -85,7 +90,6 @@
   .orbitron {
     font-family: var(--font-orbitron), system-ui, sans-serif;
   }
-
 
   @keyframes gradient {
     0% {
@@ -102,15 +106,21 @@
 
 @layer components {
   .text-glow {
-    text-shadow: 0 0 10px rgba(132, 70, 241, 0.5), 0 0 20px rgba(132, 70, 241, 0.3);
+    text-shadow:
+      0 0 10px rgba(132, 70, 241, 0.5),
+      0 0 20px rgba(132, 70, 241, 0.3);
   }
 
   .text-glow-cyan {
-    text-shadow: 0 0 10px rgba(76, 201, 240, 0.5), 0 0 20px rgba(76, 201, 240, 0.3);
+    text-shadow:
+      0 0 10px rgba(76, 201, 240, 0.5),
+      0 0 20px rgba(76, 201, 240, 0.3);
   }
 
   .card-glow {
-    box-shadow: 0 0 15px rgba(131, 56, 236, 0.4), 0 0 30px rgba(131, 56, 236, 0.15);
+    box-shadow:
+      0 0 15px rgba(131, 56, 236, 0.4),
+      0 0 30px rgba(131, 56, 236, 0.15);
   }
 
   .card-border-gradient {
@@ -121,7 +131,7 @@
   }
 
   .card-border-gradient::before {
-    content: "";
+    content: '';
     position: absolute;
     z-index: -2;
     left: -50%;
@@ -130,17 +140,22 @@
     height: 200%;
     background-color: transparent;
     background-repeat: no-repeat;
-    background-size: 50% 50%, 50% 50%;
-    background-position: 0 0, 100% 0, 100% 100%, 0 100%;
-    background-image: linear-gradient(#9d4edd, #4361ee),
-                      linear-gradient(#4cc9f0, #3bf0bb),
-                      linear-gradient(#2fc6a4, #4361ee),
-                      linear-gradient(#f72585, #9d4edd);
+    background-size:
+      50% 50%,
+      50% 50%;
+    background-position:
+      0 0,
+      100% 0,
+      100% 100%,
+      0 100%;
+    background-image:
+      linear-gradient(#9d4edd, #4361ee), linear-gradient(#4cc9f0, #3bf0bb), linear-gradient(#2fc6a4, #4361ee),
+      linear-gradient(#f72585, #9d4edd);
     animation: rotate 4s linear infinite;
   }
 
   .card-border-gradient::after {
-    content: "";
+    content: '';
     position: absolute;
     z-index: -1;
     left: 2px;
@@ -216,4 +231,3 @@
 ::-webkit-scrollbar-thumb:hover {
   background: rgba(157, 78, 221, 0.8);
 }
-

@@ -1,21 +1,21 @@
-"use client";
+'use client'
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { useWalletUi } from '@wallet-ui/react';
-import { Activity, Users, Gift, Trophy, Building2, User } from "lucide-react";
-import { useDashboard } from './DashboardContext';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { useWalletUi } from '@wallet-ui/react'
+import { Activity, Users, Gift, Trophy, Building2, User } from 'lucide-react'
+import { useDashboard } from './DashboardContext'
 
 export default function DashboardPage() {
-  const { connected } = useWalletUi();
-  const { isOrganization, setIsOrganization } = useDashboard();
+  const { connected } = useWalletUi()
+  const { isOrganization, setIsOrganization } = useDashboard()
 
   if (!connected) {
-    return null;
+    return null
   }
 
   const toggleDashboard = () => {
-    setIsOrganization(!isOrganization);
-  };
+    setIsOrganization(!isOrganization)
+  }
 
   if (isOrganization) {
     return (
@@ -23,7 +23,7 @@ export default function DashboardPage() {
         <div className="flex justify-between items-center">
           <div className="flex items-center gap-4">
             <h1 className="text-3xl font-bold text-white orbitron">Organization Dashboard</h1>
-            <button 
+            <button
               onClick={toggleDashboard}
               className="flex items-center gap-2 px-4 py-2 rounded-lg bg-black/20 border border-verxio-purple/20 text-white hover:bg-black/30 transition-colors"
             >
@@ -39,9 +39,7 @@ export default function DashboardPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           <Card className="bg-black/20 border-verxio-purple/20">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-white/70">
-                Total Programs
-              </CardTitle>
+              <CardTitle className="text-sm font-medium text-white/70">Total Programs</CardTitle>
               <Gift className="h-4 w-4 text-verxio-purple" />
             </CardHeader>
             <CardContent>
@@ -51,9 +49,7 @@ export default function DashboardPage() {
 
           <Card className="bg-black/20 border-verxio-purple/20">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-white/70">
-                Total Members
-              </CardTitle>
+              <CardTitle className="text-sm font-medium text-white/70">Total Members</CardTitle>
               <Users className="h-4 w-4 text-verxio-purple" />
             </CardHeader>
             <CardContent>
@@ -63,9 +59,7 @@ export default function DashboardPage() {
 
           <Card className="bg-black/20 border-verxio-purple/20">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-white/70">
-                Active Passes
-              </CardTitle>
+              <CardTitle className="text-sm font-medium text-white/70">Active Passes</CardTitle>
               <Activity className="h-4 w-4 text-verxio-purple" />
             </CardHeader>
             <CardContent>
@@ -75,9 +69,7 @@ export default function DashboardPage() {
 
           <Card className="bg-black/20 border-verxio-purple/20">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-white/70">
-                Total Points
-              </CardTitle>
+              <CardTitle className="text-sm font-medium text-white/70">Total Points</CardTitle>
               <Trophy className="h-4 w-4 text-verxio-purple" />
             </CardHeader>
             <CardContent>
@@ -106,7 +98,7 @@ export default function DashboardPage() {
           </Card>
         </div>
       </div>
-    );
+    )
   }
 
   // User view
@@ -115,7 +107,7 @@ export default function DashboardPage() {
       <div className="flex justify-between items-center">
         <div className="flex items-center gap-4">
           <h1 className="text-3xl font-bold text-white orbitron">My Dashboard</h1>
-          <button 
+          <button
             onClick={toggleDashboard}
             className="flex items-center gap-2 px-4 py-2 rounded-lg bg-black/20 border border-verxio-purple/20 text-white hover:bg-black/30 transition-colors"
           >
@@ -128,9 +120,7 @@ export default function DashboardPage() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <Card className="bg-black/20 border-verxio-purple/20">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-white/70">
-              My Passes
-            </CardTitle>
+            <CardTitle className="text-sm font-medium text-white/70">My Passes</CardTitle>
             <Gift className="h-4 w-4 text-verxio-purple" />
           </CardHeader>
           <CardContent>
@@ -140,9 +130,7 @@ export default function DashboardPage() {
 
         <Card className="bg-black/20 border-verxio-purple/20">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-white/70">
-              Total Points
-            </CardTitle>
+            <CardTitle className="text-sm font-medium text-white/70">Total Points</CardTitle>
             <Trophy className="h-4 w-4 text-verxio-purple" />
           </CardHeader>
           <CardContent>
@@ -152,9 +140,7 @@ export default function DashboardPage() {
 
         <Card className="bg-black/20 border-verxio-purple/20">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-white/70">
-              Current Tier
-            </CardTitle>
+            <CardTitle className="text-sm font-medium text-white/70">Current Tier</CardTitle>
             <Activity className="h-4 w-4 text-verxio-purple" />
           </CardHeader>
           <CardContent>
@@ -164,9 +150,7 @@ export default function DashboardPage() {
 
         <Card className="bg-black/20 border-verxio-purple/20">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-white/70">
-              Available Rewards
-            </CardTitle>
+            <CardTitle className="text-sm font-medium text-white/70">Available Rewards</CardTitle>
             <Gift className="h-4 w-4 text-verxio-purple" />
           </CardHeader>
           <CardContent>
@@ -195,5 +179,5 @@ export default function DashboardPage() {
         </Card>
       </div>
     </div>
-  );
+  )
 }

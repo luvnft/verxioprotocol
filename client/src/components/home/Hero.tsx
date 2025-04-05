@@ -1,22 +1,22 @@
-"use client";
-import LoyaltyCardCustomizer from "@/components/loyalty/LoyaltyCardCustomizer";
-import { motion } from "framer-motion";
-import { useState } from "react";
+'use client'
+import LoyaltyCardCustomizer from '@/components/loyalty/LoyaltyCardCustomizer'
+import { motion } from 'framer-motion'
+import { useState } from 'react'
 
 const colorOptions = [
-  { name: "Purple", value: "purple" },
-  { name: "Blue", value: "blue" },
-  { name: "Cyan", value: "cyan" },
-  { name: "Pink", value: "pink" },
-  { name: "Green", value: "green" },
-];
+  { name: 'Purple', value: 'purple' },
+  { name: 'Blue', value: 'blue' },
+  { name: 'Cyan', value: 'cyan' },
+  { name: 'Pink', value: 'pink' },
+  { name: 'Green', value: 'green' },
+]
 
 export default function Hero() {
-  const [currentThemeIndex, setCurrentThemeIndex] = useState(0);
+  const [currentThemeIndex, setCurrentThemeIndex] = useState(0)
 
   const handleRotationComplete = () => {
-    setCurrentThemeIndex(prev => (prev + 1) % colorOptions.length);
-  };
+    setCurrentThemeIndex((prev) => (prev + 1) % colorOptions.length)
+  }
 
   return (
     <div className="container mx-auto py-10 px-4 md:px-6">
@@ -26,7 +26,9 @@ export default function Hero() {
         transition={{ duration: 0.3 }}
         className="text-center mb-20"
       >
-        <h1 className={`text-3xl md:text-4xl font-bold text-white text-glow gradient-text leading-tight tracking-wide mb-4 text-verxio-${colorOptions[currentThemeIndex].value}`}>
+        <h1
+          className={`text-3xl md:text-4xl font-bold text-white text-glow gradient-text leading-tight tracking-wide mb-4 text-verxio-${colorOptions[currentThemeIndex].value}`}
+        >
           Design Your Loyalty Program
         </h1>
         <p className="pixel-font text-xs text-white/70 max-w-3xl mx-auto">
@@ -43,5 +45,5 @@ export default function Hero() {
         <LoyaltyCardCustomizer onRotationComplete={handleRotationComplete} />
       </motion.div>
     </div>
-  );
+  )
 }

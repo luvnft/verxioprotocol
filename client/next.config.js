@@ -7,15 +7,15 @@ const nextConfig = {
   images: {
     remotePatterns: [
       {
-        protocol: "https",
-        hostname: "**",
+        protocol: 'https',
+        hostname: '**',
       },
     ],
     unoptimized: true,
   },
   env: {
-    APP_URL: process.env.DOMAIN || "https://verxio-loyalty.netlify.app",
+    APP_URL: process.env.DOMAIN || 'https://verxio-loyalty.netlify.app',
   },
-};
+}
 
-module.exports = nextConfig;
+module.exports = nextConfig

@@ -1,7 +1,7 @@
-"use client";
+'use client'
 
-import StatsCard from "./StatsCard";
-import { Users, Award, CreditCard, Zap, Repeat, BarChart3 } from "lucide-react";
+import StatsCard from './StatsCard'
+import { Users, Award, CreditCard, Zap, Repeat, BarChart3 } from 'lucide-react'
 
 export default function DashboardStats() {
   return (
@@ -68,5 +68,5 @@ export default function DashboardStats() {
         trendValue="0.2% this month"
       />
     </div>
-  );
+  )
 }

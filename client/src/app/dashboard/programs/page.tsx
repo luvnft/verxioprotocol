@@ -1,19 +1,14 @@
-"use client";
+'use client'
 
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Plus, Users, Gift, Trophy, MoreVertical } from 'lucide-react';
-import Link from 'next/link';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Plus, Users, Gift, Trophy, MoreVertical } from 'lucide-react'
+import Link from 'next/link'
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 
 export default function ProgramsPage() {
   // This would come from your backend/blockchain
-  const programs = []; // Replace with actual programs data
+  const programs = [] // Replace with actual programs data
 
   return (
     <div className="space-y-6">
@@ -98,5 +93,5 @@ export default function ProgramsPage() {
         </div>
       )}
     </div>
-  );
-} 
+  )
+}

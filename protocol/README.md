@@ -257,28 +257,6 @@ interface VerxioContext {
 }
 ```
 
-## Error Handling
-
-The protocol uses descriptive error messages. Always wrap calls in try-catch:
-
-```typescript
-try {
-  await issueLoyaltyPass(context, {
-    collectionAddress,
-    recipient,
-    passName,
-    passMetadataUri,
-  })
-} catch (error) {
-  console.error(`Failed to issue pass: ${error}`)
-}
-```
-
-## Dependencies
-
-- @metaplex-foundation/umi
-- @metaplex-foundation/mpl-core
-
 ## License
 
 MIT
