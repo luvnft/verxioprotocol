@@ -247,7 +247,7 @@ const tiers = await getProgramTiers(context)
 
 ## Context Management
 
-The `VerxioContext` interface defines the protocol's context:
+The `VerxioContext` interface defines the loyalty program's context:
 
 ```typescript
 interface VerxioContext {
