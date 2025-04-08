@@ -11,6 +11,9 @@ import { toast } from 'sonner'
 import { useWalletUi } from '@wallet-ui/react'
 import { createNewLoyaltyProgram, Tier } from '@/lib/methods/createLoyaltyProgram'
 import { QRCodeSVG } from 'qrcode.react'
+import { HexColorPicker } from 'react-colorful'
+import { useVerxioProgram } from '@/lib/methods/initializeProgram'
+import { useRouter } from 'next/navigation'
 
 const colorOptions = [
   { name: 'Purple', value: 'purple' },
@@ -27,11 +30,16 @@ interface LoyaltyCardCustomizerProps {
 }
 
 export default function LoyaltyCardCustomizer({ onRotationComplete }: LoyaltyCardCustomizerProps) {
-  const { connected, account } = useWalletUi()
+  const { account, connected } = useWalletUi()
+  const context = useVerxioProgram()
+  const router = useRouter()
+  const [isLoading, setIsLoading] = useState(false)
   const [formData, setFormData] = useState({
     organizationName: '',
     metadataUri: '',
-    programColor: 'purple' as ProgramColor,
+    metadata: {
+      color: '#9d4edd', // Default purple
+    },
     tiers: [{ name: '', xpRequired: 0, rewards: [''] }] as Tier[],
     pointsPerAction: {
       '': 0,
@@ -53,7 +61,10 @@ export default function LoyaltyCardCustomizer({ onRotationComplete }: LoyaltyCar
   const handleColorChange = (color: string) => {
     setFormData({
       ...formData,
-      programColor: color as ProgramColor,
+      metadata: {
+        ...formData.metadata,
+        color: color,
+      },
     })
   }
 
@@ -109,27 +120,53 @@ export default function LoyaltyCardCustomizer({ onRotationComplete }: LoyaltyCar
       return
     }
 
+    if (!context) {
+      toast.error('Failed to initialize program context')
+      return
+    }
+
+    setIsLoading(true)
     try {
-      const result = await createNewLoyaltyProgram({
+      const result = await createNewLoyaltyProgram(context, {
         organizationName: formData.organizationName,
         metadataUri: formData.metadataUri,
         tiers: formData.tiers,
         pointsPerAction: formData.pointsPerAction,
       })
 
+      console.log(result)
+      // Clear form
+      setFormData({
+        organizationName: '',
+        metadataUri: '',
+        metadata: {
+          color: '#9d4edd',
+        },
+        tiers: [{ name: '', xpRequired: 0, rewards: [''] }],
+        pointsPerAction: {
+          '': 0,
+        },
+      })
+
       // Generate QR code data with program details
       const qrData = {
         name: formData.organizationName,
         collectionAddress: result.collection.publicKey.toString(),
-        creator: account?.address,
+        creator: account?.address.toString(),
         uri: formData.metadataUri,
       }
 
       setQrCodeData(JSON.stringify(qrData))
+      
       toast.success('Loyalty program created successfully!')
+      
+      // Redirect to dashboard
+      router.push('/dashboard')
     } catch (error) {
       console.error('Error creating program:', error)
       toast.error('Failed to create loyalty program')
+    } finally {
+      setIsLoading(false)
     }
   }
 
@@ -332,27 +369,25 @@ export default function LoyaltyCardCustomizer({ onRotationComplete }: LoyaltyCar
               </TabsContent>
 
               <TabsContent value="appearance" className="space-y-4">
+                <div className="space-y-4">
                 <div className="space-y-2">
-                  <Label className="pixel-font">Color Theme</Label>
-                  <div className="flex flex-wrap gap-2">
-                    {colorOptions.map((color) => (
-                      <Button
-                        key={color.value}
-                        type="button"
-                        variant={formData.programColor === color.value ? 'default' : 'outline'}
-                        onClick={() => handleColorChange(color.value)}
-                        className={`w-24 pixel-font ${
-                          formData.programColor === color.value ? 'text-white' : 'text-white/70'
-                        }`}
+                    <Label className="pixel-font">Brand Color</Label>
+                    <div className="flex items-center gap-4">
+                      <HexColorPicker
+                        color={formData.metadata.color}
+                        onChange={handleColorChange}
+                        className="w-[300px] h-[200px]"
+                      />
+                      <div className="w-16 h-16 rounded-full border-2 border-white/20" 
+                           style={{ backgroundColor: formData.metadata.color }} />
+                    </div>
+                  </div>
+
+                  <div className="mt-4 p-4 rounded-lg border border-white/20" 
                         style={{
-                          backgroundColor:
-                            formData.programColor === color.value ? `var(--verxio-${color.value})` : 'transparent',
-                          borderColor: `var(--verxio-${color.value})`,
-                        }}
-                      >
-                        {color.name}
-                      </Button>
-                    ))}
+                         background: `linear-gradient(135deg, ${formData.metadata.color}40, ${formData.metadata.color}20)`
+                       }}>
+                    <p className="text-white/70 text-sm">Preview of your color scheme</p>
                   </div>
                 </div>
               </TabsContent>
@@ -363,9 +398,19 @@ export default function LoyaltyCardCustomizer({ onRotationComplete }: LoyaltyCar
         <Button
           className={`w-full pixel-font bg-gradient-to-r from-[#00FFE0] via-[#0085FF] to-[#7000FF] text-white hover:opacity-90 py-6 px-8 rounded-lg text-sm ${!connected ? 'opacity-50 cursor-not-allowed' : ''}`}
           onClick={handleSave}
-          disabled={!connected}
+          disabled={!connected || isLoading}
         >
-          {connected ? 'Create Loyalty Program' : 'Connect Wallet to Create'}
+          {isLoading ? (
+            <div className="flex items-center justify-center">
+              <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+              Creating Program...
+            </div>
+          ) : (
+            connected ? 'Create Loyalty Program' : 'Connect Wallet to Create'
+          )}
         </Button>
       </div>
 
@@ -407,9 +452,9 @@ export default function LoyaltyCardCustomizer({ onRotationComplete }: LoyaltyCar
                       </h3>
                       <p className="text-white/70 text-sm">
                         Created by:{' '}
-                        {account?.address
-                          ? `${account.address.slice(0, 6)}...${account.address.slice(-4)}`
-                          : 'Wallet Address'}
+                        {account
+                          ? `${account.address.toString().slice(0, 6)}...${account.address.toString().slice(-4)}`
+                          : 'N/A'}
                       </p>
                     </div>
 

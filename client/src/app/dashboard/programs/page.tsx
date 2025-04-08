@@ -2,13 +2,69 @@
 
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Plus, Users, Gift, Trophy, MoreVertical } from 'lucide-react'
+import { Plus, Users, Gift, FileText, Key } from 'lucide-react'
 import Link from 'next/link'
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
+import { useEffect, useState } from 'react'
+import { getProgramDetails } from '@verxioprotocol/core'
+import { useVerxioProgram } from '@/lib/methods/initializeProgram'
+import { publicKey } from '@metaplex-foundation/umi'
+
+interface ProgramTier {
+  name: string
+  xpRequired: number
+  rewards: string[]
+}
+
+interface ProgramDetails {
+  name: string
+  uri: string
+  collectionAddress: string
+  updateAuthority: string
+  numMinted: number
+  creator: string
+  tiers: ProgramTier[]
+  pointsPerAction: Record<string, number>
+}
 
 export default function ProgramsPage() {
-  // This would come from your backend/blockchain
-  const programs: any[] = [] // Replace with actual programs data
+  const [programs, setPrograms] = useState<ProgramDetails[]>([])
+  const context = useVerxioProgram()
+  
+  useEffect(() => {
+    async function fetchPrograms() {
+      if (context) {
+        context.collectionAddress = publicKey("FVjXD2QaMj4iyWkz7pCTR5TfUBZkB61pfjLyWj59gsQj")
+        try {
+          const details = await getProgramDetails(context)
+          // Add mock tiers and points data for now
+          const programWithDetails = {
+            ...details,
+            tiers: [
+              {
+                name: 'Bronze',
+                xpRequired: 500,
+                rewards: ['2% cashback'],
+              },
+              {
+                name: 'Silver',
+                xpRequired: 1000,
+                rewards: ['5% cashback'],
+              },
+            ],
+            pointsPerAction: {
+              purchase: 100,
+              review: 50,
+            },
+          }
+          setPrograms([programWithDetails])
+        } catch (error) {
+          console.error("Error fetching program details:", error)
+        }
+      }
+    }
+    
+    fetchPrograms()
+  }, [context])
 
   return (
     <div className="space-y-6">
@@ -38,57 +94,45 @@ export default function ProgramsPage() {
       ) : (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {programs.map((program) => (
-            <Card key={program.id} className="bg-black/20 backdrop-blur-sm border-slate-800/20">
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-white">{program.name}</CardTitle>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" className="h-8 w-8 p-0">
-                      <MoreVertical className="h-4 w-4 text-white/70" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="bg-black/20 backdrop-blur-sm border-slate-800/20">
-                    <DropdownMenuItem className="text-white/70 hover:text-white hover:bg-white/10">
-                      View Details
-                    </DropdownMenuItem>
-                    <DropdownMenuItem className="text-white/70 hover:text-white hover:bg-white/10">
-                      Issue Passes
-                    </DropdownMenuItem>
-                    <DropdownMenuItem className="text-white/70 hover:text-white hover:bg-white/10">
-                      Manage Members
-                    </DropdownMenuItem>
-                    <DropdownMenuItem className="text-white/70 hover:text-white hover:bg-white/10">
-                      Edit Program
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-2">
-                      <Users className="h-4 w-4 text-[#0085FF]" />
-                      <span className="text-sm text-white/70">Members</span>
+            <Link href={`/dashboard/programs/${program.collectionAddress}`} key={program.collectionAddress}>
+              <Card className="bg-black/20 backdrop-blur-sm border-slate-800/20 hover:border-slate-700/40 transition-all cursor-pointer">
+                <CardHeader className="flex flex-col items-center space-y-2 pb-2">
+                  <CardTitle className="text-xl text-white text-center">{program.name}</CardTitle>
+                  <p className="text-sm text-white/50">
+                    {program.creator.slice(0, 4)}...{program.creator.slice(-4)}
+                  </p>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-2">
+                        <Users className="h-4 w-4 text-[#0085FF]" />
+                        <span className="text-sm text-white/70">Total Members</span>
+                      </div>
+                      <span className="text-sm font-medium text-white">{program.numMinted}</span>
                     </div>
-                    <span className="text-sm font-medium text-white">{program.memberCount}</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-2">
-                      <Trophy className="h-4 w-4 text-[#7000FF]" />
-                      <span className="text-sm text-white/70">Total Points</span>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-2">
+                        <FileText className="h-4 w-4 text-[#00FFE0]" />
+                        <span className="text-sm text-white/70">URI</span>
+                      </div>
+                      <span className="text-sm font-medium text-white">
+                        {program.uri.slice(0, 10)}...
+                      </span>
                     </div>
-                    <span className="text-sm font-medium text-white">{program.totalPoints}</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-2">
-                      <Gift className="h-4 w-4 text-[#00FFE0]" />
-                      <span className="text-sm text-white/70">Active Passes</span>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-2">
+                        <Key className="h-4 w-4 text-[#7000FF]" />
+                        <span className="text-sm text-white/70">Authority</span>
+                      </div>
+                      <span className="text-sm font-medium text-white">
+                        {program.updateAuthority.slice(0, 4)}...{program.updateAuthority.slice(-4)}
+                      </span>
                     </div>
-                    <span className="text-sm font-medium text-white">{program.activePasses}</span>
                   </div>
-                </div>
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
+            </Link>
           ))}
         </div>
       )}

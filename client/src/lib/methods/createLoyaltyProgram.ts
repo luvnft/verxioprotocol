@@ -1,5 +1,5 @@
-import { createLoyaltyProgram } from '@verxioprotocol/core'
-import { initializeVerxioProgram } from './initializeProgram'
+import { createLoyaltyProgram as createLoyaltyProgramCore } from '@verxioprotocol/core'
+import { VerxioContext } from '@verxioprotocol/core'
 
 export interface Tier {
   name: string
@@ -14,15 +14,12 @@ export interface CreateLoyaltyProgramParams {
   pointsPerAction: Record<string, number>
 }
 
-export const createNewLoyaltyProgram = async (params: CreateLoyaltyProgramParams) => {
-  const context = initializeVerxioProgram()
-
-  if (!context) {
-    throw new Error('Failed to initialize Verxio program')
-  }
-
+export const createNewLoyaltyProgram = async (
+  context: VerxioContext,
+  params: CreateLoyaltyProgramParams
+) => {
   try {
-    const result = await createLoyaltyProgram(context, {
+    const result = await createLoyaltyProgramCore(context, {
       ...params,
       programAuthority: context.programAuthority,
     })
