@@ -39,10 +39,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         className={`${orbitron.variable} ${pressStart2P.variable} ${kalam.variable} font-sans antialiased bg-verxio-dark min-h-screen grid-bg`}
       >
         <WalletProvider>{children}</WalletProvider>
-        <Toaster 
-          position="top-right" 
+        <Toaster
+          position="top-right"
           toastOptions={{
-            className: 'bg-white text-black border border-gray-200'
+            className: 'bg-white text-black border border-gray-200',
           }}
         />
       </body>

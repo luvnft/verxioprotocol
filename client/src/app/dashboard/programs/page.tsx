@@ -29,11 +29,11 @@ interface ProgramDetails {
 export default function ProgramsPage() {
   const [programs, setPrograms] = useState<ProgramDetails[]>([])
   const context = useVerxioProgram()
-  
+
   useEffect(() => {
     async function fetchPrograms() {
       if (context) {
-        context.collectionAddress = publicKey("FVjXD2QaMj4iyWkz7pCTR5TfUBZkB61pfjLyWj59gsQj")
+        context.collectionAddress = publicKey('FVjXD2QaMj4iyWkz7pCTR5TfUBZkB61pfjLyWj59gsQj')
         try {
           const details = await getProgramDetails(context)
           // Add mock tiers and points data for now
@@ -58,11 +58,11 @@ export default function ProgramsPage() {
           }
           setPrograms([programWithDetails])
         } catch (error) {
-          console.error("Error fetching program details:", error)
+          console.error('Error fetching program details:', error)
         }
       }
     }
-    
+
     fetchPrograms()
   }, [context])
 
@@ -116,9 +116,7 @@ export default function ProgramsPage() {
                         <FileText className="h-4 w-4 text-[#00FFE0]" />
                         <span className="text-sm text-white/70">URI</span>
                       </div>
-                      <span className="text-sm font-medium text-white">
-                        {program.uri.slice(0, 10)}...
-                      </span>
+                      <span className="text-sm font-medium text-white">{program.uri.slice(0, 10)}...</span>
                     </div>
                     <div className="flex items-center justify-between">
                       <div className="flex items-center space-x-2">

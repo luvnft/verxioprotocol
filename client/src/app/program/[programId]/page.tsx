@@ -44,7 +44,7 @@ export default function PublicProgramPage({ params }: { params: Promise<{ progra
         setIsLoading(false)
         return
       }
-      
+
       try {
         setError(null)
         context.collectionAddress = publicKey(resolvedParams.programId)
@@ -73,7 +73,7 @@ export default function PublicProgramPage({ params }: { params: Promise<{ progra
           setProgram(programWithDetails)
         }
       } catch (error) {
-        console.error("Error fetching program details:", error)
+        console.error('Error fetching program details:', error)
         if (isMounted) {
           setError('Failed to load program details. Please try again later.')
         }
@@ -83,7 +83,7 @@ export default function PublicProgramPage({ params }: { params: Promise<{ progra
         }
       }
     }
-    
+
     fetchProgram()
 
     return () => {
@@ -227,7 +227,7 @@ export default function PublicProgramPage({ params }: { params: Promise<{ progra
                 brandColor="#9d4edd"
               />
             </div>
-            <Button 
+            <Button
               onClick={() => console.log('pass issued!')}
               disabled={!connected}
               className="w-full max-w-[350px] sm:max-w-[450px] bg-gradient-to-r from-[#00FFE0] via-[#0085FF] to-[#7000FF] text-white hover:opacity-90 orbitron disabled:opacity-50 disabled:cursor-not-allowed"
@@ -239,4 +239,4 @@ export default function PublicProgramPage({ params }: { params: Promise<{ progra
       </div>
     </div>
   )
-} 
+}

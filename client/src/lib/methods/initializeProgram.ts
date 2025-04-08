@@ -6,13 +6,12 @@ import { publicKey } from '@metaplex-foundation/umi'
 
 export function useVerxioProgram() {
   const wallet = useWallet()
-  
+
   if (!wallet.connected || !wallet.publicKey) {
     return null
   }
 
-  const umi = createUmi('https://api.devnet.solana.com')
-    .use(walletAdapterIdentity(wallet))
+  const umi = createUmi('https://api.devnet.solana.com').use(walletAdapterIdentity(wallet))
 
   const context: VerxioContext = {
     umi,

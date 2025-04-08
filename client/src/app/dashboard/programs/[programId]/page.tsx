@@ -8,7 +8,7 @@ import { useVerxioProgram } from '@/lib/methods/initializeProgram'
 import { getProgramDetails } from '@verxioprotocol/core'
 import { publicKey } from '@metaplex-foundation/umi'
 import Link from 'next/link'
-import { ArrowLeft, Share2, } from 'lucide-react'
+import { ArrowLeft, Share2 } from 'lucide-react'
 import ProgramCard from '@/components/loyalty/ProgramCard'
 
 interface ProgramTier {
@@ -62,11 +62,11 @@ export default function ProgramPage() {
           }
           setProgram(programWithDetails)
         } catch (error) {
-          console.error("Error fetching program details:", error)
+          console.error('Error fetching program details:', error)
         }
       }
     }
-    
+
     fetchProgram()
   }, [context, programId])
 
@@ -191,4 +191,4 @@ export default function ProgramPage() {
       </div>
     </div>
   )
-} 
+}

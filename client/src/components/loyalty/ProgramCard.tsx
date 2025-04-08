@@ -78,7 +78,7 @@ export default function ProgramCard({
           {/* Header */}
           <div className="flex items-start justify-between mb-4">
             <div className="flex-1 min-w-0 mr-4">
-              <h2 
+              <h2
                 className={`pixel-font text-xl font-bold text-white ${gradientColors.textGlow} mb-1 truncate`}
                 style={{ textShadow: `0 0 10px ${brandColor}` }}
                 title={programName}
@@ -110,11 +110,7 @@ export default function ProgramCard({
               }}
             >
               <div className="bg-white p-2 rounded-lg">
-                <QRCode
-                  value={qrCodeUrl}
-                  size={250}
-                  style={{ height: 'auto', maxWidth: '100%', width: '100%' }}
-                />
+                <QRCode value={qrCodeUrl} size={250} style={{ height: 'auto', maxWidth: '100%', width: '100%' }} />
               </div>
             </div>
           </div>
@@ -154,25 +150,15 @@ export default function ProgramCard({
 
       {/* Action Buttons */}
       <div className="flex justify-center gap-2">
-        <Button
-          variant="outline"
-          size="sm"
-          className="w-full"
-          onClick={downloadAsImage}
-        >
+        <Button variant="outline" size="sm" className="w-full" onClick={downloadAsImage}>
           <Download className="w-4 h-4 mr-2" />
           Save as PNG
         </Button>
-        <Button
-          variant="outline"
-          size="sm"
-          className="w-full"
-          onClick={copyUrl}
-        >
+        <Button variant="outline" size="sm" className="w-full" onClick={copyUrl}>
           <Copy className="w-4 h-4 mr-2" />
           Copy URL
         </Button>
       </div>
     </div>
   )
-} 
+}

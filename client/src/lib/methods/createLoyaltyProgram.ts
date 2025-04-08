@@ -14,10 +14,7 @@ export interface CreateLoyaltyProgramParams {
   pointsPerAction: Record<string, number>
 }
 
-export const createNewLoyaltyProgram = async (
-  context: VerxioContext,
-  params: CreateLoyaltyProgramParams
-) => {
+export const createNewLoyaltyProgram = async (context: VerxioContext, params: CreateLoyaltyProgramParams) => {
   try {
     const result = await createLoyaltyProgramCore(context, {
       ...params,
