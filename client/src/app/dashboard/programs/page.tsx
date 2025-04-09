@@ -71,7 +71,7 @@ export default function ProgramsPage() {
       <div className="flex justify-between items-center">
         <h1 className="text-3xl font-bold text-white orbitron">Loyalty Programs</h1>
         <Link href="/dashboard/programs/new">
-          <Button className="bg-gradient-to-r from-[#00FFE0] via-[#0085FF] to-[#7000FF] text-white hover:opacity-90">
+          <Button className="bg-gradient-to-r from-[#00FFE0] via-[#0085FF] to-[#7000FF] text-white hover:opacity-90 orbitron">
             <Plus className="mr-2 h-4 w-4" />
             Create Program
           </Button>
@@ -84,11 +84,11 @@ export default function ProgramsPage() {
             <Gift className="h-12 w-12 text-[#00FFE0] mb-4" />
             <h3 className="text-lg font-semibold text-white mb-2">No Programs Yet</h3>
             <p className="text-white/70 mb-6">Create your first loyalty program to start rewarding your customers</p>
-            <Link href="/dashboard/programs/new">
+            {/* <Link href="/dashboard/programs/new">
               <Button className="bg-gradient-to-r from-[#00FFE0] via-[#0085FF] to-[#7000FF] text-white hover:opacity-90">
                 Create Program
               </Button>
-            </Link>
+            </Link> */}
           </CardContent>
         </Card>
       ) : (

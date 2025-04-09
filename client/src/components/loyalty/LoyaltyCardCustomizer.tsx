@@ -10,10 +10,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { toast } from 'sonner'
 import { useWalletUi } from '@wallet-ui/react'
 import { createNewLoyaltyProgram, Tier } from '@/lib/methods/createLoyaltyProgram'
-import { QRCodeSVG } from 'qrcode.react'
 import { HexColorPicker } from 'react-colorful'
 import { useVerxioProgram } from '@/lib/methods/initializeProgram'
 import { useRouter } from 'next/navigation'
+import ProgramCard from './ProgramCard'
 
 const colorOptions = [
   { name: 'Purple', value: 'purple' },
@@ -459,47 +459,14 @@ export default function LoyaltyCardCustomizer({ onRotationComplete }: LoyaltyCar
                   ease: 'easeInOut',
                 }}
               >
-                <Card className="bg-verxio-dark border-verxio-purple/20 p-6">
-                  <CardContent className="space-y-4">
-                    <div className="text-center">
-                      <h3 className="text-xl font-bold text-white mb-2">
-                        {formData.organizationName || 'Organization Name'}
-                      </h3>
-                      <p className="text-white/70 text-sm">
-                        Created by:{' '}
-                        {account
-                          ? `${account.address.toString().slice(0, 6)}...${account.address.toString().slice(-4)}`
-                          : 'N/A'}
-                      </p>
-                    </div>
-
-                    <div className="space-y-2">
-                      <h4 className="text-white/70 text-sm">Tiers</h4>
-                      {formData.tiers.map((tier, index) => (
-                        <div key={index} className="flex justify-between items-center text-white/70 text-sm">
-                          <span>{tier.name || 'Tier Name'}</span>
-                          <span>{tier.xpRequired} XP</span>
-                        </div>
-                      ))}
-                    </div>
-
-                    <div className="space-y-2">
-                      <h4 className="text-white/70 text-sm">Points per Action</h4>
-                      {Object.entries(formData.pointsPerAction).map(([action, points]) => (
-                        <div key={action} className="flex justify-between items-center text-white/70 text-sm">
-                          <span>{action || 'Action'}</span>
-                          <span>{points} points</span>
-                        </div>
-                      ))}
-                    </div>
-
-                    {qrCodeData && (
-                      <div className="flex justify-center mt-4">
-                        <QRCodeSVG value={qrCodeData} size={128} />
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
+                <ProgramCard
+                  programName={formData.organizationName || 'Organization Name'}
+                  creator={account?.address.toString() || 'N/A'}
+                  pointsPerAction={formData.pointsPerAction}
+                  collectionAddress=""
+                  qrCodeUrl={qrCodeData}
+                  brandColor={formData.metadata.color}
+                />
               </motion.div>
             </div>
           </div>
