@@ -5,6 +5,7 @@ import { useWalletUi } from '@wallet-ui/react'
 import { Activity, Users, Gift, Trophy, Building2, User } from 'lucide-react'
 import { useDashboard } from './DashboardContext'
 import Link from 'next/link'
+import { NetworkToggle } from '@/components/network/NetworkToggle'
 
 export default function DashboardPage() {
   const { connected } = useWalletUi()
@@ -32,11 +33,14 @@ export default function DashboardPage() {
               Switch to User View
             </button>
           </div>
-          <Link href="/dashboard/programs/new">
-            <button className="bg-gradient-to-r from-[#00FFE0] via-[#0085FF] to-[#7000FF] text-white px-4 py-2 rounded-lg hover:opacity-90 transition-opacity orbitron">
-              Create Program
-            </button>
-          </Link>
+          <div className="flex items-center gap-4">
+            <NetworkToggle />
+            <Link href="/dashboard/programs/new">
+              <button className="bg-gradient-to-r from-[#00FFE0] via-[#0085FF] to-[#7000FF] text-white px-4 py-2 rounded-lg hover:opacity-90 transition-opacity orbitron">
+                Create Program
+              </button>
+            </Link>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -118,6 +122,7 @@ export default function DashboardPage() {
             Switch to Organization View
           </button>
         </div>
+        <NetworkToggle />
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">

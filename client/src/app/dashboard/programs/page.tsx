@@ -30,10 +30,13 @@ export default function ProgramsPage() {
   const [programs, setPrograms] = useState<ProgramDetails[]>([])
   const context = useVerxioProgram()
 
+  console.log(programs)
+  console.log(context)
+
   useEffect(() => {
     async function fetchPrograms() {
       if (context) {
-        context.collectionAddress = publicKey('FVjXD2QaMj4iyWkz7pCTR5TfUBZkB61pfjLyWj59gsQj')
+        context.collectionAddress = publicKey('CqQzB733uEozNpGwh2E7ENtUEba7DBdSKghEL5sxUTFD')
         try {
           const details = await getProgramDetails(context)
           // Add mock tiers and points data for now
@@ -84,11 +87,6 @@ export default function ProgramsPage() {
             <Gift className="h-12 w-12 text-[#00FFE0] mb-4" />
             <h3 className="text-lg font-semibold text-white mb-2">No Programs Yet</h3>
             <p className="text-white/70 mb-6">Create your first loyalty program to start rewarding your customers</p>
-            {/* <Link href="/dashboard/programs/new">
-              <Button className="bg-gradient-to-r from-[#00FFE0] via-[#0085FF] to-[#7000FF] text-white hover:opacity-90">
-                Create Program
-              </Button>
-            </Link> */}
           </CardContent>
         </Card>
       ) : (

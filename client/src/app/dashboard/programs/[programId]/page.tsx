@@ -8,8 +8,9 @@ import { useVerxioProgram } from '@/lib/methods/initializeProgram'
 import { getProgramDetails } from '@verxioprotocol/core'
 import { publicKey } from '@metaplex-foundation/umi'
 import Link from 'next/link'
-import { ArrowLeft, Share2 } from 'lucide-react'
+import { ArrowLeft, Share2, Loader2 } from 'lucide-react'
 import ProgramCard from '@/components/loyalty/ProgramCard'
+import { ProgramActions } from '@/components/program/ProgramActions'
 
 interface ProgramTier {
   name: string
@@ -83,7 +84,14 @@ export default function ProgramPage() {
   }
 
   if (!program) {
-    return <div>Loading...</div>
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-black via-purple-950/20 to-black flex items-center justify-center">
+        <div className="text-center space-y-4">
+          <Loader2 className="w-12 h-12 animate-spin text-verxio-purple mx-auto" />
+          <p className="text-white/70 orbitron">Loading program details...</p>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -107,38 +115,6 @@ export default function ProgramPage() {
         <div className="space-y-6">
           <Card className="bg-black/20 backdrop-blur-sm border-slate-800/20">
             <CardHeader>
-              <CardTitle>Program Details</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <p className="text-sm text-white/50">Creator</p>
-                  <p className="text-white font-mono">
-                    {program.creator.slice(0, 6)}...{program.creator.slice(-4)}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-sm text-white/50">Authority</p>
-                  <p className="text-white font-mono">
-                    {program.updateAuthority.slice(0, 6)}...{program.updateAuthority.slice(-4)}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-sm text-white/50">Collection</p>
-                  <p className="text-white font-mono">
-                    {program.collectionAddress.slice(0, 6)}...{program.collectionAddress.slice(-4)}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-sm text-white/50">Members</p>
-                  <p className="text-white">{program.numMinted}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-black/20 backdrop-blur-sm border-slate-800/20">
-            <CardHeader>
               <CardTitle>Reward Tiers</CardTitle>
             </CardHeader>
             <CardContent>
@@ -160,21 +136,12 @@ export default function ProgramPage() {
             </CardContent>
           </Card>
 
-          <Card className="bg-black/20 backdrop-blur-sm border-slate-800/20">
-            <CardHeader>
-              <CardTitle>Points per Action</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {Object.entries(program.pointsPerAction).map(([action, points], index) => (
-                  <div key={index} className="flex justify-between items-center p-4 rounded-lg bg-black/40">
-                    <span className="text-white capitalize">{action}</span>
-                    <span className="text-white/70">{points} points</span>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
+          <ProgramActions
+            programId={programId as string}
+            pointsPerAction={program.pointsPerAction}
+            programName={program.name}
+            programUri={program.uri}
+          />
         </div>
 
         {/* Right Column - Program Card */}

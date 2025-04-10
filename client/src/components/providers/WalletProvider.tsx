@@ -4,15 +4,21 @@ import { createSolanaDevnet, createSolanaMainnet, createWalletUiConfig, WalletUi
 import { ConnectionProvider, WalletProvider as SolanaWalletProvider } from '@solana/wallet-adapter-react'
 import { WalletModalProvider } from '@solana/wallet-adapter-react-ui'
 import { PhantomWalletAdapter } from '@solana/wallet-adapter-phantom'
+import { SolflareWalletAdapter } from '@solana/wallet-adapter-solflare'
+import { useNetwork } from '@/lib/network-context'
 
 const config = createWalletUiConfig({
   clusters: [createSolanaDevnet(), createSolanaMainnet()],
 })
 
 export default function WalletProvider({ children }: { children: React.ReactNode }) {
+  const { rpcEndpoint } = useNetwork()
+
+  const wallets = [new PhantomWalletAdapter(), new SolflareWalletAdapter()]
+
   return (
-    <ConnectionProvider endpoint="https://api.devnet.solana.com">
-      <SolanaWalletProvider wallets={[new PhantomWalletAdapter()]} autoConnect>
+    <ConnectionProvider endpoint={rpcEndpoint}>
+      <SolanaWalletProvider wallets={wallets} autoConnect={true}>
         <WalletModalProvider>
           <WalletUi config={config}>{children}</WalletUi>
         </WalletModalProvider>

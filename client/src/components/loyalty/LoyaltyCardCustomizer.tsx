@@ -14,6 +14,8 @@ import { HexColorPicker } from 'react-colorful'
 import { useVerxioProgram } from '@/lib/methods/initializeProgram'
 import { useRouter } from 'next/navigation'
 import ProgramCard from './ProgramCard'
+import bs58 from 'bs58'
+import { SuccessModal } from '@/components/ui/success-modal'
 
 const colorOptions = [
   { name: 'Purple', value: 'purple' },
@@ -35,10 +37,11 @@ export default function LoyaltyCardCustomizer({ onRotationComplete }: LoyaltyCar
   const router = useRouter()
   const [isLoading, setIsLoading] = useState(false)
   const [formData, setFormData] = useState({
-    organizationName: '',
+    loyaltyProgramName: '',
     metadataUri: '',
     metadata: {
-      color: '#9d4edd', // Default purple
+      brandColor: '#9d4edd', // Default purple
+      hostName: '',
     },
     tiers: [{ name: '', xpRequired: 0, rewards: [''] }] as Tier[],
     pointsPerAction: {
@@ -49,13 +52,25 @@ export default function LoyaltyCardCustomizer({ onRotationComplete }: LoyaltyCar
   const [rotationCount, setRotationCount] = useState(0)
   const [currentThemeIndex, setCurrentThemeIndex] = useState(0)
   const [qrCodeData, setQrCodeData] = useState<string>('')
+  const [showSuccessModal, setShowSuccessModal] = useState(false)
+  const [successData, setSuccessData] = useState<{ title: string; message: string; signature?: string } | null>(null)
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target
-    setFormData({
-      ...formData,
-      [name]: value,
-    })
+    if (name === 'hostName') {
+      setFormData({
+        ...formData,
+        metadata: {
+          ...formData.metadata,
+          hostName: value,
+        },
+      })
+    } else {
+      setFormData({
+        ...formData,
+        [name]: value,
+      })
+    }
   }
 
   const handleColorChange = (color: string) => {
@@ -63,7 +78,7 @@ export default function LoyaltyCardCustomizer({ onRotationComplete }: LoyaltyCar
       ...formData,
       metadata: {
         ...formData.metadata,
-        color: color,
+        brandColor: color,
       },
     })
   }
@@ -128,19 +143,50 @@ export default function LoyaltyCardCustomizer({ onRotationComplete }: LoyaltyCar
     setIsLoading(true)
     try {
       const result = await createNewLoyaltyProgram(context, {
-        organizationName: formData.organizationName,
+        organizationName: formData.loyaltyProgramName,
         metadataUri: formData.metadataUri,
+        // metadata: {
+        //   brandColor: formData.metadata.brandColor,
+        //   hostName: formData.metadata.hostName,
+        // },
         tiers: formData.tiers,
         pointsPerAction: formData.pointsPerAction,
       })
+      // console.log('result', bs58.encode(result.collection.secretKey))
 
-      console.log(result)
+      // Store in database
+      if (!account?.address) {
+        toast.error('No account address available')
+        return
+      }
+
+      await fetch('/api/storeLoyaltyProgram', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          creator: account.address.toString(),
+          publicKey: result.collection.publicKey.toString(),
+          privateKey: bs58.encode(result.collection.secretKey),
+          signature: result.signature,
+        }),
+      })
+
+      setSuccessData({
+        title: 'Program Created Successfully',
+        message: 'Your loyalty program has been created successfully',
+        signature: result.signature,
+      })
+      setShowSuccessModal(true)
+
       // Clear form
       setFormData({
-        organizationName: '',
+        loyaltyProgramName: '',
         metadataUri: '',
         metadata: {
-          color: '#9d4edd',
+          brandColor: '#9d4edd',
+          hostName: '',
         },
         tiers: [{ name: '', xpRequired: 0, rewards: [''] }],
         pointsPerAction: {
@@ -150,15 +196,13 @@ export default function LoyaltyCardCustomizer({ onRotationComplete }: LoyaltyCar
 
       // Generate QR code data with program details
       const qrData = {
-        name: formData.organizationName,
+        name: formData.loyaltyProgramName,
         collectionAddress: result.collection.publicKey.toString(),
         creator: account?.address.toString(),
         uri: formData.metadataUri,
       }
 
       setQrCodeData(JSON.stringify(qrData))
-
-      toast.success('Loyalty program created successfully!')
 
       // Redirect to dashboard
       router.push('/dashboard')
@@ -200,16 +244,30 @@ export default function LoyaltyCardCustomizer({ onRotationComplete }: LoyaltyCar
 
               <TabsContent value="basics" className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="organizationName" className="pixel-font">
-                    Organization Name
+                  <Label htmlFor="loyaltyProgramName" className="pixel-font">
+                    Loyalty Program Name
                   </Label>
                   <Input
-                    id="organizationName"
-                    name="organizationName"
-                    value={formData.organizationName}
+                    id="loyaltyProgramName"
+                    name="loyaltyProgramName"
+                    value={formData.loyaltyProgramName}
                     onChange={handleInputChange}
                     className="bg-verxio-dark/50 border-verxio-purple/20 focus:border-verxio-purple orbitron placeholder:text-white/50 text-[10px] text-white/50 placeholder:orbitron placeholder:text-[10px]"
-                    placeholder="Enter organization name"
+                    placeholder="Enter loyalty program name"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="hostName" className="pixel-font">
+                    Host Name
+                  </Label>
+                  <Input
+                    id="hostName"
+                    name="hostName"
+                    value={formData.metadata.hostName}
+                    onChange={handleInputChange}
+                    className="bg-verxio-dark/50 border-verxio-purple/20 focus:border-verxio-purple orbitron placeholder:text-white/50 text-[10px] text-white/50 placeholder:orbitron placeholder:text-[10px]"
+                    placeholder="Enter host name"
                   />
                 </div>
 
@@ -374,13 +432,13 @@ export default function LoyaltyCardCustomizer({ onRotationComplete }: LoyaltyCar
                     <Label className="pixel-font">Brand Color</Label>
                     <div className="flex items-center gap-4">
                       <HexColorPicker
-                        color={formData.metadata.color}
+                        color={formData.metadata.brandColor}
                         onChange={handleColorChange}
                         className="w-[300px] h-[200px]"
                       />
                       <div
                         className="w-16 h-16 rounded-full border-2 border-white/20"
-                        style={{ backgroundColor: formData.metadata.color }}
+                        style={{ backgroundColor: formData.metadata.brandColor }}
                       />
                     </div>
                   </div>
@@ -388,7 +446,7 @@ export default function LoyaltyCardCustomizer({ onRotationComplete }: LoyaltyCar
                   <div
                     className="mt-4 p-4 rounded-lg border border-white/20"
                     style={{
-                      background: `linear-gradient(135deg, ${formData.metadata.color}40, ${formData.metadata.color}20)`,
+                      background: `linear-gradient(135deg, ${formData.metadata.brandColor}40, ${formData.metadata.brandColor}20)`,
                     }}
                   >
                     <p className="text-white/70 text-sm">Preview of your color scheme</p>
@@ -460,18 +518,29 @@ export default function LoyaltyCardCustomizer({ onRotationComplete }: LoyaltyCar
                 }}
               >
                 <ProgramCard
-                  programName={formData.organizationName || 'Organization Name'}
+                  programName={formData.loyaltyProgramName || 'Loyalty Program'}
+                  hostName={formData.metadata.hostName || 'Verxio Protocol'}
                   creator={account?.address.toString() || 'N/A'}
                   pointsPerAction={formData.pointsPerAction}
                   collectionAddress=""
                   qrCodeUrl={qrCodeData}
-                  brandColor={formData.metadata.color}
+                  brandColor={formData.metadata.brandColor}
                 />
               </motion.div>
             </div>
           </div>
         </div>
       </div>
+
+      {successData && (
+        <SuccessModal
+          isOpen={showSuccessModal}
+          onClose={() => setShowSuccessModal(false)}
+          title={successData.title}
+          message={successData.message}
+          transactionSignature={successData.signature}
+        />
+      )}
     </div>
   )
 }
