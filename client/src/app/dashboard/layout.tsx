@@ -23,10 +23,10 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="flex min-h-screen">
-      <div className="hidden md:flex w-64 flex-col gap-4 border-r border-verxio-purple/20 bg-black/20 p-4">
+      <div className="hidden md:flex w-64 flex-col gap-4 border-r border-verxio-purple/20 bg-black/20 p-4 fixed h-full">
         <DashboardNav isOrganization={isOrganization} />
       </div>
-      <main className="flex-1 p-4 md:p-8">{children}</main>
+      <main className="flex-1 p-4 md:p-8 ml-64 overflow-y-auto">{children}</main>
     </div>
   )
 }

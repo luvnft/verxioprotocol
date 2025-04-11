@@ -143,6 +143,9 @@ export default function ProgramCard({
                 <Users className="w-4 h-4" />
                 <span>Scan QR to join program</span>
               </div>
+              <div className="pt-2 text-center">
+                <p className="text-[10px] text-white/30">Powered by Verxio Protocol</p>
+              </div>
             </div>
           </div>
         </div>
