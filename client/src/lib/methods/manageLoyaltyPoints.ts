@@ -1,4 +1,4 @@
-import { awardLoyaltyPoints, revokeLoyaltyPoints } from '@verxioprotocol/core'
+import { awardLoyaltyPoints, revokeLoyaltyPoints, giftLoyaltyPoints } from '@verxioprotocol/core'
 import { VerxioContext } from '@verxioprotocol/core'
 import { publicKey } from '@metaplex-foundation/umi'
 
@@ -13,6 +13,13 @@ export interface RevokePointsParams {
   passAddress: string
   pointsToRevoke: number
   signer: any // KeypairSigner from issueLoyaltyPass
+}
+
+export interface GiftPointsParams {
+  passAddress: string
+  pointsToGift: number
+  signer: any // KeypairSigner from issueLoyaltyPass
+  action: string // Reason for gifting points
 }
 
 export interface PointsResult {
@@ -47,6 +54,22 @@ export const revokePoints = async (context: VerxioContext, params: RevokePointsP
     return result
   } catch (error) {
     console.error('Error revoking loyalty points:', error)
+    throw error
+  }
+}
+
+export const giftPoints = async (context: VerxioContext, params: GiftPointsParams): Promise<PointsResult> => {
+  try {
+    const result = await giftLoyaltyPoints(context, {
+      passAddress: publicKey(params.passAddress),
+      pointsToGift: params.pointsToGift,
+      signer: params.signer,
+      action: params.action,
+    })
+
+    return result
+  } catch (error) {
+    console.error('Error gifting loyalty points:', error)
     throw error
   }
 }

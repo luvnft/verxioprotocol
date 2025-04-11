@@ -15,6 +15,9 @@ export interface AssetData {
   currentTier: string
   tierUpdatedAt: number
   rewards: string[]
+  name: string
+  uri: string
+  owner: string
 }
 
 export async function getAssetData(context: VerxioContext, passAddress: UmiPublicKey): Promise<AssetData | null> {
@@ -26,8 +29,18 @@ export async function getAssetData(context: VerxioContext, passAddress: UmiPubli
       return null
     }
 
-    return appDataPlugin.data
+    return {
+      ...appDataPlugin.data,
+      name: asset.name,
+      uri: asset.uri,
+      owner: asset.owner.toString(),
+    }
   } catch (error) {
+    // Return null if the asset is not found
+    if (error instanceof Error && error.message.includes('not found')) {
+      return null
+    }
+    // For other errors, throw them
     throw new Error(`Failed to fetch asset data: ${error}`)
   }
 }

@@ -2,7 +2,40 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Loader2 } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import LoyaltyCard from '@/components/loyalty/LoyaltyCard'
+import { getAssetData } from '@verxioprotocol/core'
 import { useRouter } from 'next/navigation'
+import { useVerxioProgram } from '@/lib/methods/initializeProgram'
+import { publicKey } from '@metaplex-foundation/umi'
+
+interface AssetData {
+  xp: number
+  lastAction: string | null
+  actionHistory: Array<{
+    type: string
+    points: number
+    timestamp: number
+    newTotal: number
+  }>
+  currentTier: string
+  tierUpdatedAt: number
+  rewards: string[]
+  name: string
+  uri: string
+  owner: string
+}
+
+interface LoyaltyPass {
+  programName: string
+  owner: string
+  pointsPerAction: Record<string, number>
+  hostName: string
+  brandColor: string
+  loyaltyPassAddress: string
+  qrCodeUrl: string
+  totalEarnedPoints: number
+  tier: string
+  assetData?: AssetData
+}
 
 // Demo data for loyalty passes
 const DEMO_LOYALTY_PASSES = Array.from({ length: 5 }, (_, i) => ({
@@ -44,22 +77,49 @@ const TIERS = [
 
 export default function MyLoyaltyPasses() {
   const router = useRouter()
+  const context = useVerxioProgram()
   const [currentPage, setCurrentPage] = useState(1)
   const [isLoading, setIsLoading] = useState(true)
-  const totalPages = Math.ceil(DEMO_LOYALTY_PASSES.length / CARDS_PER_PAGE)
+  const [loyaltyPasses, setLoyaltyPasses] = useState<LoyaltyPass[]>([])
+  const totalPages = Math.ceil(loyaltyPasses.length / CARDS_PER_PAGE)
 
   // Calculate the cards to show on the current page
   const startIndex = (currentPage - 1) * CARDS_PER_PAGE
   const endIndex = startIndex + CARDS_PER_PAGE
-  const currentCards = DEMO_LOYALTY_PASSES.slice(startIndex, endIndex)
+  const currentCards = loyaltyPasses.slice(startIndex, endIndex)
 
-  // Simulate loading
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setIsLoading(false)
-    }, 1000)
-    return () => clearTimeout(timer)
-  }, [])
+    async function fetchAssetData() {
+      if (!context) return
+
+      try {
+        const assetAddress = '3jgh5WZutghR9HoKUeQmmaFppmZEE61SmJn8MGmwGqYH'
+        const data = await getAssetData(context, publicKey(assetAddress))
+
+        if (data) {
+          const pass: LoyaltyPass = {
+            programName: data.name,
+            owner: data.owner,
+            pointsPerAction: {}, // This will be fetched separately
+            hostName: 'Verxio Protocol',
+            brandColor: '#9d4edd',
+            loyaltyPassAddress: assetAddress,
+            qrCodeUrl: `/dashboard/${assetAddress}`,
+            totalEarnedPoints: data.xp,
+            tier: data.currentTier,
+            assetData: data,
+          }
+          setLoyaltyPasses([pass])
+        }
+      } catch (error) {
+        console.error('Error fetching asset data:', error)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    fetchAssetData()
+  }, [context])
 
   if (isLoading) {
     return (
@@ -93,30 +153,29 @@ export default function MyLoyaltyPasses() {
       ) : (
         <>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 px-4 sm:px-6 lg:px-8">
-            {currentCards.map((pass, index) => {
-              const currentTier = getCurrentTier(pass.totalEarnedPoints, TIERS)
-              return (
-                <div
-                  key={index}
-                  className="flex justify-center cursor-pointer transform transition-transform hover:scale-105"
-                  onClick={() => router.push(`/dashboard/${pass.loyaltyPassAddress}`)}
-                >
-                  <div className="w-full max-w-[320px] mx-auto">
-                    <LoyaltyCard
-                      programName={pass.programName}
-                      owner={pass.owner}
-                      pointsPerAction={pass.pointsPerAction}
-                      hostName={pass.hostName}
-                      brandColor={pass.brandColor}
-                      loyaltyPassAddress={pass.loyaltyPassAddress}
-                      qrCodeUrl={pass.qrCodeUrl}
-                      totalEarnedPoints={pass.totalEarnedPoints}
-                      tier={currentTier.name}
-                    />
-                  </div>
+            {currentCards.map((pass, index) => (
+              <div
+                key={index}
+                className="flex justify-center cursor-pointer transform transition-transform hover:scale-105"
+                onClick={() => router.push(`/dashboard/${pass.loyaltyPassAddress}`)}
+              >
+                <div className="w-full max-w-[320px] mx-auto">
+                  <LoyaltyCard
+                    programName={pass.programName}
+                    owner={pass.owner}
+                    pointsPerAction={pass.pointsPerAction}
+                    hostName={pass.hostName}
+                    brandColor={pass.brandColor}
+                    loyaltyPassAddress={pass.loyaltyPassAddress}
+                    qrCodeUrl={pass.qrCodeUrl}
+                    totalEarnedPoints={pass.totalEarnedPoints}
+                    tier={pass.tier}
+                    lastAction={pass.assetData?.lastAction}
+                    rewards={pass.assetData?.rewards}
+                  />
                 </div>
-              )
-            })}
+              </div>
+            ))}
           </div>
 
           {/* Pagination */}

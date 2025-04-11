@@ -4,7 +4,7 @@ import { useRef } from 'react'
 import QRCode from 'react-qr-code'
 import { motion } from 'framer-motion'
 import { Badge } from '@/components/ui/badge'
-import { Users, Gift, Download, Copy } from 'lucide-react'
+import { Users, Download, Copy } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { toast } from 'sonner'
 import html2canvas from 'html2canvas'
@@ -19,6 +19,8 @@ interface LoyaltyCardProps {
   qrCodeUrl: string
   totalEarnedPoints: number
   tier: string
+  lastAction?: string | null
+  rewards?: string[]
 }
 
 export default function LoyaltyCard({
@@ -31,6 +33,8 @@ export default function LoyaltyCard({
   qrCodeUrl,
   totalEarnedPoints = 0,
   tier = 'Bronze',
+  lastAction = null,
+  rewards = [],
 }: LoyaltyCardProps) {
   const cardRef = useRef<HTMLDivElement>(null)
 
@@ -73,7 +77,7 @@ export default function LoyaltyCard({
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
-        className="card-border-gradient w-[450px] h-[600px]"
+        className="card-border-gradient w-[450px] h-[650px]"
         style={{
           borderColor: brandColor,
           boxShadow: `0 0 15px ${brandColor}40`,
@@ -143,22 +147,42 @@ export default function LoyaltyCard({
                 {totalEarnedPoints} XP
               </Badge>
             </div>
+            {lastAction && (
+              <div className="flex items-center justify-between">
+                <span className="text-white/70">Last Action</span>
+                <span className="text-white/90 text-sm">{lastAction}</span>
+              </div>
+            )}
+            {rewards.length > 0 && (
+              <div className="flex items-center justify-between">
+                <span className="text-white/70">Current Reward</span>
+                <Badge
+                  className="pixel-font py-1 px-2 text-[10px]"
+                  style={{
+                    backgroundColor: `${brandColor}40`,
+                    color: 'white',
+                  }}
+                >
+                  {rewards[0]}
+                </Badge>
+              </div>
+            )}
             <div className="space-y-1">
               <p className="text-[10.5px] text-white/50 font-mono truncate" title={owner}>
                 Owner: {owner}
               </p>
               <p className="text-[10.5px] text-white/50 font-mono truncate" title={loyaltyPassAddress}>
-                Loyalty Pass: {loyaltyPassAddress}
+                Pass: {loyaltyPassAddress}
               </p>
             </div>
             <div className="pt-4 border-t border-white/10">
               <div className="flex items-center gap-2 text-white/50 text-sm">
                 <Users className="w-4 h-4" />
-                <span>Scan QR for more details</span>
+                <span>Scan QR to join program</span>
               </div>
-            </div>
-            <div className="pt-2 text-center">
-              <p className="text-[10px] text-white/30">Powered by Verxio Protocol</p>
+              <div className="pt-4 text-center">
+                <p className="text-[10px] text-white/30">Powered by Verxio Protocol</p>
+              </div>
             </div>
           </div>
         </div>

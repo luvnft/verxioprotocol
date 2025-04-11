@@ -1,6 +1,6 @@
 # Verxio Protocol
 
-Reward Protocol for creating and managing loyalty programs on Solana and SVM.
+On-chain loyalty protocol powered by Metaplex CORE for creating and managing loyalty programs on Solana and SVM.
 
 ## Features
 
@@ -11,6 +11,8 @@ Reward Protocol for creating and managing loyalty programs on Solana and SVM.
 - Built-in support for multiple networks (Solana, Sonic)
 - Automatic tier progression based on XP
 - Update loyalty program tiers and points per action
+- Gift points to users with custom actions
+- Comprehensive asset data tracking
 
 ## Installation
 
@@ -156,6 +158,7 @@ console.log(result)
 // {
 //   points: number,    // New total points
 //   signature: string  // Transaction signature
+//   newTier: LoyaltyProgramTier // New tier if updated
 // }
 ```
 
@@ -172,89 +175,117 @@ console.log(result)
 // {
 //   points: number,    // New total points after reduction
 //   signature: string  // Transaction signature
+//   newTier: LoyaltyProgramTier // New tier if updated
 // }
 ```
 
-### Get Pass Data
+### Gift Points
 
 ```typescript
-const data = await getAssetData(context, passAddress)
+const result = await giftLoyaltyPoints(context, {
+  passAddress: publicKey('PASS_ADDRESS'),
+  pointsToGift: 100,
+  signer: passSigner, // KeypairSigner from issueLoyaltyPass
+  action: 'bonus', // Reason for gifting points
+})
 
-console.log(data)
+console.log(result)
 // {
-//   xp: number,
-//   lastAction: string | null,
-//   actionHistory: Array<{
+//   points: number,    // New total points
+//   signature: string  // Transaction signature
+//   newTier: LoyaltyProgramTier // New tier if updated
+// }
+```
+
+### Get Asset Data
+
+```typescript
+const assetData = await getAssetData(context, publicKey('PASS_ADDRESS'))
+
+console.log(assetData)
+// {
+//   xp: number,              // Current XP points
+//   lastAction: string,      // Last action performed
+//   actionHistory: Array<{   // History of actions
 //     type: string,
 //     points: number,
 //     timestamp: number,
 //     newTotal: number
 //   }>,
-//   currentTier: string,
-//   tierUpdatedAt: number,
-//   rewards: string[]
+//   currentTier: string,     // Current tier name
+//   tierUpdatedAt: number,   // Timestamp of last tier update
+//   rewards: string[],       // Available rewards
+//   name: string,           // Asset name
+//   uri: string,            // Asset metadata URI
+//   owner: string           // Asset owner address
 // }
 ```
 
 ### Get Program Details
 
 ```typescript
-const details = await getProgramDetails(context)
+const programDetails = await getProgramDetails(context)
 
-console.log(details)
+console.log(programDetails)
 // {
 //   name: string,
 //   uri: string,
 //   collectionAddress: string,
 //   updateAuthority: string,
 //   numMinted: number,
-//   transferAuthority: string,
-//   creator: string
+//   creator: string,
+//   tiers: Array<{
+//     name: string,
+//     xpRequired: number,
+//     rewards: string[]
+//   }>,
+//   pointsPerAction: Record<string, number>
 // }
 ```
 
-### Transfer Pass
+### Get Wallet Loyalty Passes
 
 ```typescript
-await approveTransfer(
-  context,
-  passAddress, // UMI PublicKey of the pass
-  toAddress, // UMI PublicKey of the new owner
-)
+const passes = await getWalletLoyaltyPasses(context, publicKey('WALLET_ADDRESS'))
+
+console.log(passes)
+// Array<{
+//   publicKey: string,
+//   name: string,
+//   uri: string,
+//   owner: string
+// }>
 ```
 
-### Query Methods
+### Get Program Tiers
 
 ```typescript
-// Get all loyalty passes owned by a wallet
-const passes = await getWalletLoyaltyPasses(
-  context,
-  walletAddress, // UMI PublicKey of the wallet
-)
-
-// Get program's points per action
-const pointsPerAction = await getPointsPerAction(context)
-// Returns: Record<string, number>
-
-// Get program's tiers
 const tiers = await getProgramTiers(context)
-// Returns: Array<{
+
+console.log(tiers)
+// Array<{
 //   name: string,
 //   xpRequired: number,
 //   rewards: string[]
 // }>
 ```
 
-## Context Management
-
-The `VerxioContext` interface defines the loyalty program's context:
+### Get Points Per Action
 
 ```typescript
-interface VerxioContext {
-  umi: Umi
-  programAuthority: PublicKey
-  collectionAddress?: PublicKey
-}
+const pointsPerAction = await getPointsPerAction(context)
+
+console.log(pointsPerAction)
+// Record<string, number> // Action name to points mapping
+```
+
+### Approve Transfer
+
+```typescript
+await approveTransfer(context, {
+  passAddress: publicKey('PASS_ADDRESS'),
+  toAddress: publicKey('NEW_OWNER_ADDRESS'),
+})
 ```
 
 ## License

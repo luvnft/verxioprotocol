@@ -11,7 +11,7 @@ import { Upload, Info, Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { useVerxioProgram } from '@/lib/methods/initializeProgram'
 import { issueNewLoyaltyPass } from '@/lib/methods/issueLoyaltyPass'
-import { awardPoints, revokePoints } from '@/lib/methods/manageLoyaltyPoints'
+import { awardPoints, revokePoints, giftPoints } from '@/lib/methods/manageLoyaltyPoints'
 import { generateSigner, createSignerFromKeypair } from '@metaplex-foundation/umi'
 import { convertSecretKeyToKeypair } from '@/lib/utils'
 import bs58 from 'bs58'
@@ -30,6 +30,8 @@ export function ProgramActions({ programId, pointsPerAction, programName, progra
   const [address, setAddress] = useState('')
   const [selectedAction, setSelectedAction] = useState('')
   const [pointsToRevoke, setPointsToRevoke] = useState('')
+  const [pointsToGift, setPointsToGift] = useState('')
+  const [action, setAction] = useState('')
   const [csvFile, setCsvFile] = useState<File | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [showSuccessModal, setShowSuccessModal] = useState(false)
@@ -41,6 +43,8 @@ export function ProgramActions({ programId, pointsPerAction, programName, progra
     setAddress('')
     setSelectedAction('')
     setPointsToRevoke('')
+    setPointsToGift('')
+    setAction('')
     setCsvFile(null)
   }
 
@@ -156,18 +160,12 @@ export function ProgramActions({ programId, pointsPerAction, programName, progra
         const res = await fetch(`/api/getSigner?publicKey=${address}`)
         const data = await res.json()
         if (!data?.privateKey) {
-          toast.error('Private key not found for this pass')
+          toast.error('Signer record not found for this pass')
           return
         }
 
         const assetSigner = createSignerFromKeypair(context.umi, convertSecretKeyToKeypair(data.privateKey))
         context.collectionAddress = data.collection
-
-        console.log('Awarding points with data:', {
-          passAddress: address,
-          action: selectedAction,
-          collection: data.collection,
-        })
 
         await awardPoints(context, {
           passAddress: address,
@@ -221,7 +219,7 @@ export function ProgramActions({ programId, pointsPerAction, programName, progra
         const res = await fetch(`/api/getSigner?publicKey=${address}`)
         const data = await res.json()
         if (!data?.privateKey) {
-          toast.error('Private key not found for this pass')
+          toast.error('Signer record not found for this pass')
           return
         }
         const assetSigner = createSignerFromKeypair(context.umi, convertSecretKeyToKeypair(data.privateKey))
@@ -248,6 +246,69 @@ export function ProgramActions({ programId, pointsPerAction, programName, progra
     }
   }
 
+  const handleGiftPoints = async () => {
+    if (!context) {
+      toast.error('Please connect your wallet first')
+      return
+    }
+
+    setIsLoading(true)
+    try {
+      if (csvFile) {
+        const records = await parseCsvFileWithGiftPoints(csvFile)
+        for (const record of records) {
+          const assetSigner = generateSigner(context.umi)
+          await giftPoints(context, {
+            passAddress: record.address,
+            pointsToGift: record.points,
+            signer: assetSigner,
+            action: record.action || 'gift',
+          })
+        }
+        setSuccessData({
+          title: 'Points Gifted Successfully',
+          message: `Successfully gifted points to ${records.length} addresses`,
+        })
+        setShowSuccessModal(true)
+        setAddress('')
+        setPointsToGift('')
+        setAction('')
+        setCsvFile(null)
+      } else if (address && pointsToGift && action) {
+        const res = await fetch(`/api/getSigner?publicKey=${address}`)
+        const data = await res.json()
+        if (!data?.privateKey) {
+          toast.error('Signer record not found for this pass')
+          return
+        }
+
+        const assetSigner = createSignerFromKeypair(context.umi, convertSecretKeyToKeypair(data.privateKey))
+        context.collectionAddress = data.collection
+
+        await giftPoints(context, {
+          passAddress: address,
+          pointsToGift: parseInt(pointsToGift),
+          signer: assetSigner,
+          action,
+        })
+        setSuccessData({
+          title: 'Points Gifted Successfully',
+          message: 'Points have been gifted successfully',
+        })
+        setShowSuccessModal(true)
+        setAddress('')
+        setPointsToGift('')
+        setAction('')
+        setCsvFile(null)
+      }
+    } catch (error) {
+      console.error('Error gifting points:', error)
+      toast.error(error instanceof Error ? error.message : 'Failed to gift points')
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
   return (
     <>
       <Card className="bg-black/20 backdrop-blur-sm border-slate-800/20">
@@ -256,9 +317,10 @@ export function ProgramActions({ programId, pointsPerAction, programName, progra
         </CardHeader>
         <CardContent>
           <Tabs value={activeTab} onValueChange={handleTabChange}>
-            <TabsList className="grid w-full grid-cols-3">
+            <TabsList className="grid w-full grid-cols-4">
               <TabsTrigger value="issue">Issue Pass</TabsTrigger>
               <TabsTrigger value="award">Award Points</TabsTrigger>
+              <TabsTrigger value="gift">Gift Points</TabsTrigger>
               <TabsTrigger value="revoke">Revoke Points</TabsTrigger>
             </TabsList>
 
@@ -377,6 +439,73 @@ export function ProgramActions({ programId, pointsPerAction, programName, progra
               </Button>
             </TabsContent>
 
+            <TabsContent value="gift" className="space-y-4">
+              <div className="space-y-2">
+                <Label className="orbitron">Loyalty Pass Address</Label>
+                <Input
+                  placeholder="Enter the loyalty pass address to gift points"
+                  value={address}
+                  onChange={(e) => setAddress(e.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label className="orbitron">Points to Gift</Label>
+                <Input
+                  type="number"
+                  placeholder="Enter number of points to gift"
+                  value={pointsToGift}
+                  onChange={(e) => setPointsToGift(e.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label className="orbitron">Reason</Label>
+                <Input
+                  placeholder="Enter reason for gifting points"
+                  value={action}
+                  onChange={(e) => setAction(e.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <Label className="orbitron text-xs text-white/50">Premium: Upload CSV</Label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button variant="ghost" size="icon" className="h-4 w-4 p-0">
+                        <Info className="h-4 w-4 text-white/50" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-80 bg-slate-900 border-slate-700/20">
+                      <div className="space-y-2">
+                        <h4 className="font-medium orbitron">Premium Feature (Coming Soon)</h4>
+                        <p className="text-sm text-white/90">Batch operations are available in our premium plan.</p>
+                        <p className="text-sm text-white/90 mt-2">Upgrade to process multiple addresses at once.</p>
+                      </div>
+                    </PopoverContent>
+                  </Popover>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Input type="file" accept=".csv" className="cursor-not-allowed opacity-50" disabled />
+                  <Button variant="outline" size="icon" disabled>
+                    <Upload className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+              <Button
+                onClick={handleGiftPoints}
+                disabled={!address || !pointsToGift || !action || isLoading}
+                className="w-full bg-gradient-to-r from-[#00FFE0] via-[#0085FF] to-[#7000FF] text-white hover:opacity-90 orbitron disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isLoading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Gifting Points...
+                  </>
+                ) : (
+                  'Gift Loyalty Points'
+                )}
+              </Button>
+            </TabsContent>
+
             <TabsContent value="revoke" className="space-y-4">
               <div className="space-y-2">
                 <Label className="orbitron">Loyalty Pass Address</Label>
@@ -471,13 +600,24 @@ async function parseCsvFileWithActions(file: File): Promise<{ address: string; a
     .filter((record) => record.address && record.action)
 }
 
-async function parseCsvFileWithPoints(file: File): Promise<{ address: string; points: number }[]> {
+async function parseCsvFileWithPoints(file: File): Promise<{ address: string; points: number; action: string }[]> {
   const text = await file.text()
   return text
     .split('\n')
     .map((line) => {
-      const [address, points] = line.split(',').map((item) => item.trim())
-      return { address, points: parseInt(points) }
+      const [address, points, action] = line.split(',').map((item) => item.trim())
+      return { address, points: parseInt(points), action: action || 'gift' }
+    })
+    .filter((record) => record.address && !isNaN(record.points))
+}
+
+async function parseCsvFileWithGiftPoints(file: File): Promise<{ address: string; points: number; action: string }[]> {
+  const text = await file.text()
+  return text
+    .split('\n')
+    .map((line) => {
+      const [address, points, action] = line.split(',').map((item) => item.trim())
+      return { address, points: parseInt(points), action: action || 'gift' }
     })
     .filter((record) => record.address && !isNaN(record.points))
 }
