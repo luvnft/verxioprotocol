@@ -17,11 +17,24 @@ const MOCK_ACTION_HISTORY = Array.from({ length: 20 }, (_, i) => ({
 
 const ACTIONS_PER_PAGE = 5
 
-export default function LoyaltyPassDetails({ params }: { params: { passId: string } }) {
+interface PageProps {
+  params: Promise<{ passId: string }>
+}
+
+export default function LoyaltyPassDetails({ params }: PageProps) {
   const router = useRouter()
   const [isLoading, setIsLoading] = useState(true)
   const [currentPage, setCurrentPage] = useState(1)
   const [actionHistory, setActionHistory] = useState(MOCK_ACTION_HISTORY)
+  const [passId, setPassId] = useState<string>('')
+
+  useEffect(() => {
+    const loadParams = async () => {
+      const resolvedParams = await params
+      setPassId(resolvedParams.passId)
+    }
+    loadParams()
+  }, [params])
 
   // Mock data for the loyalty pass
   const loyaltyPass = {
@@ -35,8 +48,8 @@ export default function LoyaltyPassDetails({ params }: { params: { passId: strin
     },
     hostName: 'Demo Business',
     brandColor: '#9d4edd',
-    loyaltyPassAddress: params.passId,
-    qrCodeUrl: `https://verxio.io/pass/${params.passId}`,
+    loyaltyPassAddress: passId,
+    qrCodeUrl: `https://verxio.io/pass/${passId}`,
     totalEarnedPoints: 1250,
     tier: 'Silver',
     tiers: [

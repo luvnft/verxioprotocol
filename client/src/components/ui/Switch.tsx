@@ -1,66 +1,28 @@
-import React from 'react'
+'use client'
 
-interface SwitchProps {
-  checked: boolean
-  onChange: () => void
-  className?: string
-}
+import * as React from 'react'
+import * as SwitchPrimitives from '@radix-ui/react-switch'
+import { cn } from '@/lib/utils'
 
-export const Switch: React.FC<SwitchProps> = ({ checked, onChange, className }) => {
-  return (
-    <label className={`switch ${className}`}>
-      <input type="checkbox" checked={checked} onChange={onChange} />
-      <span className="slider round"></span>
-    </label>
-  )
-}
+const Switch = React.forwardRef<
+  React.ElementRef<typeof SwitchPrimitives.Root>,
+  React.ComponentPropsWithoutRef<typeof SwitchPrimitives.Root>
+>(({ className, ...props }, ref) => (
+  <SwitchPrimitives.Root
+    className={cn(
+      'peer inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:cursor-not-allowed disabled:opacity-50',
+      className,
+    )}
+    {...props}
+    ref={ref}
+  >
+    <SwitchPrimitives.Thumb
+      className={cn(
+        'pointer-events-none block h-5 w-5 rounded-full bg-white shadow-lg ring-0 transition-transform data-[state=checked]:translate-x-5 data-[state=unchecked]:translate-x-0',
+      )}
+    />
+  </SwitchPrimitives.Root>
+))
+Switch.displayName = SwitchPrimitives.Root.displayName
 
-// Add basic styles for the switch
-const style = document.createElement('style')
-style.innerHTML = `
-  .switch {
-    position: relative;
-    display: inline-block;
-    width: 34px;
-    height: 20px;
-  }
-
-  .switch input {
-    opacity: 0;
-    width: 0;
-    height: 0;
-  }
-
-  .slider {
-    position: absolute;
-    cursor: pointer;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background-color: #ccc;
-    transition: .4s;
-    border-radius: 34px;
-  }
-
-  .slider:before {
-    position: absolute;
-    content: "";
-    height: 14px;
-    width: 14px;
-    left: 3px;
-    bottom: 3px;
-    background-color: white;
-    transition: .4s;
-    border-radius: 50%;
-  }
-
-  input:checked + .slider {
-    background-color: #2196F3;
-  }
-
-  input:checked + .slider:before {
-    transform: translateX(14px);
-  }
-`
-document.head.appendChild(style)
+export { Switch }
