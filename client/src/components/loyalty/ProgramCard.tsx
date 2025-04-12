@@ -11,7 +11,7 @@ interface ProgramCardProps {
   programName: string
   creator: string
   pointsPerAction: Record<string, number>
-  hostName?: string
+  organizationName?: string
   brandColor?: string // Single brand color from metadata
   collectionAddress: string
   qrCodeUrl: string // URL for program page
@@ -21,7 +21,7 @@ export default function ProgramCard({
   programName = 'Sample Program',
   creator = '7YarZW...',
   pointsPerAction = { purchase: 100, review: 50 },
-  hostName = 'Verxio Protocol',
+  organizationName = 'Verxio Protocol',
   brandColor = '#9d4edd', // Default purple if no brand color provided
   collectionAddress,
   qrCodeUrl,
@@ -85,8 +85,8 @@ export default function ProgramCard({
               >
                 {programName}
               </h2>
-              <p className="text-white/70 text-sm truncate" title={hostName}>
-                by {hostName}
+              <p className="text-white/70 text-sm truncate" title={organizationName}>
+                by {organizationName}
               </p>
             </div>
             <div

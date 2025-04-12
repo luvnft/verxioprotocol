@@ -8,10 +8,10 @@ export interface Tier {
 }
 
 export interface CreateLoyaltyProgramParams {
-  organizationName: string
+  loyaltyProgramName: string
   metadataUri: string
   metadata: {
-    hostName: string
+    organizationName: string
     brandColor?: string
     [key: string]: any
   }

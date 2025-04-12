@@ -26,7 +26,7 @@ interface ProgramDetails {
   tiers: ProgramTier[]
   pointsPerAction: Record<string, number>
   metadata: {
-    hostName: string
+    organizationName: string
     brandColor?: string
     [key: string]: any
   }
@@ -210,7 +210,7 @@ export default function PublicProgramPage({ params }: { params: Promise<{ progra
                 collectionAddress={program.collectionAddress}
                 qrCodeUrl={qrCodeUrl}
                 brandColor={program.metadata.brandColor}
-                hostName={program.metadata.hostName}
+                organizationName={program.metadata.organizationName}
               />
             </div>
             <Button

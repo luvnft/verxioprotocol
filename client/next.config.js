@@ -12,9 +12,6 @@ const nextConfig = {
     ],
     unoptimized: true,
   },
-  env: {
-    PRISMA_FIELD_ENCRYPTION_KEY: process.env.PRISMA_FIELD_ENCRYPTION_KEY,
-  },
 }
 
 module.exports = nextConfig

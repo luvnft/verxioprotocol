@@ -40,7 +40,7 @@ export default function LoyaltyCardCustomizer({ onRotationComplete }: LoyaltyCar
     loyaltyProgramName: '',
     metadataUri: '',
     metadata: {
-      hostName: '',
+      organizationName: '',
       brandColor: '#9d4edd', // Default purple
     },
     tiers: [{ name: '', xpRequired: 0, rewards: [''] }] as Tier[],
@@ -57,12 +57,12 @@ export default function LoyaltyCardCustomizer({ onRotationComplete }: LoyaltyCar
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target
-    if (name === 'hostName') {
+    if (name === 'organizationName') {
       setFormData({
         ...formData,
         metadata: {
           ...formData.metadata,
-          hostName: value,
+          organizationName: value,
         },
       })
     } else {
@@ -140,7 +140,7 @@ export default function LoyaltyCardCustomizer({ onRotationComplete }: LoyaltyCar
       return
     }
 
-    if (!formData.metadata.hostName) {
+    if (!formData.metadata.organizationName) {
       toast.error('Please provide a host name')
       return
     }
@@ -148,10 +148,10 @@ export default function LoyaltyCardCustomizer({ onRotationComplete }: LoyaltyCar
     setIsLoading(true)
     try {
       const result = await createNewLoyaltyProgram(context, {
-        organizationName: formData.loyaltyProgramName,
+        loyaltyProgramName: formData.loyaltyProgramName,
         metadataUri: formData.metadataUri,
         metadata: {
-          hostName: formData.metadata.hostName,
+          organizationName: formData.metadata.organizationName,
           brandColor: formData.metadata.brandColor,
         },
         tiers: formData.tiers,
@@ -190,7 +190,7 @@ export default function LoyaltyCardCustomizer({ onRotationComplete }: LoyaltyCar
         loyaltyProgramName: '',
         metadataUri: '',
         metadata: {
-          hostName: '',
+          organizationName: '',
           brandColor: '#9d4edd',
         },
         tiers: [{ name: '', xpRequired: 0, rewards: [''] }],
@@ -263,13 +263,13 @@ export default function LoyaltyCardCustomizer({ onRotationComplete }: LoyaltyCar
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="hostName" className="pixel-font">
+                  <Label htmlFor="organizationName" className="pixel-font">
                     Host Name
                   </Label>
                   <Input
-                    id="hostName"
-                    name="hostName"
-                    value={formData.metadata.hostName}
+                    id="organizationName"
+                    name="organizationName"
+                    value={formData.metadata.organizationName}
                     onChange={handleInputChange}
                     className="bg-verxio-dark/50 border-verxio-purple/20 focus:border-verxio-purple orbitron placeholder:text-white/50 text-[10px] text-white/50 placeholder:orbitron placeholder:text-[10px]"
                     placeholder="Enter host name"
@@ -524,7 +524,7 @@ export default function LoyaltyCardCustomizer({ onRotationComplete }: LoyaltyCar
               >
                 <ProgramCard
                   programName={formData.loyaltyProgramName || 'Loyalty Program'}
-                  hostName={formData.metadata.hostName || 'Verxio Protocol'}
+                  organizationName={formData.metadata.organizationName || 'Verxio Protocol'}
                   creator={account?.address.toString() || 'N/A'}
                   pointsPerAction={formData.pointsPerAction}
                   collectionAddress=""

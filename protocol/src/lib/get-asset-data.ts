@@ -20,7 +20,7 @@ export interface AssetData {
   owner: string
   pass: string
   metadata: {
-    hostName: string
+    organizationName: string
     brandColor?: string
     [key: string]: any
   }

@@ -9,12 +9,12 @@ import { assertValidContext } from '@utils/assert-valid-context'
 export interface CreateLoyaltyProgramConfig {
   collectionSigner?: KeypairSigner
   metadataUri: string
-  organizationName: string
+  loyaltyProgramName: string
   pointsPerAction: Record<string, number>
   programAuthority: PublicKey
   tiers: LoyaltyProgramTier[]
   metadata: {
-    hostName: string
+    organizationName: string
     brandColor?: string
     [key: string]: any // Allow additional metadata fields
   }
@@ -31,7 +31,7 @@ export async function createLoyaltyProgram(
   try {
     const tx = await createCollection(context.umi, {
       collection,
-      name: config.organizationName,
+      name: config.loyaltyProgramName,
       plugins: createLoyaltyProgramPlugins(config),
       uri: config.metadataUri,
     }).sendAndConfirm(context.umi, { confirm: { commitment: 'confirmed' } })
@@ -71,8 +71,8 @@ function assertValidCreateLoyaltyProgramConfig(
   if (!config) {
     throw new Error('assertValidCreateLoyaltyProgramConfig: Config is undefined')
   }
-  if (!config.organizationName || !config.organizationName.trim() || !config.organizationName.trim().length) {
-    throw new Error('assertValidCreateLoyaltyProgramConfig: Organization name is undefined')
+  if (!config.loyaltyProgramName || !config.loyaltyProgramName.trim() || !config.loyaltyProgramName.trim().length) {
+    throw new Error('assertValidCreateLoyaltyProgramConfig: Loyalty program name is undefined')
   }
   if (!config.metadataUri || !config.metadataUri.trim() || !config.metadataUri.trim().length) {
     throw new Error('assertValidCreateLoyaltyProgramConfig: Metadata URI is undefined')
@@ -98,7 +98,11 @@ function assertValidCreateLoyaltyProgramConfig(
   if (!config.metadata) {
     throw new Error('assertValidCreateLoyaltyProgramConfig: Metadata is undefined')
   }
-  if (!config.metadata.hostName || !config.metadata.hostName.trim() || !config.metadata.hostName.trim().length) {
+  if (
+    !config.metadata.organizationName ||
+    !config.metadata.organizationName.trim() ||
+    !config.metadata.organizationName.trim().length
+  ) {
     throw new Error('assertValidCreateLoyaltyProgramConfig: Host name is undefined')
   }
   return true

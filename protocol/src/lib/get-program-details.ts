@@ -10,7 +10,7 @@ export interface ProgramTier {
 }
 
 export interface ProgramMetadata {
-  hostName: string
+  organizationName: string
   brandColor?: string
   [key: string]: any
 }

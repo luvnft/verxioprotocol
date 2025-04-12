@@ -23,7 +23,7 @@ export interface AssetData {
   uri: string
   owner: string
   metadata: {
-    hostName: string
+    organizationName: string
     brandColor?: string
     [key: string]: any
   }
@@ -38,7 +38,7 @@ interface LoyaltyPass {
   programName: string
   owner: string
   pointsPerAction: Record<string, number>
-  hostName: string
+  organizationName: string
   brandColor: string
   loyaltyPassAddress: string
   qrCodeUrl: string
@@ -75,7 +75,7 @@ export default function MyLoyaltyPasses() {
             programName: data.name,
             owner: data.owner,
             pointsPerAction: {}, // This will be fetched separately
-            hostName: data.metadata.hostName,
+            organizationName: data.metadata.organizationName,
             brandColor: data.metadata.brandColor!,
             loyaltyPassAddress: assetAddress,
             qrCodeUrl: `/dashboard/${assetAddress}`,
@@ -138,7 +138,7 @@ export default function MyLoyaltyPasses() {
                     programName={pass.programName}
                     owner={pass.owner}
                     pointsPerAction={pass.pointsPerAction}
-                    hostName={pass.hostName}
+                    organizationName={pass.organizationName}
                     brandColor={pass.brandColor}
                     loyaltyPassAddress={pass.loyaltyPassAddress}
                     qrCodeUrl={pass.qrCodeUrl}

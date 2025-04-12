@@ -78,7 +78,7 @@ describe('get-program-details', () => {
 
       // ASSERT
       expect(typeof details.metadata).toBe('object')
-      expect(details.metadata).toHaveProperty('hostName')
+      expect(details.metadata).toHaveProperty('organizationName')
     })
   })
 

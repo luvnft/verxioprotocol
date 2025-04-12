@@ -50,11 +50,11 @@ context.umi.use(keypairIdentity('FEE_PAYER'))
 
 ```typescript
 const result = await createLoyaltyProgram(context, {
-  organizationName: "Brew's summer discount",
+  loyaltyProgramName: "Brew's summer discount",
   metadataUri: 'https://arweave.net/...',
   programAuthority: context.programAuthority,
   metadata: {
-    hostName: 'Coffee Brew', // Required: Name of the host/organization
+    organizationName: 'Coffee Brew', // Required: Name of the host/organization
     brandColor: '#FF5733', // Optional: Brand color for UI customization
   },
   tiers: [
@@ -224,7 +224,7 @@ console.log(assetData)
 //   owner: string,          // Asset owner address
 //   pass: string,           // Pass public key
 //   metadata: {             // Program metadata
-//     hostName: string,     // Required: Name of the host/organization
+//     organizationName: string,     // Required: Name of the host/organization
 //     brandColor?: string   // Optional: Brand color for UI customization
 //   },
 //   rewardTiers: Array<{    // All available reward tiers
@@ -255,7 +255,7 @@ console.log(programDetails)
 //   }>,
 //   pointsPerAction: Record<string, number>,
 //   metadata: {
-//     hostName: string,     // Required: Name of the host/organization
+//     organizationName: string,     // Required: Name of the host/organization
 //     brandColor?: string   // Optional: Brand color for UI customization
 //   }
 // }

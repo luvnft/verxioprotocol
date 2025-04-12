@@ -205,7 +205,7 @@ export default function LoyaltyPassDetails({ params }: PageProps) {
                 programName={assetData.name}
                 owner={assetData.owner}
                 pointsPerAction={{}}
-                hostName={assetData.metadata.hostName}
+                organizationName={assetData.metadata.organizationName}
                 brandColor={assetData.metadata.brandColor!}
                 loyaltyPassAddress={passId}
                 qrCodeUrl={`${window.location.origin}/dashboard/${passId}`}

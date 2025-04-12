@@ -13,7 +13,7 @@ interface LoyaltyCardProps {
   programName: string
   owner: string
   pointsPerAction: Record<string, number>
-  hostName?: string
+  organizationName?: string
   brandColor?: string
   loyaltyPassAddress: string
   qrCodeUrl: string
@@ -27,7 +27,7 @@ export default function LoyaltyCard({
   programName = 'Sample Program',
   owner = '7YarZW...',
   pointsPerAction = { purchase: 100, review: 50 },
-  hostName = 'Verxio Protocol',
+  organizationName = 'Verxio Protocol',
   brandColor = '#9d4edd',
   loyaltyPassAddress,
   qrCodeUrl,
@@ -94,8 +94,8 @@ export default function LoyaltyCard({
               >
                 {programName}
               </h2>
-              <p className="text-white/70 text-sm truncate" title={hostName}>
-                by {hostName}
+              <p className="text-white/70 text-sm truncate" title={organizationName}>
+                by {organizationName}
               </p>
             </div>
             <div
