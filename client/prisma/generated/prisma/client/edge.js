@@ -167,7 +167,7 @@ const config = {
   inlineSchema:
     '// This is your Prisma schema file,\n// learn more about it in the docs: https://pris.ly/d/prisma-schema\n\n// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?\n// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init\n\ngenerator client {\n  provider = "prisma-client-js"\n  output   = "generated/prisma/client"\n}\n\ndatasource db {\n  provider = "postgresql"\n  url      = env("DATABASE_URL")\n}\n\nmodel LoyaltyProgram {\n  id         String   @id @default(cuid())\n  creator    String\n  publicKey  String\n  privateKey String ///@encrypted\n  signature  String\n  createdAt  DateTime @default(now())\n  updatedAt  DateTime @updatedAt\n}\n\nmodel LoyaltyPass {\n  id         String   @id @default(cuid())\n  collection String\n  recipient  String\n  publicKey  String\n  privateKey String ///@encrypted\n  signature  String\n  createdAt  DateTime @default(now())\n  updatedAt  DateTime @updatedAt\n}\n',
   inlineSchemaHash: '855d4a4390a4d38eca1aceccb9d6251e484b4b5bfc9a7d47e2d49cc5ba0443ea',
-  copyEngine: true,
+  copyEngine: false,
 }
 config.dirname = '/'
 
