@@ -21,10 +21,6 @@ export interface CreateLoyaltyProgramParams {
 
 export const createNewLoyaltyProgram = async (context: VerxioContext, params: CreateLoyaltyProgramParams) => {
   try {
-    console.log('Creating loyalty program with params:', {
-      ...params,
-      programAuthority: context.programAuthority.toString(),
-    })
 
     const result = await createLoyaltyProgramCore(context, {
       ...params,

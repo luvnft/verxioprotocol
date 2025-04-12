@@ -147,7 +147,6 @@ export default function LoyaltyCardCustomizer({ onRotationComplete }: LoyaltyCar
 
     setIsLoading(true)
     try {
-      console.log('Submitting form data:', formData)
 
       const result = await createNewLoyaltyProgram(context, {
         organizationName: formData.loyaltyProgramName,
