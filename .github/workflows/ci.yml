@@ -32,4 +32,5 @@ jobs:
           cache: 'pnpm'
       - run: pnpm install
       - run: cd client && pnpm prisma generate
+      - run: cd client && pnpm prisma db push --skip-generate
       - run: pnpm run ci
