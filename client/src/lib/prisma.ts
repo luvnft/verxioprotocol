@@ -1,4 +1,4 @@
-import { PrismaClient } from '@prisma/client'
+import { PrismaClient } from '../../prisma/generated/prisma/client'
 import { fieldEncryptionExtension } from 'prisma-field-encryption'
 
 const prisma = new PrismaClient()
