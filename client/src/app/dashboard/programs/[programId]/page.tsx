@@ -27,6 +27,11 @@ interface ProgramDetails {
   creator: string
   tiers: ProgramTier[]
   pointsPerAction: Record<string, number>
+  metadata: {
+    hostName: string
+    brandColor?: string
+    [key: string]: any
+  }
 }
 
 export default function ProgramPage() {
@@ -41,27 +46,7 @@ export default function ProgramPage() {
         context.collectionAddress = publicKey(programId as string)
         try {
           const details = await getProgramDetails(context)
-          // Add mock tiers and points data for now
-          const programWithDetails = {
-            ...details,
-            tiers: [
-              {
-                name: 'Bronze',
-                xpRequired: 500,
-                rewards: ['2% cashback'],
-              },
-              {
-                name: 'Silver',
-                xpRequired: 1000,
-                rewards: ['5% cashback'],
-              },
-            ],
-            pointsPerAction: {
-              purchase: 100,
-              review: 50,
-            },
-          }
-          setProgram(programWithDetails)
+          setProgram(details)
         } catch (error) {
           console.error('Error fetching program details:', error)
         }
@@ -152,7 +137,8 @@ export default function ProgramPage() {
             pointsPerAction={program.pointsPerAction}
             collectionAddress={program.collectionAddress}
             qrCodeUrl={qrCodeUrl}
-            brandColor="#9d4edd" // This will come from metadata later
+            brandColor={program.metadata.brandColor}
+            hostName={program.metadata.hostName}
           />
         </div>
       </div>

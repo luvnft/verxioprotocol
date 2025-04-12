@@ -13,6 +13,9 @@ export function createTestLoyaltyProgramConfigEmpty(
     programAuthority: publicKey('11111111111111111111111111111111'),
     pointsPerAction: {},
     tiers: [],
+    metadata: {
+      hostName: 'Test Host',
+    },
     ...config,
   }
 }
@@ -31,6 +34,10 @@ export function createTestLoyaltyProgramConfig(
       { name: 'Gold', xpRequired: 2000, rewards: ['10% cashback'] },
     ],
     pointsPerAction: { swap: 600, refer: 1000, stake: 2000 },
+    metadata: {
+      hostName: 'Test Host',
+      brandColor: '#9d4edd',
+    },
     ...config,
   }
 }

@@ -46,7 +46,7 @@ describe('get-asset-data', () => {
 
   describe('expected usage', () => {
     it('should fetch asset data for a valid pass', async () => {
-      expect.assertions(7)
+      expect.assertions(9)
       if (!loyaltyPass) throw new Error('Test setup failed')
 
       // ACT
@@ -60,6 +60,8 @@ describe('get-asset-data', () => {
       expect(data?.tierUpdatedAt).toBeDefined()
       expect(data?.rewards).toBeDefined()
       expect(data?.actionHistory).toHaveLength(1)
+      expect(data?.pass).toBe(loyaltyPass.publicKey.toString())
+      expect(data?.metadata).toBeDefined()
     })
 
     it('should return null for an invalid pass', async () => {
@@ -89,6 +91,9 @@ describe('get-asset-data', () => {
     expect(data).toHaveProperty('name')
     expect(data).toHaveProperty('uri')
     expect(data).toHaveProperty('owner')
+    expect(data).toHaveProperty('pass')
+    expect(data).toHaveProperty('metadata')
+    expect(data).toHaveProperty('rewardTiers')
   })
 
   it('should return null for non-existent asset', async () => {

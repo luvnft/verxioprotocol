@@ -2,30 +2,14 @@
 
 import { useState, useEffect } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Loader2, ArrowLeft, Star, Clock } from 'lucide-react'
+import { Loader2, ArrowLeft, Star, Clock, Zap } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useRouter } from 'next/navigation'
 import LoyaltyCard from '@/components/loyalty/LoyaltyCard'
 import { getAssetData } from '@verxioprotocol/core'
 import { useVerxioProgram } from '@/lib/methods/initializeProgram'
 import { publicKey } from '@metaplex-foundation/umi'
-
-interface AssetData {
-  xp: number
-  lastAction: string | null
-  actionHistory: Array<{
-    type: string
-    points: number
-    timestamp: number
-    newTotal: number
-  }>
-  currentTier: string
-  tierUpdatedAt: number
-  rewards: string[]
-  name: string
-  uri: string
-  owner: string
-}
+import { AssetData } from '@/components/dashboard/MyLoyaltyPass'
 
 interface PageProps {
   params: Promise<{ passId: string }>
@@ -118,7 +102,7 @@ export default function LoyaltyPassDetails({ params }: PageProps) {
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
-                  {assetData.rewards.map((reward, index) => (
+                  {assetData.rewardTiers.map((tier: any, index: number) => (
                     <div
                       key={index}
                       className="p-3 rounded-lg bg-black/40 border border-slate-800/20 hover:bg-black/50 transition-colors"
@@ -131,15 +115,18 @@ export default function LoyaltyPassDetails({ params }: PageProps) {
                             boxShadow: `0 0 15px #9d4edd40`,
                           }}
                         >
-                          <Star className="w-4 h-4 text-white" />
+                          <Zap className="w-4 h-4 text-white" />
                         </div>
-                        <h3 className="text-white font-semibold">Current Tier: {assetData.currentTier}</h3>
+                        <h3 className="text-white font-semibold">{tier.name}</h3>
+                        <span className="text-white/70 text-sm">({tier.xpRequired} XP)</span>
                       </div>
                       <div className="mt-2">
-                        <div className="flex items-center gap-2 text-white/90">
-                          <div className="w-1.5 h-1.5 rounded-full bg-white/50" />
-                          <span>{reward}</span>
-                        </div>
+                        {tier.rewards.map((reward: string, i: number) => (
+                          <div key={i} className="flex items-center gap-2 text-white/90">
+                            <div className="w-1.5 h-1.5 rounded-full bg-white/50" />
+                            <span>{reward}</span>
+                          </div>
+                        ))}
                       </div>
                     </div>
                   ))}
@@ -218,8 +205,8 @@ export default function LoyaltyPassDetails({ params }: PageProps) {
                 programName={assetData.name}
                 owner={assetData.owner}
                 pointsPerAction={{}}
-                hostName="Verxio Protocol"
-                brandColor="#9d4edd"
+                hostName={assetData.metadata.hostName}
+                brandColor={assetData.metadata.brandColor!}
                 loyaltyPassAddress={passId}
                 qrCodeUrl={`${window.location.origin}/dashboard/${passId}`}
                 totalEarnedPoints={assetData.xp}

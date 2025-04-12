@@ -114,6 +114,10 @@ export function LoyaltyProgram() {
         tiers,
         pointsPerAction: actions,
         programAuthority: verxio.programAuthority,
+        metadata: {
+          hostName: programName,
+          brandColor: '#9d4edd',
+        },
       })
 
       const collectionAddress = result.collection.publicKey.toString()

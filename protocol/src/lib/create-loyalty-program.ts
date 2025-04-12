@@ -13,6 +13,11 @@ export interface CreateLoyaltyProgramConfig {
   pointsPerAction: Record<string, number>
   programAuthority: PublicKey
   tiers: LoyaltyProgramTier[]
+  metadata: {
+    hostName: string
+    brandColor?: string
+    [key: string]: any // Allow additional metadata fields
+  }
 }
 
 export async function createLoyaltyProgram(
@@ -46,6 +51,7 @@ export function createLoyaltyProgramPlugins(config: CreateLoyaltyProgramConfig):
         { key: ATTRIBUTE_KEYS.TIERS, value: JSON.stringify(config.tiers) },
         { key: ATTRIBUTE_KEYS.POINTS_PER_ACTION, value: JSON.stringify(config.pointsPerAction) },
         { key: ATTRIBUTE_KEYS.CREATOR, value: config.programAuthority.toString() },
+        { key: ATTRIBUTE_KEYS.METADATA, value: JSON.stringify(config.metadata) },
       ],
     },
     {
@@ -88,6 +94,12 @@ function assertValidCreateLoyaltyProgramConfig(
   }
   if (!Object.values(config.pointsPerAction).length) {
     throw new Error('assertValidCreateLoyaltyProgramConfig: Points per action must not be empty')
+  }
+  if (!config.metadata) {
+    throw new Error('assertValidCreateLoyaltyProgramConfig: Metadata is undefined')
+  }
+  if (!config.metadata.hostName || !config.metadata.hostName.trim() || !config.metadata.hostName.trim().length) {
+    throw new Error('assertValidCreateLoyaltyProgramConfig: Host name is undefined')
   }
   return true
 }

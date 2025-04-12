@@ -28,4 +28,5 @@ export const ATTRIBUTE_KEYS = {
   CREATOR: 'creator',
   TYPE: 'type',
   XP: 'xp',
+  METADATA: 'metadata',
 } as const

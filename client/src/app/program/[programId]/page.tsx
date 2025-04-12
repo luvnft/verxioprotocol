@@ -25,6 +25,11 @@ interface ProgramDetails {
   creator: string
   tiers: ProgramTier[]
   pointsPerAction: Record<string, number>
+  metadata: {
+    hostName: string
+    brandColor?: string
+    [key: string]: any
+  }
 }
 
 export default function PublicProgramPage({ params }: { params: Promise<{ programId: string }> }) {
@@ -49,28 +54,8 @@ export default function PublicProgramPage({ params }: { params: Promise<{ progra
         setError(null)
         context.collectionAddress = publicKey(resolvedParams.programId)
         const details = await getProgramDetails(context)
-        // Add mock tiers and points data for now
-        const programWithDetails = {
-          ...details,
-          tiers: [
-            {
-              name: 'Bronze',
-              xpRequired: 500,
-              rewards: ['2% cashback'],
-            },
-            {
-              name: 'Silver',
-              xpRequired: 1000,
-              rewards: ['5% cashback'],
-            },
-          ],
-          pointsPerAction: {
-            purchase: 100,
-            review: 50,
-          },
-        }
         if (isMounted) {
-          setProgram(programWithDetails)
+          setProgram(details)
         }
       } catch (error) {
         console.error('Error fetching program details:', error)
@@ -224,7 +209,8 @@ export default function PublicProgramPage({ params }: { params: Promise<{ progra
                 pointsPerAction={program.pointsPerAction}
                 collectionAddress={program.collectionAddress}
                 qrCodeUrl={qrCodeUrl}
-                brandColor="#9d4edd"
+                brandColor={program.metadata.brandColor}
+                hostName={program.metadata.hostName}
               />
             </div>
             <Button

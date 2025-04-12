@@ -23,6 +23,9 @@ describe('create-loyalty-program', { sequential: true }, () => {
       // ARRANGE
       const config = createTestLoyaltyProgramConfig({
         programAuthority: context.programAuthority,
+        metadata: {
+          hostName: 'Test Host',
+        },
       })
 
       // ACT
@@ -41,6 +44,9 @@ describe('create-loyalty-program', { sequential: true }, () => {
       const config: CreateLoyaltyProgramConfig = createTestLoyaltyProgramConfig({
         collectionSigner,
         programAuthority: context.programAuthority,
+        metadata: {
+          hostName: 'Test Host',
+        },
       })
       // ACT
       const result = await createLoyaltyProgram(context, config)
@@ -209,6 +215,54 @@ describe('create-loyalty-program', { sequential: true }, () => {
           // ASSERT
           expect(error).toBeDefined()
           expect(error.message).toEqual('assertValidCreateLoyaltyProgramConfig: Points per action must not be empty')
+        }
+      })
+
+      it('should throw an error if metadata is not set', async () => {
+        expect.assertions(2)
+        // ARRANGE
+        const brokenConfig = createTestLoyaltyProgramConfigEmpty({
+          organizationName: 'Test Loyalty Program',
+          metadataUri: 'https://arweave.net/123abc',
+          programAuthority: context.programAuthority,
+          tiers: [{ name: 'Grind', xpRequired: 0, rewards: ['nothing for you!'] }],
+          pointsPerAction: { default: 10 },
+        })
+
+        // ACT
+        try {
+          await createLoyaltyProgram(context, {
+            ...brokenConfig,
+            metadata: undefined,
+          } as unknown as CreateLoyaltyProgramConfig)
+        } catch (error) {
+          // ASSERT
+          expect(error).toBeDefined()
+          expect(error.message).toEqual('assertValidCreateLoyaltyProgramConfig: Metadata is undefined')
+        }
+      })
+
+      it('should throw an error if hostName is not set in metadata', async () => {
+        expect.assertions(2)
+        // ARRANGE
+        const brokenConfig = createTestLoyaltyProgramConfigEmpty({
+          organizationName: 'Test Loyalty Program',
+          metadataUri: 'https://arweave.net/123abc',
+          programAuthority: context.programAuthority,
+          tiers: [{ name: 'Grind', xpRequired: 0, rewards: ['nothing for you!'] }],
+          pointsPerAction: { default: 10 },
+          metadata: {
+            hostName: '',
+          },
+        })
+
+        // ACT
+        try {
+          await createLoyaltyProgram(context, brokenConfig)
+        } catch (error) {
+          // ASSERT
+          expect(error).toBeDefined()
+          expect(error.message).toEqual('assertValidCreateLoyaltyProgramConfig: Host name is undefined')
         }
       })
     })

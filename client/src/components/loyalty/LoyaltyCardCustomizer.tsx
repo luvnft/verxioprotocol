@@ -40,8 +40,8 @@ export default function LoyaltyCardCustomizer({ onRotationComplete }: LoyaltyCar
     loyaltyProgramName: '',
     metadataUri: '',
     metadata: {
-      brandColor: '#9d4edd', // Default purple
       hostName: '',
+      brandColor: '#9d4edd', // Default purple
     },
     tiers: [{ name: '', xpRequired: 0, rewards: [''] }] as Tier[],
     pointsPerAction: {
@@ -140,15 +140,22 @@ export default function LoyaltyCardCustomizer({ onRotationComplete }: LoyaltyCar
       return
     }
 
+    if (!formData.metadata.hostName) {
+      toast.error('Please provide a host name')
+      return
+    }
+
     setIsLoading(true)
     try {
+      console.log('Submitting form data:', formData)
+
       const result = await createNewLoyaltyProgram(context, {
         organizationName: formData.loyaltyProgramName,
         metadataUri: formData.metadataUri,
-        // metadata: {
-        //   brandColor: formData.metadata.brandColor,
-        //   hostName: formData.metadata.hostName,
-        // },
+        metadata: {
+          hostName: formData.metadata.hostName,
+          brandColor: formData.metadata.brandColor,
+        },
         tiers: formData.tiers,
         pointsPerAction: formData.pointsPerAction,
       })
@@ -185,8 +192,8 @@ export default function LoyaltyCardCustomizer({ onRotationComplete }: LoyaltyCar
         loyaltyProgramName: '',
         metadataUri: '',
         metadata: {
-          brandColor: '#9d4edd',
           hostName: '',
+          brandColor: '#9d4edd',
         },
         tiers: [{ name: '', xpRequired: 0, rewards: [''] }],
         pointsPerAction: {

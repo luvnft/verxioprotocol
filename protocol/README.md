@@ -12,7 +12,7 @@ On-chain loyalty protocol powered by Metaplex CORE for creating and managing loy
 - Automatic tier progression based on XP
 - Update loyalty program tiers and points per action
 - Gift points to users with custom actions
-- Comprehensive asset data tracking
+- Comprehensive asset data and customer behaviour tracking
 
 ## Installation
 
@@ -50,9 +50,13 @@ context.umi.use(keypairIdentity('FEE_PAYER'))
 
 ```typescript
 const result = await createLoyaltyProgram(context, {
-  organizationName: 'Coffee Rewards',
+  organizationName: "Brew's summer discount",
   metadataUri: 'https://arweave.net/...',
   programAuthority: context.programAuthority,
+  metadata: {
+    hostName: 'Coffee Brew', // Required: Name of the host/organization
+    brandColor: '#FF5733', // Optional: Brand color for UI customization
+  },
   tiers: [
     {
       name: 'Bronze',
@@ -205,7 +209,7 @@ const assetData = await getAssetData(context, publicKey('PASS_ADDRESS'))
 console.log(assetData)
 // {
 //   xp: number,              // Current XP points
-//   lastAction: string,      // Last action performed
+//   lastAction: string | null, // Last action performed
 //   actionHistory: Array<{   // History of actions
 //     type: string,
 //     points: number,
@@ -217,7 +221,17 @@ console.log(assetData)
 //   rewards: string[],       // Available rewards
 //   name: string,           // Asset name
 //   uri: string,            // Asset metadata URI
-//   owner: string           // Asset owner address
+//   owner: string,          // Asset owner address
+//   pass: string,           // Pass public key
+//   metadata: {             // Program metadata
+//     hostName: string,     // Required: Name of the host/organization
+//     brandColor?: string   // Optional: Brand color for UI customization
+//   },
+//   rewardTiers: Array<{    // All available reward tiers
+//     name: string,
+//     xpRequired: number,
+//     rewards: string[]
+//   }>
 // }
 ```
 
@@ -239,7 +253,11 @@ console.log(programDetails)
 //     xpRequired: number,
 //     rewards: string[]
 //   }>,
-//   pointsPerAction: Record<string, number>
+//   pointsPerAction: Record<string, number>,
+//   metadata: {
+//     hostName: string,     // Required: Name of the host/organization
+//     brandColor?: string   // Optional: Brand color for UI customization
+//   }
 // }
 ```
 

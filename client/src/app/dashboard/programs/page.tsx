@@ -30,36 +30,13 @@ export default function ProgramsPage() {
   const [programs, setPrograms] = useState<ProgramDetails[]>([])
   const context = useVerxioProgram()
 
-  console.log(programs)
-  console.log(context)
-
   useEffect(() => {
     async function fetchPrograms() {
       if (context) {
-        context.collectionAddress = publicKey('CqQzB733uEozNpGwh2E7ENtUEba7DBdSKghEL5sxUTFD')
+        context.collectionAddress = publicKey('DBby8qLorcDAnXWBz3tUFKHtUUGJCKe9X3CEbivdfCFb')
         try {
           const details = await getProgramDetails(context)
-          // Add mock tiers and points data for now
-          const programWithDetails = {
-            ...details,
-            tiers: [
-              {
-                name: 'Bronze',
-                xpRequired: 500,
-                rewards: ['2% cashback'],
-              },
-              {
-                name: 'Silver',
-                xpRequired: 1000,
-                rewards: ['5% cashback'],
-              },
-            ],
-            pointsPerAction: {
-              purchase: 100,
-              review: 50,
-            },
-          }
-          setPrograms([programWithDetails])
+          setPrograms([details])
         } catch (error) {
           console.error('Error fetching program details:', error)
         }

@@ -24,7 +24,7 @@ describe('get-program-details', () => {
 
   describe('expected usage', () => {
     it('should return program details', async () => {
-      expect.assertions(8)
+      expect.assertions(11)
       if (!collection) throw new Error('Test setup failed')
 
       // ACT
@@ -39,6 +39,46 @@ describe('get-program-details', () => {
       expect(details.numMinted).toBeDefined()
       expect(details.transferAuthority).toBeDefined()
       expect(details.creator).toBeDefined()
+      expect(details.tiers).toBeDefined()
+      expect(details.pointsPerAction).toBeDefined()
+      expect(details.metadata).toBeDefined()
+    })
+
+    it('should return valid tiers data', async () => {
+      expect.assertions(3)
+      if (!collection) throw new Error('Test setup failed')
+
+      // ACT
+      const details = await getProgramDetails(context)
+
+      // ASSERT
+      expect(Array.isArray(details.tiers)).toBe(true)
+      expect(details.tiers[0]).toHaveProperty('name')
+      expect(details.tiers[0]).toHaveProperty('xpRequired')
+    })
+
+    it('should return valid points per action data', async () => {
+      expect.assertions(2)
+      if (!collection) throw new Error('Test setup failed')
+
+      // ACT
+      const details = await getProgramDetails(context)
+
+      // ASSERT
+      expect(typeof details.pointsPerAction).toBe('object')
+      expect(Object.keys(details.pointsPerAction).length).toBeGreaterThan(0)
+    })
+
+    it('should return valid metadata', async () => {
+      expect.assertions(2)
+      if (!collection) throw new Error('Test setup failed')
+
+      // ACT
+      const details = await getProgramDetails(context)
+
+      // ASSERT
+      expect(typeof details.metadata).toBe('object')
+      expect(details.metadata).toHaveProperty('hostName')
     })
   })
 

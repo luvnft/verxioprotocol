@@ -7,7 +7,7 @@ import { useRouter } from 'next/navigation'
 import { useVerxioProgram } from '@/lib/methods/initializeProgram'
 import { publicKey } from '@metaplex-foundation/umi'
 
-interface AssetData {
+export interface AssetData {
   xp: number
   lastAction: string | null
   actionHistory: Array<{
@@ -22,6 +22,16 @@ interface AssetData {
   name: string
   uri: string
   owner: string
+  metadata: {
+    hostName: string
+    brandColor?: string
+    [key: string]: any
+  }
+  rewardTiers: Array<{
+    name: string
+    xpRequired: number
+    rewards: string[]
+  }>
 }
 
 interface LoyaltyPass {
@@ -37,43 +47,7 @@ interface LoyaltyPass {
   assetData?: AssetData
 }
 
-// Demo data for loyalty passes
-const DEMO_LOYALTY_PASSES = Array.from({ length: 5 }, (_, i) => ({
-  programName: `Program ${i + 1}`,
-  owner: '7YarZW...',
-  pointsPerAction: { purchase: 100, review: 50 },
-  hostName: 'Demo Business',
-  brandColor: '#9d4edd',
-  loyaltyPassAddress: `Pass${i + 1}...`,
-  qrCodeUrl: `https://verxio.io/pass/${i + 1}`,
-  totalEarnedPoints: Math.floor(Math.random() * 1000),
-}))
-
 const CARDS_PER_PAGE = 4
-
-// Function to determine the current tier based on total points
-function getCurrentTier(totalPoints: number, tiers: { name: string; xpRequired: number }[]) {
-  for (let i = tiers.length - 1; i >= 0; i--) {
-    if (totalPoints >= tiers[i].xpRequired) {
-      return tiers[i]
-    }
-  }
-  return tiers[0] // Default to the first tier if no match
-}
-
-// Example tiers
-const TIERS = [
-  {
-    name: 'Bronze',
-    xpRequired: 500,
-    rewards: ['2% cashback'],
-  },
-  {
-    name: 'Silver',
-    xpRequired: 1000,
-    rewards: ['5% cashback'],
-  },
-]
 
 export default function MyLoyaltyPasses() {
   const router = useRouter()
@@ -93,7 +67,7 @@ export default function MyLoyaltyPasses() {
       if (!context) return
 
       try {
-        const assetAddress = '3jgh5WZutghR9HoKUeQmmaFppmZEE61SmJn8MGmwGqYH'
+        const assetAddress = '9UCFuJgXvCRx7YGs8upDUCEH7pM5t3wBGEQL7tC4he4j'
         const data = await getAssetData(context, publicKey(assetAddress))
 
         if (data) {
@@ -101,8 +75,8 @@ export default function MyLoyaltyPasses() {
             programName: data.name,
             owner: data.owner,
             pointsPerAction: {}, // This will be fetched separately
-            hostName: 'Verxio Protocol',
-            brandColor: '#9d4edd',
+            hostName: data.metadata.hostName,
+            brandColor: data.metadata.brandColor!,
             loyaltyPassAddress: assetAddress,
             qrCodeUrl: `/dashboard/${assetAddress}`,
             totalEarnedPoints: data.xp,
