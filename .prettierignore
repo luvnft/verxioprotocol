@@ -6,4 +6,3 @@ tmp
 pnpm-lock.yaml
 .next
 node_modules
-client/prisma/generated
