@@ -13,7 +13,7 @@ const nextConfig = {
     unoptimized: true,
   },
   env: {
-    APP_URL: process.env.DOMAIN || 'https://verxio-loyalty.netlify.app',
+    PRISMA_FIELD_ENCRYPTION_KEY: process.env.PRISMA_FIELD_ENCRYPTION_KEY,
   },
 }
 
