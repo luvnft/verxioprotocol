@@ -28,5 +28,4 @@ jobs:
           node-version: 22.14.0
           cache: 'pnpm'
       - run: pnpm install
-      - run: pnpm prisma generate --no-engine
       - run: pnpm run ci

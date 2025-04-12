@@ -15,22 +15,22 @@ datasource db {
 }
 
 model LoyaltyProgram {
-  id          String   @id @default(cuid())
-  creator     String   
-  publicKey   String 
-  privateKey  String   ///@encrypted
-  signature   String 
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id         String   @id @default(cuid())
+  creator    String
+  publicKey  String
+  privateKey String ///@encrypted
+  signature  String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 }
 
 model LoyaltyPass {
-  id          String   @id @default(cuid())
-  collection  String  
-  recipient   String  
-  publicKey   String 
-  privateKey  String   ///@encrypted
-  signature   String 
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id         String   @id @default(cuid())
+  collection String
+  recipient  String
+  publicKey  String
+  privateKey String ///@encrypted
+  signature  String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 }
