@@ -24,7 +24,7 @@ export async function GET(request: Request) {
     const passes = await prisma.loyaltyPass.findMany({
       where: {
         collection: {
-          in: programs.map((program) => program.publicKey),
+          in: programs.map((program: { publicKey: string }) => program.publicKey),
         },
       },
       select: {
