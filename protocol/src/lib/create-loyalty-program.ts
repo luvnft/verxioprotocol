@@ -5,6 +5,7 @@ import { VerxioContext } from '@schemas/verxio-context'
 import { toBase58 } from '@utils/to-base58'
 import { LoyaltyProgramTier } from '@schemas/loyalty-program-tier'
 import { assertValidContext } from '@utils/assert-valid-context'
+import { createFeeInstruction } from '@utils/fee-structure'
 
 export interface CreateLoyaltyProgramConfig {
   collectionSigner?: KeypairSigner
@@ -29,14 +30,16 @@ export async function createLoyaltyProgram(
   const collection = config.collectionSigner ?? generateSigner(context.umi)
 
   try {
-    const tx = await createCollection(context.umi, {
+    const feeInstruction = createFeeInstruction(context.umi, context.umi.identity.publicKey, 'CREATE_LOYALTY_PROGRAM')
+    const txnInstruction = createCollection(context.umi, {
       collection,
       name: config.loyaltyProgramName,
       plugins: createLoyaltyProgramPlugins(config),
       uri: config.metadataUri,
-    }).sendAndConfirm(context.umi, { confirm: { commitment: 'confirmed' } })
+    }).add(feeInstruction)
 
-    return { collection, signature: toBase58(tx.signature) }
+    const txn = await txnInstruction.sendAndConfirm(context.umi, { confirm: { commitment: 'confirmed' } })
+    return { collection, signature: toBase58(txn.signature) }
   } catch (error) {
     throw new Error(`Failed to create loyalty program: ${error}`)
   }

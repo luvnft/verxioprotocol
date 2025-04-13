@@ -2,9 +2,8 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { cn } from '@/lib/utils'
-import { LayoutDashboard, Gift, Building2, Users, Trophy, Settings, Copy, LogOut } from 'lucide-react'
-import { useWalletUi } from '@wallet-ui/react'
+import { LayoutDashboard, Building2, Users, Trophy, Settings, Copy, LogOut } from 'lucide-react'
+import { useWallet } from '@solana/wallet-adapter-react'
 import { Button } from '@/components/ui/button'
 import { toast } from 'sonner'
 import { NetworkToggle } from '@/components/network/NetworkToggle'
@@ -15,7 +14,7 @@ interface DashboardNavProps {
 
 export default function DashboardNav({ isOrganization }: DashboardNavProps) {
   const pathname = usePathname()
-  const { connected, account, disconnect } = useWalletUi()
+  const { connected, publicKey, disconnect } = useWallet()
 
   const userNavItems = [
     {
@@ -56,8 +55,8 @@ export default function DashboardNav({ isOrganization }: DashboardNavProps) {
   const navItems = isOrganization ? organizationNavItems : userNavItems
 
   const handleCopyAddress = () => {
-    if (account) {
-      navigator.clipboard.writeText(account.address)
+    if (publicKey) {
+      navigator.clipboard.writeText(publicKey.toString())
       toast.success('Wallet address copied to clipboard')
     }
   }
@@ -97,7 +96,7 @@ export default function DashboardNav({ isOrganization }: DashboardNavProps) {
           <NetworkToggle />
           <div className="bg-black/20 rounded-lg p-3 space-y-2">
             <div className="flex items-center justify-between">
-              <div className="text-sm text-white/70">{shortenAddress(account?.address || '')}</div>
+              <div className="text-sm text-white/70">{shortenAddress(publicKey?.toString() || '')}</div>
               <Button
                 variant="ghost"
                 size="icon"

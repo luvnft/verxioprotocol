@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { toast } from 'sonner'
-import { useWalletUi } from '@wallet-ui/react'
+import { useWallet } from '@solana/wallet-adapter-react'
 import { createNewLoyaltyProgram, Tier } from '@/lib/methods/createLoyaltyProgram'
 import { HexColorPicker } from 'react-colorful'
 import { useVerxioProgram } from '@/lib/methods/initializeProgram'
@@ -32,7 +32,7 @@ interface LoyaltyCardCustomizerProps {
 }
 
 export default function LoyaltyCardCustomizer({ onRotationComplete }: LoyaltyCardCustomizerProps) {
-  const { account, connected } = useWalletUi()
+  const { connected, publicKey: address } = useWallet()
   const context = useVerxioProgram()
   const router = useRouter()
   const [isLoading, setIsLoading] = useState(false)
@@ -147,6 +147,7 @@ export default function LoyaltyCardCustomizer({ onRotationComplete }: LoyaltyCar
 
     setIsLoading(true)
     try {
+      console.log(formData)
       const result = await createNewLoyaltyProgram(context, {
         loyaltyProgramName: formData.loyaltyProgramName,
         metadataUri: formData.metadataUri,
@@ -157,10 +158,9 @@ export default function LoyaltyCardCustomizer({ onRotationComplete }: LoyaltyCar
         tiers: formData.tiers,
         pointsPerAction: formData.pointsPerAction,
       })
-      // console.log('result', bs58.encode(result.collection.secretKey))
 
       // Store in database
-      if (!account?.address) {
+      if (!address) {
         toast.error('No account address available')
         return
       }
@@ -171,7 +171,7 @@ export default function LoyaltyCardCustomizer({ onRotationComplete }: LoyaltyCar
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          creator: account.address.toString(),
+          creator: address?.toString(),
           publicKey: result.collection.publicKey.toString(),
           privateKey: bs58.encode(result.collection.secretKey),
           signature: result.signature,
@@ -203,7 +203,7 @@ export default function LoyaltyCardCustomizer({ onRotationComplete }: LoyaltyCar
       const qrData = {
         name: formData.loyaltyProgramName,
         collectionAddress: result.collection.publicKey.toString(),
-        creator: account?.address.toString(),
+        creator: address?.toString(),
         uri: formData.metadataUri,
       }
 
@@ -525,9 +525,9 @@ export default function LoyaltyCardCustomizer({ onRotationComplete }: LoyaltyCar
                 <ProgramCard
                   programName={formData.loyaltyProgramName || 'Loyalty Program'}
                   organizationName={formData.metadata.organizationName || 'Verxio Protocol'}
-                  creator={account?.address.toString() || 'N/A'}
+                  creator={address?.toString() || 'VERXIO76abNGYsQa4vjLcCJ4zx8vbtrVWTR'}
                   pointsPerAction={formData.pointsPerAction}
-                  collectionAddress=""
+                  collectionAddress="VERXIO25rNGYsQa4vjLAcCJ4zx8vZ4BSqQoCb"
                   qrCodeUrl={qrCodeData}
                   brandColor={formData.metadata.brandColor}
                 />

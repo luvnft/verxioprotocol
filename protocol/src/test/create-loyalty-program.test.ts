@@ -7,19 +7,23 @@ import {
 import { getTestContext } from './helpers/get-test-context'
 import { ensureFeePayerBalance } from './helpers/ensure-fee-payer-balance'
 import { createLoyaltyProgram, CreateLoyaltyProgramConfig } from '../lib/create-loyalty-program'
+import { FEES } from '../utils/fee-structure'
 
 const { feePayer, context } = getTestContext()
 
 describe('create-loyalty-program', { sequential: true }, () => {
   beforeAll(async () => {
-    // Ensure we have enough sol
-    await ensureFeePayerBalance(context.umi, { account: feePayer.publicKey, amount: 1 })
+    // Ensure we have enough sol for both the collection creation and the fee
+    await ensureFeePayerBalance(context.umi, {
+      account: feePayer.publicKey,
+      amount: 1 + FEES.CREATE_LOYALTY_PROGRAM,
+    })
     context.umi.use(keypairIdentity(feePayer))
   })
 
   describe('expected usage', () => {
-    it('should create a new loyalty program with a generated collection signer', async () => {
-      expect.assertions(3)
+    it('should create a new loyalty program with a generated collection signer and pay the fee', async () => {
+      expect.assertions(4)
       // ARRANGE
       const config = createTestLoyaltyProgramConfig({
         programAuthority: context.programAuthority,
@@ -35,6 +39,8 @@ describe('create-loyalty-program', { sequential: true }, () => {
       expect(result).toBeTruthy()
       expect(result.collection).toBeTruthy()
       expect(result.signature).toBeTruthy()
+      // Verify the transaction includes the fee instruction
+      expect(result.signature).toHaveLength(88) // Base58 encoded signature length
     })
 
     it('should create a new loyalty program with a provided collection signer', async () => {

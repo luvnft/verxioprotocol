@@ -43,6 +43,7 @@
   "dependencies": {
     "@metaplex-foundation/mpl-core": "^1.2.0",
     "@metaplex-foundation/mpl-token-metadata": "^3.4.0",
+    "@metaplex-foundation/mpl-toolbox": "^0.10.0",
     "@metaplex-foundation/umi": "^1.1.1",
     "@metaplex-foundation/umi-bundle-defaults": "^1.1.1",
     "@metaplex-foundation/umi-eddsa-web3js": "^1.1.1",

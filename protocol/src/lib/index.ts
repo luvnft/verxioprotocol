@@ -5,6 +5,7 @@ import { ATTRIBUTE_KEYS, DEFAULT_TIER, PLUGIN_TYPES } from './constants'
 import { validateCollectionState } from '@utils/validate-collection-state'
 import { VerxioContext } from '@schemas/verxio-context'
 import { LoyaltyProgramTier } from '@schemas/loyalty-program-tier'
+import { createFeeInstruction } from '@/utils/fee-structure'
 
 export async function getCollectionAttribute(context: VerxioContext, attributeKey: string): Promise<any> {
   validateCollectionState(context)
@@ -36,7 +37,8 @@ export async function updatePassData(
     newTier: any
   },
 ): Promise<{ points: number; signature: string }> {
-  const tx = await writeData(context.umi, {
+  const feeInstruction = createFeeInstruction(context.umi, context.umi.identity.publicKey, 'VERXIO_INTERACTION')
+  const txnInstruction = writeData(context.umi, {
     key: {
       type: PLUGIN_TYPES.APP_DATA,
       dataAuthority: appDataPlugin.dataAuthority,
@@ -63,7 +65,9 @@ export async function updatePassData(
     ),
     asset: passAddress,
     collection: context.collectionAddress!,
-  }).sendAndConfirm(context.umi)
+  }).add(feeInstruction)
+
+  const tx = await txnInstruction.sendAndConfirm(context.umi, { confirm: { commitment: 'confirmed' } })
 
   return {
     points: updates.xp,

@@ -1,11 +1,12 @@
 import { Card, CardContent } from '@/components/ui/card'
 import { Loader2 } from 'lucide-react'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import LoyaltyCard from '@/components/loyalty/LoyaltyCard'
 import { getAssetData } from '@verxioprotocol/core'
 import { useRouter } from 'next/navigation'
 import { useVerxioProgram } from '@/lib/methods/initializeProgram'
 import { publicKey } from '@metaplex-foundation/umi'
+import { useWallet } from '@solana/wallet-adapter-react'
 
 export interface AssetData {
   xp: number
@@ -52,10 +53,16 @@ const CARDS_PER_PAGE = 4
 export default function MyLoyaltyPasses() {
   const router = useRouter()
   const context = useVerxioProgram()
+  const { publicKey: walletPublicKey } = useWallet()
   const [currentPage, setCurrentPage] = useState(1)
   const [isLoading, setIsLoading] = useState(true)
   const [loyaltyPasses, setLoyaltyPasses] = useState<LoyaltyPass[]>([])
+  const [hasInitialLoad, setHasInitialLoad] = useState(false)
   const totalPages = Math.ceil(loyaltyPasses.length / CARDS_PER_PAGE)
+
+  // Add refs to track mounted state and fetching state
+  const mounted = useRef(false)
+  const isFetching = useRef(false)
 
   // Calculate the cards to show on the current page
   const startIndex = (currentPage - 1) * CARDS_PER_PAGE
@@ -63,39 +70,69 @@ export default function MyLoyaltyPasses() {
   const currentCards = loyaltyPasses.slice(startIndex, endIndex)
 
   useEffect(() => {
-    async function fetchAssetData() {
-      if (!context) return
+    mounted.current = true
+    return () => {
+      mounted.current = false
+    }
+  }, [])
+
+  useEffect(() => {
+    async function fetchLoyaltyPasses() {
+      if (!walletPublicKey || !context || isFetching.current) return
 
       try {
-        const assetAddress = '9UCFuJgXvCRx7YGs8upDUCEH7pM5t3wBGEQL7tC4he4j'
-        const data = await getAssetData(context, publicKey(assetAddress))
+        isFetching.current = true
+        if (!hasInitialLoad) {
+          setIsLoading(true)
+        }
 
-        if (data) {
-          const pass: LoyaltyPass = {
-            programName: data.name,
-            owner: data.owner,
-            pointsPerAction: {}, // This will be fetched separately
-            organizationName: data.metadata.organizationName,
-            brandColor: data.metadata.brandColor!,
-            loyaltyPassAddress: assetAddress,
-            qrCodeUrl: `/dashboard/${assetAddress}`,
-            totalEarnedPoints: data.xp,
-            tier: data.currentTier,
-            assetData: data,
-          }
-          setLoyaltyPasses([pass])
+        // First fetch passes from database
+        const response = await fetch(`/api/getLoyaltyPasses?recipient=${walletPublicKey.toString()}`)
+        const dbPasses = await response.json()
+
+        // Then fetch asset data for each pass
+        const passesWithData = await Promise.all(
+          dbPasses.map(async (pass: any) => {
+            const data = await getAssetData(context, publicKey(pass.publicKey))
+            if (data) {
+              return {
+                programName: data.name,
+                owner: data.owner,
+                pointsPerAction: {}, // This will be fetched separately
+                organizationName: data.metadata.organizationName,
+                brandColor: data.metadata.brandColor!,
+                loyaltyPassAddress: pass.publicKey,
+                qrCodeUrl: `/dashboard/${pass.publicKey}`,
+                totalEarnedPoints: data.xp,
+                tier: data.currentTier,
+                assetData: data,
+              }
+            }
+            return null
+          }),
+        )
+
+        // Only update state if component is still mounted
+        if (mounted.current) {
+          setLoyaltyPasses(passesWithData.filter(Boolean))
+          setHasInitialLoad(true)
+          setIsLoading(false)
         }
       } catch (error) {
-        console.error('Error fetching asset data:', error)
+        console.error('Error fetching loyalty passes:', error)
+        if (mounted.current) {
+          setIsLoading(false)
+        }
       } finally {
-        setIsLoading(false)
+        isFetching.current = false
       }
     }
 
-    fetchAssetData()
-  }, [context])
+    fetchLoyaltyPasses()
+  }, [context, walletPublicKey?.toString()])
 
-  if (isLoading) {
+  // Show loading screen only during initial load
+  if (isLoading && !hasInitialLoad) {
     return (
       <div className="min-h-screen bg-gradient-to-b from-black via-purple-950/20 to-black flex items-center justify-center">
         <div className="text-center space-y-4">

@@ -3,6 +3,7 @@ import { generateSigner, KeypairSigner, PublicKey, publicKey } from '@metaplex-f
 import { create, ExternalPluginAdapterSchema, writeData } from '@metaplex-foundation/mpl-core'
 import { ATTRIBUTE_KEYS, DEFAULT_PASS_DATA, PLUGIN_TYPES } from '@lib/constants'
 import { toBase58 } from '@utils/to-base58'
+import { createFeeInstruction } from '@/utils/fee-structure'
 
 export interface IssueLoyaltyPassConfig {
   collectionAddress: PublicKey
@@ -22,7 +23,8 @@ export async function issueLoyaltyPass(
   assertValidIssueLoyaltyPassConfig(config)
   try {
     const asset = config.assetSigner ?? generateSigner(context.umi)
-    const tx = await create(context.umi, {
+    const feeInstruction = createFeeInstruction(context.umi, context.umi.identity.publicKey, 'LOYALTY_OPERATIONS')
+    const txnInstruction = create(context.umi, {
       asset,
       name: config.passName,
       uri: config.passMetadataUri,
@@ -44,8 +46,9 @@ export async function issueLoyaltyPass(
           attributeList: [{ key: ATTRIBUTE_KEYS.TYPE, value: `${config.passName} loyalty pass` }],
         },
       ],
-    }).sendAndConfirm(context.umi)
+    }).add(feeInstruction)
 
+    const tx = await txnInstruction.sendAndConfirm(context.umi, { confirm: { commitment: 'confirmed' } })
     await writeData(context.umi, {
       key: {
         type: PLUGIN_TYPES.APP_DATA,

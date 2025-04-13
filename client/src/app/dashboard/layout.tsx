@@ -1,13 +1,13 @@
 'use client'
 
-import { useWalletUi } from '@wallet-ui/react'
+import { useWallet } from '@solana/wallet-adapter-react'
 import { useRouter } from 'next/navigation'
 import { useEffect } from 'react'
 import DashboardNav from '@/components/dashboard/DashboardNav'
 import { DashboardProvider, useDashboard } from './DashboardContext'
 
 function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
-  const { connected } = useWalletUi()
+  const { connected } = useWallet()
   const router = useRouter()
   const { isOrganization } = useDashboard()
 

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Loader2, ArrowLeft, Star, Clock, Zap } from 'lucide-react'
+import { Loader2, ArrowLeft, Clock, Zap } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useRouter } from 'next/navigation'
 import LoyaltyCard from '@/components/loyalty/LoyaltyCard'

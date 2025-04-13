@@ -7,8 +7,9 @@ import { getProgramDetails } from '@verxioprotocol/core'
 import { publicKey } from '@metaplex-foundation/umi'
 import ProgramCard from '@/components/loyalty/ProgramCard'
 import { Loader2 } from 'lucide-react'
-import { WalletUiDropdown, useWalletUi } from '@wallet-ui/react'
 import { Button } from '@/components/ui/button'
+import { useWallet } from '@solana/wallet-adapter-react'
+import { WalletButton } from '@/components/layout/buttonConfig'
 
 interface ProgramTier {
   name: string
@@ -37,7 +38,7 @@ export default function PublicProgramPage({ params }: { params: Promise<{ progra
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const context = useVerxioProgram()
-  const { connected } = useWalletUi()
+  const { connected } = useWallet()
   const resolvedParams = use(params)
   const qrCodeUrl = program ? `${window.location.origin}/program/${program.collectionAddress}` : ''
 
@@ -115,9 +116,7 @@ export default function PublicProgramPage({ params }: { params: Promise<{ progra
   return (
     <div className="min-h-screen bg-gradient-to-b from-black via-purple-950/20 to-black">
       <div className="fixed top-0 right-0 z-50 p-2 sm:p-4">
-        <div className="orbitron">
-          <WalletUiDropdown size="lg" label="Select Wallet" />
-        </div>
+        <WalletButton style={{ fontFamily: 'orbitron' }} />
       </div>
       <div className="max-w-[1200px] mx-auto px-2 sm:px-4 py-4 sm:py-8">
         <div className="mb-4 sm:mb-6">
@@ -214,7 +213,6 @@ export default function PublicProgramPage({ params }: { params: Promise<{ progra
               />
             </div>
             <Button
-              onClick={() => console.log('pass issued!')}
               disabled={!connected}
               className="w-full max-w-[350px] sm:max-w-[450px] bg-gradient-to-r from-[#00FFE0] via-[#0085FF] to-[#7000FF] text-white hover:opacity-90 orbitron disabled:opacity-50 disabled:cursor-not-allowed"
             >
