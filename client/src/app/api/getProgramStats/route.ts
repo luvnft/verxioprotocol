@@ -35,7 +35,7 @@ export async function GET(request: Request) {
     // Calculate statistics
     const totalPrograms = programs.length
     const activePasses = passes.length
-    const uniqueHolders = new Set(passes.map((pass) => pass.recipient)).size
+    const uniqueHolders = new Set(passes.map((pass: { recipient: string }) => pass.recipient)).size
 
     return NextResponse.json({
       totalPrograms,
