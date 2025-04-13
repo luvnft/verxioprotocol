@@ -1,9 +1,6 @@
 import { NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
-
-interface Program {
-  publicKey: string
-}
+import { Prisma } from '@prisma/client'
 
 export async function GET(request: Request) {
   try {
@@ -16,22 +13,23 @@ export async function GET(request: Request) {
 
     // Get all programs created by the user
     const programs = await prisma.loyaltyProgram.findMany({
-      where: { creator },
-      select: { publicKey: true },
+      where: {
+        creator: creator,
+      },
+      select: {
+        publicKey: true,
+      },
     })
 
-    const programAddresses = programs.map((program: Program) => program.publicKey)
-
-    // Get all loyalty passes for these programs
+    // Get all passes associated with these programs
     const passes = await prisma.loyaltyPass.findMany({
       where: {
         collection: {
-          in: programAddresses,
+          in: programs.map((program) => program.publicKey),
         },
       },
       select: {
         recipient: true,
-        collection: true,
       },
     })
 
@@ -48,6 +46,6 @@ export async function GET(request: Request) {
     })
   } catch (error) {
     console.error('Error fetching program stats:', error)
-    return NextResponse.json({ error: 'Failed to fetch program statistics' }, { status: 500 })
+    return NextResponse.json({ error: 'Failed to fetch program stats' }, { status: 500 })
   }
 }
