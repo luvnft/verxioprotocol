@@ -1,6 +1,10 @@
 import { NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
 
+interface Program {
+  publicKey: string
+}
+
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url)
@@ -16,7 +20,7 @@ export async function GET(request: Request) {
       select: { publicKey: true },
     })
 
-    const programAddresses = programs.map((program) => program.publicKey)
+    const programAddresses = programs.map((program: Program) => program.publicKey)
 
     // Get all loyalty passes for these programs
     const passes = await prisma.loyaltyPass.findMany({
