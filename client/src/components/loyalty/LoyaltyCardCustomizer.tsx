@@ -8,9 +8,18 @@ import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { toast } from 'sonner'
-import { useWalletUi } from '@wallet-ui/react'
+import { useWallet } from '@solana/wallet-adapter-react'
 import { createNewLoyaltyProgram, Tier } from '@/lib/methods/createLoyaltyProgram'
-import { QRCodeSVG } from 'qrcode.react'
+import { HexColorPicker } from 'react-colorful'
+import { useVerxioProgram } from '@/lib/methods/initializeProgram'
+import { useRouter } from 'next/navigation'
+import ProgramCard from './ProgramCard'
+import bs58 from 'bs58'
+import { SuccessModal } from '@/components/ui/success-modal'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import { Info, Upload } from 'lucide-react'
+import { generateImageUri } from '@/lib/metadata/generateImageUri'
+import { generateNftMetadata } from '@/lib/metadata/generateNftMetadata'
 
 const colorOptions = [
   { name: 'Purple', value: 'purple' },
@@ -27,11 +36,18 @@ interface LoyaltyCardCustomizerProps {
 }
 
 export default function LoyaltyCardCustomizer({ onRotationComplete }: LoyaltyCardCustomizerProps) {
-  const { connected, account } = useWalletUi()
+  const { connected, publicKey: address } = useWallet()
+  const context = useVerxioProgram()
+  const router = useRouter()
+  const [isLoading, setIsLoading] = useState(false)
   const [formData, setFormData] = useState({
-    organizationName: '',
-    metadataUri: '',
-    programColor: 'purple' as ProgramColor,
+    loyaltyProgramName: '',
+    description: '',
+    bannerImage: null as File | null,
+    metadata: {
+      organizationName: '',
+      brandColor: '#9d4edd', // Default purple
+    },
     tiers: [{ name: '', xpRequired: 0, rewards: [''] }] as Tier[],
     pointsPerAction: {
       '': 0,
@@ -40,20 +56,46 @@ export default function LoyaltyCardCustomizer({ onRotationComplete }: LoyaltyCar
 
   const [rotationCount, setRotationCount] = useState(0)
   const [currentThemeIndex, setCurrentThemeIndex] = useState(0)
-  const [qrCodeData, setQrCodeData] = useState<string>('')
+  const [showSuccessModal, setShowSuccessModal] = useState(false)
+  const [successData, setSuccessData] = useState<{ title: string; message: string; signature?: string } | null>(null)
+  const [bannerPreview, setBannerPreview] = useState<string | null>(null)
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target
-    setFormData({
-      ...formData,
-      [name]: value,
-    })
+    if (name === 'organizationName') {
+      setFormData({
+        ...formData,
+        metadata: {
+          ...formData.metadata,
+          organizationName: value,
+        },
+      })
+    } else if (name === 'bannerImage' && e.target.files && e.target.files[0]) {
+      const file = e.target.files[0]
+      setFormData({
+        ...formData,
+        bannerImage: file,
+      })
+      const reader = new FileReader()
+      reader.onloadend = () => {
+        setBannerPreview(reader.result as string)
+      }
+      reader.readAsDataURL(file)
+    } else {
+      setFormData({
+        ...formData,
+        [name]: value,
+      })
+    }
   }
 
   const handleColorChange = (color: string) => {
     setFormData({
       ...formData,
-      programColor: color as ProgramColor,
+      metadata: {
+        ...formData.metadata,
+        brandColor: color,
+      },
     })
   }
 
@@ -109,27 +151,113 @@ export default function LoyaltyCardCustomizer({ onRotationComplete }: LoyaltyCar
       return
     }
 
+    if (!context) {
+      toast.error('Failed to initialize program context')
+      return
+    }
+
+    if (!formData.loyaltyProgramName) {
+      toast.error('Please provide a loyalty program name')
+      return
+    }
+
+    if (!formData.description) {
+      toast.error('Please provide a loyalty program description')
+      return
+    }
+
+    if (!formData.bannerImage) {
+      toast.error('Please upload a banner image')
+      return
+    }
+
+    if (!formData.metadata.organizationName) {
+      toast.error('Please provide name of host organization')
+      return
+    }
+
+    setIsLoading(true)
     try {
-      const result = await createNewLoyaltyProgram({
-        organizationName: formData.organizationName,
-        metadataUri: formData.metadataUri,
+      let imageUri = ''
+      if (formData.bannerImage) {
+        imageUri = await generateImageUri(formData.bannerImage)
+      }
+
+      const { uri } = await generateNftMetadata(
+        {
+          loyaltyProgramName: formData.loyaltyProgramName,
+          metadata: {
+            organizationName: formData.metadata.organizationName,
+            brandColor: formData.metadata.brandColor,
+          },
+          tiers: formData.tiers,
+          pointsPerAction: formData.pointsPerAction,
+          metadataUri: imageUri,
+        },
+        imageUri,
+        address?.toString() || '',
+        formData.bannerImage?.type,
+      )
+
+      const result = await createNewLoyaltyProgram(context, {
+        loyaltyProgramName: formData.loyaltyProgramName,
+        metadataUri: uri,
+        metadata: {
+          organizationName: formData.metadata.organizationName,
+          brandColor: formData.metadata.brandColor,
+        },
         tiers: formData.tiers,
         pointsPerAction: formData.pointsPerAction,
       })
 
-      // Generate QR code data with program details
-      const qrData = {
-        name: formData.organizationName,
-        collectionAddress: result.collection.publicKey.toString(),
-        creator: account?.address,
-        uri: formData.metadataUri,
+      // Store in database
+      if (!address) {
+        toast.error('No account address available')
+        return
       }
 
-      setQrCodeData(JSON.stringify(qrData))
-      toast.success('Loyalty program created successfully!')
+      await fetch('/api/storeLoyaltyProgram', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          creator: address?.toString(),
+          publicKey: result.collection.publicKey.toString(),
+          privateKey: bs58.encode(result.collection.secretKey),
+          signature: result.signature,
+        }),
+      })
+
+      setSuccessData({
+        title: 'Program Created Successfully',
+        message: 'Your loyalty program has been created successfully',
+        signature: result.signature,
+      })
+      setShowSuccessModal(true)
+
+      // Clear form
+      setFormData({
+        loyaltyProgramName: '',
+        description: '',
+        bannerImage: null,
+        metadata: {
+          organizationName: '',
+          brandColor: '#9d4edd',
+        },
+        tiers: [{ name: '', xpRequired: 0, rewards: [''] }],
+        pointsPerAction: {
+          '': 0,
+        },
+      })
+
+      // Redirect to dashboard
+      router.push('/dashboard')
     } catch (error) {
       console.error('Error creating program:', error)
       toast.error('Failed to create loyalty program')
+    } finally {
+      setIsLoading(false)
     }
   }
 
@@ -163,30 +291,83 @@ export default function LoyaltyCardCustomizer({ onRotationComplete }: LoyaltyCar
 
               <TabsContent value="basics" className="space-y-4">
                 <div className="space-y-2">
+                  <Label htmlFor="loyaltyProgramName" className="pixel-font">
+                    Loyalty Program Name
+                  </Label>
+                  <Input
+                    id="loyaltyProgramName"
+                    name="loyaltyProgramName"
+                    value={formData.loyaltyProgramName}
+                    onChange={handleInputChange}
+                    className="bg-verxio-dark/50 border-verxio-purple/20 focus:border-verxio-purple orbitron placeholder:text-white/50 text-[10px] text-white/50 placeholder:orbitron placeholder:text-[10px]"
+                    placeholder="Enter loyalty program name"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="description" className="pixel-font">
+                    Description
+                  </Label>
+                  <Input
+                    id="description"
+                    name="description"
+                    value={formData.description}
+                    onChange={handleInputChange}
+                    className="bg-verxio-dark/50 border-verxio-purple/20 focus:border-verxio-purple orbitron placeholder:text-white/50 text-[10px] text-white/50 placeholder:orbitron placeholder:text-[10px]"
+                    placeholder="Enter program description"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <Label htmlFor="bannerImage" className="pixel-font">
+                      Loyalty Banner
+                    </Label>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button variant="ghost" size="icon" className="h-4 w-4 p-0">
+                          <Info className="h-4 w-4 text-white/50" />
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-80 bg-slate-900 border-slate-700/20">
+                        <div className="space-y-2">
+                          <h4 className="font-medium orbitron">Recommended Dimensions</h4>
+                          <p className="text-sm text-white/90">For best results, use an image with:</p>
+                          <ul className="text-sm text-white/90 list-disc list-inside">
+                            <li>Width: 400px</li>
+                            <li>Height: 250px</li>
+                            <li>Format: PNG, JPG, or GIF</li>
+                          </ul>
+                        </div>
+                      </PopoverContent>
+                    </Popover>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Input
+                      id="bannerImage"
+                      name="bannerImage"
+                      type="file"
+                      accept="image/*,.gif"
+                      onChange={handleInputChange}
+                      className="bg-verxio-dark/50 border-verxio-purple/20 focus:border-verxio-purple orbitron placeholder:text-white/50 text-[10px] text-white/50 placeholder:orbitron placeholder:text-[10px] cursor-pointer"
+                    />
+                    <Button variant="outline" size="icon" className="h-10 w-10">
+                      <Upload className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
                   <Label htmlFor="organizationName" className="pixel-font">
                     Organization Name
                   </Label>
                   <Input
                     id="organizationName"
                     name="organizationName"
-                    value={formData.organizationName}
+                    value={formData.metadata.organizationName}
                     onChange={handleInputChange}
                     className="bg-verxio-dark/50 border-verxio-purple/20 focus:border-verxio-purple orbitron placeholder:text-white/50 text-[10px] text-white/50 placeholder:orbitron placeholder:text-[10px]"
                     placeholder="Enter organization name"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="metadataUri" className="pixel-font">
-                    Metadata URI
-                  </Label>
-                  <Input
-                    id="metadataUri"
-                    name="metadataUri"
-                    value={formData.metadataUri}
-                    onChange={handleInputChange}
-                    className="bg-verxio-dark/50 border-verxio-purple/20 focus:border-verxio-purple orbitron placeholder:text-white/50 text-[10px] text-white/50 placeholder:orbitron placeholder:text-[10px]"
-                    placeholder="Enter metadata URI"
                   />
                 </div>
               </TabsContent>
@@ -332,27 +513,29 @@ export default function LoyaltyCardCustomizer({ onRotationComplete }: LoyaltyCar
               </TabsContent>
 
               <TabsContent value="appearance" className="space-y-4">
-                <div className="space-y-2">
-                  <Label className="pixel-font">Color Theme</Label>
-                  <div className="flex flex-wrap gap-2">
-                    {colorOptions.map((color) => (
-                      <Button
-                        key={color.value}
-                        type="button"
-                        variant={formData.programColor === color.value ? 'default' : 'outline'}
-                        onClick={() => handleColorChange(color.value)}
-                        className={`w-24 pixel-font ${
-                          formData.programColor === color.value ? 'text-white' : 'text-white/70'
-                        }`}
-                        style={{
-                          backgroundColor:
-                            formData.programColor === color.value ? `var(--verxio-${color.value})` : 'transparent',
-                          borderColor: `var(--verxio-${color.value})`,
-                        }}
-                      >
-                        {color.name}
-                      </Button>
-                    ))}
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label className="pixel-font">Brand Color</Label>
+                    <div className="flex items-center gap-4">
+                      <HexColorPicker
+                        color={formData.metadata.brandColor}
+                        onChange={handleColorChange}
+                        className="w-[300px] h-[200px]"
+                      />
+                      <div
+                        className="w-16 h-16 rounded-full border-2 border-white/20"
+                        style={{ backgroundColor: formData.metadata.brandColor }}
+                      />
+                    </div>
+                  </div>
+
+                  <div
+                    className="mt-4 p-4 rounded-lg border border-white/20"
+                    style={{
+                      background: `linear-gradient(135deg, ${formData.metadata.brandColor}40, ${formData.metadata.brandColor}20)`,
+                    }}
+                  >
+                    <p className="text-white/70 text-sm">Preview of your color scheme</p>
                   </div>
                 </div>
               </TabsContent>
@@ -363,9 +546,30 @@ export default function LoyaltyCardCustomizer({ onRotationComplete }: LoyaltyCar
         <Button
           className={`w-full pixel-font bg-gradient-to-r from-[#00FFE0] via-[#0085FF] to-[#7000FF] text-white hover:opacity-90 py-6 px-8 rounded-lg text-sm ${!connected ? 'opacity-50 cursor-not-allowed' : ''}`}
           onClick={handleSave}
-          disabled={!connected}
+          disabled={!connected || isLoading}
         >
-          {connected ? 'Create Loyalty Program' : 'Connect Wallet to Create'}
+          {isLoading ? (
+            <div className="flex items-center justify-center">
+              <svg
+                className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+              >
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                <path
+                  className="opacity-75"
+                  fill="currentColor"
+                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                ></path>
+              </svg>
+              Creating Program...
+            </div>
+          ) : connected ? (
+            'Create Loyalty Program'
+          ) : (
+            'Connect Wallet to Create'
+          )}
         </Button>
       </div>
 
@@ -399,52 +603,29 @@ export default function LoyaltyCardCustomizer({ onRotationComplete }: LoyaltyCar
                   ease: 'easeInOut',
                 }}
               >
-                <Card className="bg-verxio-dark border-verxio-purple/20 p-6">
-                  <CardContent className="space-y-4">
-                    <div className="text-center">
-                      <h3 className="text-xl font-bold text-white mb-2">
-                        {formData.organizationName || 'Organization Name'}
-                      </h3>
-                      <p className="text-white/70 text-sm">
-                        Created by:{' '}
-                        {account?.address
-                          ? `${account.address.slice(0, 6)}...${account.address.slice(-4)}`
-                          : 'Wallet Address'}
-                      </p>
-                    </div>
-
-                    <div className="space-y-2">
-                      <h4 className="text-white/70 text-sm">Tiers</h4>
-                      {formData.tiers.map((tier, index) => (
-                        <div key={index} className="flex justify-between items-center text-white/70 text-sm">
-                          <span>{tier.name || 'Tier Name'}</span>
-                          <span>{tier.xpRequired} XP</span>
-                        </div>
-                      ))}
-                    </div>
-
-                    <div className="space-y-2">
-                      <h4 className="text-white/70 text-sm">Points per Action</h4>
-                      {Object.entries(formData.pointsPerAction).map(([action, points]) => (
-                        <div key={action} className="flex justify-between items-center text-white/70 text-sm">
-                          <span>{action || 'Action'}</span>
-                          <span>{points} points</span>
-                        </div>
-                      ))}
-                    </div>
-
-                    {qrCodeData && (
-                      <div className="flex justify-center mt-4">
-                        <QRCodeSVG value={qrCodeData} size={128} />
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
+                <ProgramCard
+                  programName={formData.loyaltyProgramName || 'Verxio Loyalty Program'}
+                  organizationName={formData.metadata.organizationName || 'Verxio Protocol'}
+                  brandColor={formData.metadata.brandColor}
+                  creator={address?.toString() || 'VERXIO76abNGYsQa4vjLcCJ4zx8vbtrVWTR'}
+                  pointsPerAction={formData.pointsPerAction}
+                  collectionAddress="VERXIO25rNGYsQa4vjLAcCJ4zx8vZ4BSqQoCb"
+                  qrCodeUrl={''}
+                  bannerImage={bannerPreview}
+                />
               </motion.div>
             </div>
           </div>
         </div>
       </div>
+
+      <SuccessModal
+        isOpen={showSuccessModal}
+        onClose={() => setShowSuccessModal(false)}
+        title={successData?.title || ''}
+        message={successData?.message || ''}
+        transactionSignature={successData?.signature}
+      />
     </div>
   )
 }

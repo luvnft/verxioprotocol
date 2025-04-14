@@ -109,11 +109,15 @@ export function LoyaltyProgram() {
     try {
       toast.info('Creating new loyalty program via createProgram() method')
       const result = await createLoyaltyProgram(verxio, {
-        organizationName: programName,
+        loyaltyProgramName: programName,
         metadataUri: metadataUri,
         tiers,
         pointsPerAction: actions,
         programAuthority: verxio.programAuthority,
+        metadata: {
+          organizationName: programName,
+          brandColor: '#9d4edd',
+        },
       })
 
       const collectionAddress = result.collection.publicKey.toString()

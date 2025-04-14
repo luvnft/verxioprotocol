@@ -201,10 +201,13 @@ describe('award-loyalty-points', () => {
       // Create a new collection with minimal points configuration
       const minimalConfig = {
         programAuthority: context.programAuthority,
-        organizationName: 'Test Program',
+        loyaltyProgramName: 'Test Program',
         metadataUri: 'https://arweave.net/123abc',
         tiers: [{ name: 'Grind', xpRequired: 0, rewards: ['nothing for you!'] }],
         pointsPerAction: { swap: 0 }, // This will be treated as missing in our function
+        metadata: {
+          organizationName: 'Test Host',
+        },
       }
       const collectionWithoutPoints = await createLoyaltyProgram(context, minimalConfig)
       context.collectionAddress = collectionWithoutPoints.collection.publicKey

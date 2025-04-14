@@ -4,6 +4,7 @@ import './globals.css'
 import { Toaster } from '@/components/ui/sonner'
 import '@wallet-ui/tailwind/index.css'
 import WalletProvider from '@/components/providers/WalletProvider'
+import { NetworkProvider } from '@/lib/network-context'
 
 const orbitron = Orbitron({
   variable: '--font-orbitron',
@@ -38,8 +39,17 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body
         className={`${orbitron.variable} ${pressStart2P.variable} ${kalam.variable} font-sans antialiased bg-verxio-dark min-h-screen grid-bg`}
       >
-        <WalletProvider>{children}</WalletProvider>
-        <Toaster position="top-right" />
+        <NetworkProvider>
+          <WalletProvider>
+            {children}
+            <Toaster
+              position="top-right"
+              toastOptions={{
+                className: 'bg-white text-black border border-gray-200',
+              }}
+            />
+          </WalletProvider>
+        </NetworkProvider>
       </body>
     </html>
   )

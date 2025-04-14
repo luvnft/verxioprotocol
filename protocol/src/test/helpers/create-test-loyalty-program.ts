@@ -9,10 +9,13 @@ export function createTestLoyaltyProgramConfigEmpty(
 ): CreateLoyaltyProgramConfig {
   return {
     metadataUri: '',
-    organizationName: '',
+    loyaltyProgramName: '',
     programAuthority: publicKey('11111111111111111111111111111111'),
     pointsPerAction: {},
     tiers: [],
+    metadata: {
+      organizationName: 'Test Host',
+    },
     ...config,
   }
 }
@@ -22,7 +25,7 @@ export function createTestLoyaltyProgramConfig(
   config: Partial<CreateLoyaltyProgramConfig> & { programAuthority: PublicKey },
 ): CreateLoyaltyProgramConfig {
   return {
-    organizationName: 'Test Loyalty Program',
+    loyaltyProgramName: 'Test Loyalty Program',
     metadataUri: 'https://arweave.net/123abc',
     tiers: [
       { name: 'Grind', xpRequired: 0, rewards: ['nothing for you!'] },
@@ -31,6 +34,10 @@ export function createTestLoyaltyProgramConfig(
       { name: 'Gold', xpRequired: 2000, rewards: ['10% cashback'] },
     ],
     pointsPerAction: { swap: 600, refer: 1000, stake: 2000 },
+    metadata: {
+      organizationName: 'Test Host',
+      brandColor: '#9d4edd',
+    },
     ...config,
   }
 }

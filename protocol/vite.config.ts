@@ -7,7 +7,7 @@ export default defineConfig({
     lib: {
       entry: resolve(__dirname, 'src/index.ts'),
       name: 'VerxioProtocol',
-      fileName: 'index',
+      fileName: (format) => `index.${format === 'es' ? 'mjs' : 'js'}`,
       formats: ['es', 'cjs'],
     },
     rollupOptions: {
@@ -15,12 +15,16 @@ export default defineConfig({
         '@metaplex-foundation/umi',
         '@metaplex-foundation/mpl-core',
         '@metaplex-foundation/mpl-token-metadata',
+        '@metaplex-foundation/mpl-toolbox',
+        '@solana/web3.js',
       ],
       output: {
         globals: {
           '@metaplex-foundation/umi': 'Umi',
           '@metaplex-foundation/mpl-core': 'MplCore',
           '@metaplex-foundation/mpl-token-metadata': 'MplTokenMetadata',
+          '@metaplex-foundation/mpl-toolbox': 'MplToolbox',
+          '@solana/web3.js': 'SolanaWeb3',
         },
       },
     },
@@ -37,6 +41,7 @@ export default defineConfig({
     dts({
       insertTypesEntry: true,
       include: ['src/**/*.ts'],
+      rollupTypes: true,
     }),
   ],
 })

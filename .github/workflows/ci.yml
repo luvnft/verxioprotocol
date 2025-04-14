@@ -8,10 +8,22 @@ on:
     branches:
       - main
 
+env:
+  DATABASE_URL: 'postgresql://verxio-protocol:verxio-protocol@localhost:5432/verxio-protocol?schema=public'
+  PRISMA_FIELD_ENCRYPTION_KEY: 'k1.aesgcm256.DbQoar8ZLuUsOHZNyrnjlskInHDYlzF3q6y1KGM7DUM='
+
 jobs:
   ci:
     runs-on: ubuntu-latest
     services:
+      postgres:
+        image: postgres:15-alpine
+        env:
+          POSTGRES_USER: verxio-protocol
+          POSTGRES_PASSWORD: verxio-protocol
+          POSTGRES_DB: verxio-protocol
+        ports: ['5432:5432']
+        options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
       test-validator:
         image: ghcr.io/samui-build/samui-test-validator:latest
         ports:
@@ -27,4 +39,6 @@ jobs:
           node-version: 22.14.0
           cache: 'pnpm'
       - run: pnpm install
+      - run: cd client && pnpm prisma generate
+      - run: cd client && pnpm prisma db push --skip-generate
       - run: pnpm run ci

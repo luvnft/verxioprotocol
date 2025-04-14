@@ -1,8 +1,8 @@
 # Add files here to ignore them from prettier formatting
 dist
+out
 coverage
 tmp
 pnpm-lock.yaml
 .next
 node_modules
-out

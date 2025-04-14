@@ -5,14 +5,20 @@ import { VerxioContext } from '@schemas/verxio-context'
 import { toBase58 } from '@utils/to-base58'
 import { LoyaltyProgramTier } from '@schemas/loyalty-program-tier'
 import { assertValidContext } from '@utils/assert-valid-context'
+import { createFeeInstruction } from '@utils/fee-structure'
 
 export interface CreateLoyaltyProgramConfig {
   collectionSigner?: KeypairSigner
   metadataUri: string
-  organizationName: string
+  loyaltyProgramName: string
   pointsPerAction: Record<string, number>
   programAuthority: PublicKey
   tiers: LoyaltyProgramTier[]
+  metadata: {
+    organizationName: string
+    brandColor?: string
+    [key: string]: any // Allow additional metadata fields
+  }
 }
 
 export async function createLoyaltyProgram(
@@ -24,14 +30,16 @@ export async function createLoyaltyProgram(
   const collection = config.collectionSigner ?? generateSigner(context.umi)
 
   try {
-    const tx = await createCollection(context.umi, {
+    const feeInstruction = createFeeInstruction(context.umi, context.umi.identity.publicKey, 'CREATE_LOYALTY_PROGRAM')
+    const txnInstruction = createCollection(context.umi, {
       collection,
-      name: config.organizationName,
+      name: config.loyaltyProgramName,
       plugins: createLoyaltyProgramPlugins(config),
       uri: config.metadataUri,
-    }).sendAndConfirm(context.umi, { confirm: { commitment: 'confirmed' } })
+    }).add(feeInstruction)
 
-    return { collection, signature: toBase58(tx.signature) }
+    const txn = await txnInstruction.sendAndConfirm(context.umi, { confirm: { commitment: 'confirmed' } })
+    return { collection, signature: toBase58(txn.signature) }
   } catch (error) {
     throw new Error(`Failed to create loyalty program: ${error}`)
   }
@@ -46,6 +54,7 @@ export function createLoyaltyProgramPlugins(config: CreateLoyaltyProgramConfig):
         { key: ATTRIBUTE_KEYS.TIERS, value: JSON.stringify(config.tiers) },
         { key: ATTRIBUTE_KEYS.POINTS_PER_ACTION, value: JSON.stringify(config.pointsPerAction) },
         { key: ATTRIBUTE_KEYS.CREATOR, value: config.programAuthority.toString() },
+        { key: ATTRIBUTE_KEYS.METADATA, value: JSON.stringify(config.metadata) },
       ],
     },
     {
@@ -65,8 +74,8 @@ function assertValidCreateLoyaltyProgramConfig(
   if (!config) {
     throw new Error('assertValidCreateLoyaltyProgramConfig: Config is undefined')
   }
-  if (!config.organizationName || !config.organizationName.trim() || !config.organizationName.trim().length) {
-    throw new Error('assertValidCreateLoyaltyProgramConfig: Organization name is undefined')
+  if (!config.loyaltyProgramName || !config.loyaltyProgramName.trim() || !config.loyaltyProgramName.trim().length) {
+    throw new Error('assertValidCreateLoyaltyProgramConfig: Loyalty program name is undefined')
   }
   if (!config.metadataUri || !config.metadataUri.trim() || !config.metadataUri.trim().length) {
     throw new Error('assertValidCreateLoyaltyProgramConfig: Metadata URI is undefined')
@@ -88,6 +97,16 @@ function assertValidCreateLoyaltyProgramConfig(
   }
   if (!Object.values(config.pointsPerAction).length) {
     throw new Error('assertValidCreateLoyaltyProgramConfig: Points per action must not be empty')
+  }
+  if (!config.metadata) {
+    throw new Error('assertValidCreateLoyaltyProgramConfig: Metadata is undefined')
+  }
+  if (
+    !config.metadata.organizationName ||
+    !config.metadata.organizationName.trim() ||
+    !config.metadata.organizationName.trim().length
+  ) {
+    throw new Error('assertValidCreateLoyaltyProgramConfig: Host name is undefined')
   }
   return true
 }

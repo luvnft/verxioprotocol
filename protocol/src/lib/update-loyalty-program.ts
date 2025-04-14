@@ -6,6 +6,7 @@ import { LoyaltyProgramTier } from '@schemas/loyalty-program-tier'
 import { assertValidContext } from '@utils/assert-valid-context'
 import { getCollectionAttribute } from './index'
 import { toBase58 } from '@utils/to-base58'
+import { createFeeInstruction } from '@/utils/fee-structure'
 
 export interface UpdateLoyaltyProgramConfig {
   collectionAddress: PublicKey
@@ -43,7 +44,8 @@ export async function updateLoyaltyProgram(
     }
 
     // Update the collection plugin with new configuration
-    const tx = await updateCollectionPlugin(context.umi, {
+    const feeInstruction = createFeeInstruction(context.umi, context.umi.identity.publicKey, 'LOYALTY_OPERATIONS')
+    const txnInstruction = updateCollectionPlugin(context.umi, {
       collection: config.collectionAddress,
       plugin: {
         type: PLUGIN_TYPES.ATTRIBUTES,
@@ -54,8 +56,9 @@ export async function updateLoyaltyProgram(
           { key: ATTRIBUTE_KEYS.CREATOR, value: config.programAuthority.toString() },
         ],
       },
-    }).sendAndConfirm(context.umi, { confirm: { commitment: 'confirmed' } })
+    }).add(feeInstruction)
 
+    const tx = await txnInstruction.sendAndConfirm(context.umi, { confirm: { commitment: 'confirmed' } })
     return { signature: toBase58(tx.signature) }
   } catch (error) {
     throw new Error(`Failed to update loyalty program: ${error}`)

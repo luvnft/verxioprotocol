@@ -46,7 +46,7 @@ describe('get-asset-data', () => {
 
   describe('expected usage', () => {
     it('should fetch asset data for a valid pass', async () => {
-      expect.assertions(7)
+      expect.assertions(9)
       if (!loyaltyPass) throw new Error('Test setup failed')
 
       // ACT
@@ -60,22 +60,45 @@ describe('get-asset-data', () => {
       expect(data?.tierUpdatedAt).toBeDefined()
       expect(data?.rewards).toBeDefined()
       expect(data?.actionHistory).toHaveLength(1)
+      expect(data?.pass).toBe(loyaltyPass.publicKey.toString())
+      expect(data?.metadata).toBeDefined()
     })
 
-    it('should throw an error for an invalid pass', async () => {
-      expect.assertions(2)
+    it('should return null for an invalid pass', async () => {
+      expect.assertions(1)
 
       // ARRANGE
       const invalidPass = generateSigner(context.umi)
 
       // ACT & ASSERT
-      try {
-        await getAssetData(context, invalidPass.publicKey)
-        expect(true).toBe(false) // Should not reach here
-      } catch (error) {
-        expect(error).toBeDefined()
-        expect(error.message).toContain('not found')
-      }
+      const result = await getAssetData(context, invalidPass.publicKey)
+      expect(result).toBeNull()
     })
+  })
+
+  it('should fetch asset data with all fields', async () => {
+    if (!loyaltyPass) throw new Error('Loyalty pass not created')
+
+    const data = await getAssetData(context, loyaltyPass.publicKey)
+
+    expect(data).toBeDefined()
+    expect(data).toHaveProperty('xp')
+    expect(data).toHaveProperty('lastAction')
+    expect(data).toHaveProperty('actionHistory')
+    expect(data).toHaveProperty('currentTier')
+    expect(data).toHaveProperty('tierUpdatedAt')
+    expect(data).toHaveProperty('rewards')
+    expect(data).toHaveProperty('name')
+    expect(data).toHaveProperty('uri')
+    expect(data).toHaveProperty('owner')
+    expect(data).toHaveProperty('pass')
+    expect(data).toHaveProperty('metadata')
+    expect(data).toHaveProperty('rewardTiers')
+  })
+
+  it('should return null for non-existent asset', async () => {
+    const nonExistentAsset = generateSigner(context.umi)
+    const data = await getAssetData(context, nonExistentAsset.publicKey)
+    expect(data).toBeNull()
   })
 })

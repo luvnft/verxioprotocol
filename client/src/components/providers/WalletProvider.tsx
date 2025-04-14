@@ -1,11 +1,17 @@
 'use client'
 
-import { createSolanaDevnet, createSolanaLocalnet, createWalletUiConfig, WalletUi } from '@wallet-ui/react'
-
-const config = createWalletUiConfig({
-  clusters: [createSolanaDevnet(), createSolanaLocalnet()],
-})
+import { ConnectionProvider, WalletProvider as SolanaWalletProvider } from '@solana/wallet-adapter-react'
+import { WalletModalProvider } from '@solana/wallet-adapter-react-ui'
+import { useNetwork } from '@/lib/network-context'
 
 export default function WalletProvider({ children }: { children: React.ReactNode }) {
-  return <WalletUi config={config}>{children}</WalletUi>
+  const { rpcEndpoint } = useNetwork()
+
+  return (
+    <ConnectionProvider endpoint={rpcEndpoint}>
+      <SolanaWalletProvider wallets={[]} autoConnect={true}>
+        <WalletModalProvider>{children}</WalletModalProvider>
+      </SolanaWalletProvider>
+    </ConnectionProvider>
+  )
 }

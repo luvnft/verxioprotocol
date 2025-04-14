@@ -1,7 +1,5 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  output: 'export',
-  distDir: 'out',
   cleanDistDir: true,
   reactStrictMode: true,
   images: {
@@ -12,9 +10,6 @@ const nextConfig = {
       },
     ],
     unoptimized: true,
-  },
-  env: {
-    APP_URL: process.env.DOMAIN || 'https://verxio-loyalty.netlify.app',
   },
 }
 

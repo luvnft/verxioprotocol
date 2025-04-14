@@ -7,22 +7,29 @@ import {
 import { getTestContext } from './helpers/get-test-context'
 import { ensureFeePayerBalance } from './helpers/ensure-fee-payer-balance'
 import { createLoyaltyProgram, CreateLoyaltyProgramConfig } from '../lib/create-loyalty-program'
+import { FEES } from '../utils/fee-structure'
 
 const { feePayer, context } = getTestContext()
 
 describe('create-loyalty-program', { sequential: true }, () => {
   beforeAll(async () => {
-    // Ensure we have enough sol
-    await ensureFeePayerBalance(context.umi, { account: feePayer.publicKey, amount: 1 })
+    // Ensure we have enough sol for both the collection creation and the fee
+    await ensureFeePayerBalance(context.umi, {
+      account: feePayer.publicKey,
+      amount: 1 + FEES.CREATE_LOYALTY_PROGRAM,
+    })
     context.umi.use(keypairIdentity(feePayer))
   })
 
   describe('expected usage', () => {
-    it('should create a new loyalty program with a generated collection signer', async () => {
-      expect.assertions(3)
+    it('should create a new loyalty program with a generated collection signer and pay the fee', async () => {
+      expect.assertions(4)
       // ARRANGE
       const config = createTestLoyaltyProgramConfig({
         programAuthority: context.programAuthority,
+        metadata: {
+          organizationName: 'Test Host',
+        },
       })
 
       // ACT
@@ -32,6 +39,8 @@ describe('create-loyalty-program', { sequential: true }, () => {
       expect(result).toBeTruthy()
       expect(result.collection).toBeTruthy()
       expect(result.signature).toBeTruthy()
+      // Verify the transaction includes the fee instruction
+      expect(result.signature).toHaveLength(88) // Base58 encoded signature length
     })
 
     it('should create a new loyalty program with a provided collection signer', async () => {
@@ -41,6 +50,9 @@ describe('create-loyalty-program', { sequential: true }, () => {
       const config: CreateLoyaltyProgramConfig = createTestLoyaltyProgramConfig({
         collectionSigner,
         programAuthority: context.programAuthority,
+        metadata: {
+          organizationName: 'Test Host',
+        },
       })
       // ACT
       const result = await createLoyaltyProgram(context, config)
@@ -59,7 +71,7 @@ describe('create-loyalty-program', { sequential: true }, () => {
         expect.assertions(2)
         // ARRANGE
         const brokenConfig: CreateLoyaltyProgramConfig = createTestLoyaltyProgramConfigEmpty({
-          organizationName: '',
+          loyaltyProgramName: '',
         })
 
         // ACT
@@ -68,7 +80,7 @@ describe('create-loyalty-program', { sequential: true }, () => {
         } catch (error) {
           // ASSERT
           expect(error).toBeDefined()
-          expect(error.message).toEqual('assertValidCreateLoyaltyProgramConfig: Organization name is undefined')
+          expect(error.message).toEqual('assertValidCreateLoyaltyProgramConfig: Loyalty program name is undefined')
         }
       })
 
@@ -76,7 +88,7 @@ describe('create-loyalty-program', { sequential: true }, () => {
         expect.assertions(2)
         // ARRANGE
         const brokenConfig: CreateLoyaltyProgramConfig = createTestLoyaltyProgramConfigEmpty({
-          organizationName: 'Test Loyalty Program',
+          loyaltyProgramName: 'Test Loyalty Program',
         })
 
         // ACT
@@ -93,7 +105,7 @@ describe('create-loyalty-program', { sequential: true }, () => {
         expect.assertions(2)
         // ARRANGE
         const brokenConfig: CreateLoyaltyProgramConfig = createTestLoyaltyProgramConfigEmpty({
-          organizationName: 'Test Loyalty Program',
+          loyaltyProgramName: 'Test Loyalty Program',
           metadataUri: 'foobar',
         })
 
@@ -111,7 +123,7 @@ describe('create-loyalty-program', { sequential: true }, () => {
         expect.assertions(2)
         // ARRANGE
         const brokenConfig: CreateLoyaltyProgramConfig = createTestLoyaltyProgramConfigEmpty({
-          organizationName: 'Test Loyalty Program',
+          loyaltyProgramName: 'Test Loyalty Program',
           metadataUri: 'https://arweave.net/123abc',
           programAuthority: undefined,
         })
@@ -130,7 +142,7 @@ describe('create-loyalty-program', { sequential: true }, () => {
         expect.assertions(2)
         // ARRANGE
         const brokenConfig: CreateLoyaltyProgramConfig = createTestLoyaltyProgramConfigEmpty({
-          organizationName: 'Test Loyalty Program',
+          loyaltyProgramName: 'Test Loyalty Program',
           metadataUri: 'https://arweave.net/123abc',
           programAuthority: context.programAuthority,
         })
@@ -152,7 +164,7 @@ describe('create-loyalty-program', { sequential: true }, () => {
         expect.assertions(2)
         // ARRANGE
         const brokenConfig: CreateLoyaltyProgramConfig = createTestLoyaltyProgramConfigEmpty({
-          organizationName: 'Test Loyalty Program',
+          loyaltyProgramName: 'Test Loyalty Program',
           metadataUri: 'https://arweave.net/123abc',
           programAuthority: context.programAuthority,
           tiers: [],
@@ -172,7 +184,7 @@ describe('create-loyalty-program', { sequential: true }, () => {
         expect.assertions(2)
         // ARRANGE
         const brokenConfig: CreateLoyaltyProgramConfig = createTestLoyaltyProgramConfigEmpty({
-          organizationName: 'Test Loyalty Program',
+          loyaltyProgramName: 'Test Loyalty Program',
           metadataUri: 'https://arweave.net/123abc',
           programAuthority: context.programAuthority,
           tiers: [{ name: 'Grind', xpRequired: 0, rewards: ['nothing for you!'] }],
@@ -195,7 +207,7 @@ describe('create-loyalty-program', { sequential: true }, () => {
         expect.assertions(2)
         // ARRANGE
         const brokenConfig: CreateLoyaltyProgramConfig = createTestLoyaltyProgramConfigEmpty({
-          organizationName: 'Test Loyalty Program',
+          loyaltyProgramName: 'Test Loyalty Program',
           metadataUri: 'https://arweave.net/123abc',
           programAuthority: context.programAuthority,
           tiers: [{ name: 'Grind', xpRequired: 0, rewards: ['nothing for you!'] }],
@@ -209,6 +221,54 @@ describe('create-loyalty-program', { sequential: true }, () => {
           // ASSERT
           expect(error).toBeDefined()
           expect(error.message).toEqual('assertValidCreateLoyaltyProgramConfig: Points per action must not be empty')
+        }
+      })
+
+      it('should throw an error if metadata is not set', async () => {
+        expect.assertions(2)
+        // ARRANGE
+        const brokenConfig = createTestLoyaltyProgramConfigEmpty({
+          loyaltyProgramName: 'Test Loyalty Program',
+          metadataUri: 'https://arweave.net/123abc',
+          programAuthority: context.programAuthority,
+          tiers: [{ name: 'Grind', xpRequired: 0, rewards: ['nothing for you!'] }],
+          pointsPerAction: { default: 10 },
+        })
+
+        // ACT
+        try {
+          await createLoyaltyProgram(context, {
+            ...brokenConfig,
+            metadata: undefined,
+          } as unknown as CreateLoyaltyProgramConfig)
+        } catch (error) {
+          // ASSERT
+          expect(error).toBeDefined()
+          expect(error.message).toEqual('assertValidCreateLoyaltyProgramConfig: Metadata is undefined')
+        }
+      })
+
+      it('should throw an error if organizationName is not set in metadata', async () => {
+        expect.assertions(2)
+        // ARRANGE
+        const brokenConfig = createTestLoyaltyProgramConfigEmpty({
+          loyaltyProgramName: 'Test Loyalty Program',
+          metadataUri: 'https://arweave.net/123abc',
+          programAuthority: context.programAuthority,
+          tiers: [{ name: 'Grind', xpRequired: 0, rewards: ['nothing for you!'] }],
+          pointsPerAction: { default: 10 },
+          metadata: {
+            organizationName: '',
+          },
+        })
+
+        // ACT
+        try {
+          await createLoyaltyProgram(context, brokenConfig)
+        } catch (error) {
+          // ASSERT
+          expect(error).toBeDefined()
+          expect(error.message).toEqual('assertValidCreateLoyaltyProgramConfig: Host name is undefined')
         }
       })
     })

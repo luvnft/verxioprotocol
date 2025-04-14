@@ -1,26 +1,35 @@
-import { initializeVerxio } from '@verxioprotocol/core'
 import { createUmi } from '@metaplex-foundation/umi-bundle-defaults'
-import { publicKey } from '@metaplex-foundation/umi'
-import { walletAdapterIdentity } from '@metaplex-foundation/umi-signer-wallet-adapters'
+import { createSignerFromWalletAdapter } from '@metaplex-foundation/umi-signer-wallet-adapters'
+import { VerxioContext } from '@verxioprotocol/core'
+import { publicKey, Signer, signerIdentity } from '@metaplex-foundation/umi'
 import { useWallet } from '@solana/wallet-adapter-react'
-import { toast } from 'sonner'
+import { useNetwork } from '../network-context'
 
-export const initializeVerxioProgram = () => {
-  const wallet = useWallet()
-  const DEVNET_RPC_URL = 'https://api.devnet.solana.com'
-  const MAINNET_RPC_URL = 'https://api.mainnet-beta.solana.com'
-  const umi = createUmi(DEVNET_RPC_URL)
+export function useVerxioProgram() {
+  const { publicKey: walletPublicKey, wallet } = useWallet()
+  const { rpcEndpoint } = useNetwork()
 
-  if (!wallet.publicKey) {
-    toast.error('Please connect your wallet first')
+  // Early return if no wallet or public key
+  if (!walletPublicKey || !wallet) {
     return null
   }
 
-  // Initialize program with wallet as authority
-  const context = initializeVerxio(umi, publicKey(wallet.publicKey.toString()))
+  // Create UMI instance
+  const umi = createUmi(rpcEndpoint)
 
-  // Set Signer
-  context.umi.use(walletAdapterIdentity(wallet))
+  // Convert the public key to UMI format
+  const programAuthority = publicKey(walletPublicKey.toBase58())
+
+  // Create signer from the active wallet adapter
+  const signer = createSignerFromWalletAdapter(wallet.adapter)
+  const umiWithSigner = umi.use(signerIdentity(signer))
+
+  // Return the context
+  const context: VerxioContext = {
+    umi: umiWithSigner,
+    programAuthority,
+    collectionAddress: undefined,
+  }
 
   return context
 }
