@@ -11,6 +11,7 @@ import Link from 'next/link'
 import { ArrowLeft, Share2, Loader2 } from 'lucide-react'
 import ProgramCard from '@/components/loyalty/ProgramCard'
 import { ProgramActions } from '@/components/program/ProgramActions'
+import { getImageFromMetadata } from '@/lib/getImageFromMetadata'
 
 interface ProgramTier {
   name: string
@@ -37,6 +38,7 @@ interface ProgramDetails {
 export default function ProgramPage() {
   const { programId } = useParams()
   const [program, setProgram] = useState<ProgramDetails | null>(null)
+  const [bannerImage, setBannerImage] = useState<string | null>(null)
   const context = useVerxioProgram()
   const qrCodeUrl = program ? `${window.location.origin}/program/${program.collectionAddress}` : ''
 
@@ -47,6 +49,11 @@ export default function ProgramPage() {
         try {
           const details = await getProgramDetails(context)
           setProgram(details)
+          // Fetch the image URL from metadata
+          if (details.uri) {
+            const imageUrl = await getImageFromMetadata(details.uri)
+            setBannerImage(imageUrl)
+          }
         } catch (error) {
           console.error('Error fetching program details:', error)
         }
@@ -139,6 +146,7 @@ export default function ProgramPage() {
             qrCodeUrl={qrCodeUrl}
             brandColor={program.metadata.brandColor}
             organizationName={program.metadata.organizationName}
+            bannerImage={bannerImage}
           />
         </div>
       </div>

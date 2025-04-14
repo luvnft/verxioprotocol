@@ -10,6 +10,10 @@ import { Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useWallet } from '@solana/wallet-adapter-react'
 import { WalletButton } from '@/components/layout/buttonConfig'
+import { getImageFromMetadata } from '@/lib/getImageFromMetadata'
+import { mintLoyaltyPass } from '@/components/program/mintLoyaltyPass'
+import { SuccessModal } from '@/components/ui/success-modal'
+import { toast } from 'sonner'
 
 interface ProgramTier {
   name: string
@@ -37,10 +41,14 @@ export default function PublicProgramPage({ params }: { params: Promise<{ progra
   const [program, setProgram] = useState<ProgramDetails | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [bannerImage, setBannerImage] = useState<string | null>(null)
   const context = useVerxioProgram()
-  const { connected } = useWallet()
+  const { connected, publicKey: address } = useWallet()
   const resolvedParams = use(params)
   const qrCodeUrl = program ? `${window.location.origin}/program/${program.collectionAddress}` : ''
+  const [isMinting, setIsMinting] = useState(false)
+  const [showSuccessModal, setShowSuccessModal] = useState(false)
+  const [successData, setSuccessData] = useState<{ title: string; message: string; signature?: string } | null>(null)
 
   useEffect(() => {
     let isMounted = true
@@ -57,6 +65,11 @@ export default function PublicProgramPage({ params }: { params: Promise<{ progra
         const details = await getProgramDetails(context)
         if (isMounted) {
           setProgram(details)
+          // Fetch the image URL from metadata
+          if (details.uri) {
+            const imageUrl = await getImageFromMetadata(details.uri)
+            setBannerImage(imageUrl)
+          }
         }
       } catch (error) {
         console.error('Error fetching program details:', error)
@@ -76,6 +89,49 @@ export default function PublicProgramPage({ params }: { params: Promise<{ progra
       isMounted = false
     }
   }, [context, resolvedParams.programId])
+
+  const handleMintPass = async () => {
+    if (!address) {
+      toast.error('Please connect your wallet first')
+      return
+    }
+
+    if (!program) {
+      toast.error('Program not found')
+      return
+    }
+
+    if (!context) {
+      toast.error('Please connect your wallet first')
+      return
+    }
+
+    setIsMinting(true)
+    try {
+      const result = await mintLoyaltyPass(
+        context,
+        program.collectionAddress,
+        program.name,
+        program.uri,
+        address.toString(),
+      )
+
+      if (result) {
+        setSuccessData({
+          title: 'Passes Issued Successfully',
+          message: `Your loyalty pass has been issued successfully`,
+          signature: result.signature,
+        })
+      }
+      setShowSuccessModal(true)
+      toast.success('Loyalty pass minted successfully!')
+    } catch (error) {
+      console.error('Error minting pass:', error)
+      toast.error('Failed to mint loyalty pass')
+    } finally {
+      setIsMinting(false)
+    }
+  }
 
   if (isLoading) {
     return (
@@ -210,17 +266,38 @@ export default function PublicProgramPage({ params }: { params: Promise<{ progra
                 qrCodeUrl={qrCodeUrl}
                 brandColor={program.metadata.brandColor}
                 organizationName={program.metadata.organizationName}
+                bannerImage={bannerImage}
               />
             </div>
             <Button
-              disabled={!connected}
+              onClick={handleMintPass}
+              disabled={!connected || isMinting}
               className="w-full max-w-[350px] sm:max-w-[450px] bg-gradient-to-r from-[#00FFE0] via-[#0085FF] to-[#7000FF] text-white hover:opacity-90 orbitron disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {connected ? 'Mint Pass' : 'Connect Wallet to Mint Pass'}
+              {isMinting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Minting Pass...
+                </>
+              ) : connected ? (
+                'Mint Loyalty Pass'
+              ) : (
+                'Connect Wallet to Mint'
+              )}
             </Button>
           </div>
         </div>
       </div>
+
+      {successData && (
+        <SuccessModal
+          isOpen={showSuccessModal}
+          onClose={() => setShowSuccessModal(false)}
+          title={successData.title}
+          message={successData.message}
+          transactionSignature={successData.signature}
+        />
+      )}
     </div>
   )
 }

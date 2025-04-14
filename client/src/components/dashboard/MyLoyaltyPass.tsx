@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation'
 import { useVerxioProgram } from '@/lib/methods/initializeProgram'
 import { publicKey } from '@metaplex-foundation/umi'
 import { useWallet } from '@solana/wallet-adapter-react'
+import { getImageFromMetadata } from '@/lib/getImageFromMetadata'
 
 export interface AssetData {
   xp: number
@@ -46,6 +47,7 @@ interface LoyaltyPass {
   totalEarnedPoints: number
   tier: string
   assetData?: AssetData
+  bannerImage: string
 }
 
 export default function MyLoyaltyPasses() {
@@ -111,6 +113,9 @@ export default function MyLoyaltyPasses() {
           dbPasses.map(async (pass: any) => {
             const data = await getAssetData(context, publicKey(pass.publicKey))
             if (data) {
+              // Fetch the image URL from metadata
+              const bannerImage = await getImageFromMetadata(data.uri)
+
               return {
                 programName: data.name,
                 owner: data.owner,
@@ -122,6 +127,7 @@ export default function MyLoyaltyPasses() {
                 totalEarnedPoints: data.xp,
                 tier: data.currentTier,
                 assetData: data,
+                bannerImage, // Add the banner image URL
               }
             }
             return null
@@ -195,6 +201,7 @@ export default function MyLoyaltyPasses() {
                     tier={pass.tier}
                     lastAction={pass.assetData?.lastAction}
                     rewards={pass.assetData?.rewards}
+                    bannerImage={pass.bannerImage}
                   />
                 </div>
               </div>

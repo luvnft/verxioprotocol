@@ -10,6 +10,7 @@ import { getAssetData } from '@verxioprotocol/core'
 import { useVerxioProgram } from '@/lib/methods/initializeProgram'
 import { publicKey } from '@metaplex-foundation/umi'
 import { AssetData } from '@/components/dashboard/MyLoyaltyPass'
+import { getImageFromMetadata } from '@/lib/getImageFromMetadata'
 
 interface PageProps {
   params: Promise<{ passId: string }>
@@ -22,6 +23,7 @@ export default function LoyaltyPassDetails({ params }: PageProps) {
   const [currentPage, setCurrentPage] = useState(1)
   const [passId, setPassId] = useState<string>('')
   const [assetData, setAssetData] = useState<AssetData | null>(null)
+  const [bannerImage, setBannerImage] = useState<string | null>(null)
 
   useEffect(() => {
     const loadParams = async () => {
@@ -39,6 +41,9 @@ export default function LoyaltyPassDetails({ params }: PageProps) {
         const data = await getAssetData(context, publicKey(passId))
         if (data) {
           setAssetData(data)
+          // Fetch the image URL from metadata
+          const imageUrl = await getImageFromMetadata(data.uri)
+          setBannerImage(imageUrl)
         }
       } catch (error) {
         console.error('Error fetching asset data:', error)
@@ -202,17 +207,18 @@ export default function LoyaltyPassDetails({ params }: PageProps) {
           <div className="flex justify-center">
             <div className="w-full max-w-[400px]">
               <LoyaltyCard
-                programName={assetData.name}
-                owner={assetData.owner}
+                programName={assetData?.name || ''}
+                owner={assetData?.owner || ''}
                 pointsPerAction={{}}
-                organizationName={assetData.metadata.organizationName}
-                brandColor={assetData.metadata.brandColor!}
+                organizationName={assetData?.metadata.organizationName || ''}
+                brandColor={assetData?.metadata.brandColor || '#9d4edd'}
                 loyaltyPassAddress={passId}
                 qrCodeUrl={`${window.location.origin}/dashboard/${passId}`}
-                totalEarnedPoints={assetData.xp}
-                tier={assetData.currentTier}
-                lastAction={assetData.lastAction}
-                rewards={assetData.rewards}
+                totalEarnedPoints={assetData?.xp || 0}
+                tier={assetData?.currentTier || ''}
+                lastAction={assetData?.lastAction || null}
+                rewards={assetData?.rewards || []}
+                bannerImage={bannerImage}
               />
             </div>
           </div>

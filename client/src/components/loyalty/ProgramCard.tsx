@@ -161,8 +161,13 @@ export default function ProgramCard({
                   <Users className="w-4 h-4" />
                   <span>Scan QR to join program</span>
                 </div>
-                <div className="bg-white p-1 rounded">
-                  <QRCode value={qrCodeUrl} size={40} style={{ height: 'auto', maxWidth: '100%', width: '100%' }} />
+                <div className="bg-white p-2 rounded-lg">
+                  <QRCode
+                    value={qrCodeUrl}
+                    size={80}
+                    style={{ height: 'auto', maxWidth: '100%', width: '100%' }}
+                    level="H"
+                  />
                 </div>
               </div>
               <div className="pt-2 text-center">

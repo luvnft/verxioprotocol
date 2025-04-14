@@ -7,7 +7,9 @@ import { Badge } from '@/components/ui/badge'
 import { Users, Download, Copy } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { toast } from 'sonner'
-import html2canvas from 'html2canvas'
+import * as htmlToImage from 'html-to-image'
+import Image from 'next/image'
+import demoImage from '@/app/public/demoImage.jpg'
 
 interface LoyaltyCardProps {
   programName: string
@@ -21,12 +23,12 @@ interface LoyaltyCardProps {
   tier: string
   lastAction?: string | null
   rewards?: string[]
+  bannerImage?: string | null
 }
 
 export default function LoyaltyCard({
   programName = 'Sample Program',
   owner = '7YarZW...',
-  pointsPerAction = { purchase: 100, review: 50 },
   organizationName = 'Verxio Protocol',
   brandColor = '#9d4edd',
   loyaltyPassAddress,
@@ -35,6 +37,7 @@ export default function LoyaltyCard({
   tier = 'Bronze',
   lastAction = null,
   rewards = [],
+  bannerImage = null,
 }: LoyaltyCardProps) {
   const cardRef = useRef<HTMLDivElement>(null)
 
@@ -49,14 +52,23 @@ export default function LoyaltyCard({
   const downloadAsImage = async () => {
     if (!cardRef.current) return
     try {
-      const canvas = await html2canvas(cardRef.current)
-      const image = canvas.toDataURL('image/png')
+      // Use htmlToImage for better quality
+      const dataUrl = await htmlToImage.toPng(cardRef.current, {
+        quality: 1,
+        pixelRatio: 2, // Higher resolution
+        style: {
+          transform: 'scale(1)', // Remove any active animations
+          opacity: '1',
+        },
+      })
+
       const link = document.createElement('a')
-      link.href = image
+      link.href = dataUrl
       link.download = `${programName}-loyalty-card.png`
       link.click()
       toast.success('Loyalty card downloaded successfully!')
     } catch (error) {
+      console.error('PNG download error:', error)
       toast.error('Failed to download loyalty card')
     }
   }
@@ -117,18 +129,22 @@ export default function LoyaltyCard({
             </div>
           </div>
 
-          {/* QR Code Section */}
+          {/* Banner Image Section */}
           <div className="flex-grow flex justify-center items-center mb-4">
             <div
-              className="p-4 rounded-2xl"
+              className="w-full h-[250px] rounded-2xl overflow-hidden"
               style={{
                 background: `linear-gradient(135deg, ${brandColor}, ${brandColor}dd)`,
                 boxShadow: `0 0 15px ${brandColor}40`,
               }}
             >
-              <div className="bg-white p-2 rounded-lg">
-                <QRCode value={qrCodeUrl} size={250} style={{ height: 'auto', maxWidth: '100%', width: '100%' }} />
-              </div>
+              <Image
+                src={bannerImage || demoImage}
+                alt="Program Preview"
+                width={400}
+                height={250}
+                className="w-full h-full object-cover"
+              />
             </div>
           </div>
 
@@ -176,11 +192,21 @@ export default function LoyaltyCard({
               </p>
             </div>
             <div className="pt-4 border-t border-white/10">
-              <div className="flex items-center gap-2 text-white/50 text-sm">
-                <Users className="w-4 h-4" />
-                <span>Scan QR to join program</span>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2 text-white/50 text-sm">
+                  <Users className="w-4 h-4" />
+                  <span>Scan QR to view pass details</span>
+                </div>
+                <div className="bg-white p-2 rounded-lg">
+                  <QRCode
+                    value={qrCodeUrl}
+                    size={80}
+                    style={{ height: 'auto', maxWidth: '100%', width: '100%' }}
+                    level="H"
+                  />
+                </div>
               </div>
-              <div className="pt-4 text-center">
+              <div className="pt-2 text-center">
                 <p className="text-[10px] text-white/30">Powered by Verxio Protocol</p>
               </div>
             </div>
