@@ -1,20 +1,23 @@
 import { motion } from 'framer-motion'
 import QRCode from 'react-qr-code'
 import { Badge } from '@/components/ui/badge'
-import { Users, Gift, Download, Copy, Share2 } from 'lucide-react'
+import { Users, Gift, Download, Copy } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { toast } from 'sonner'
-import html2canvas from 'html2canvas'
 import { useRef } from 'react'
+import Image from 'next/image'
+import demoImage from '@/app/public/demoImage.jpg'
+import * as htmlToImage from 'html-to-image'
 
 interface ProgramCardProps {
   programName: string
   creator: string
   pointsPerAction: Record<string, number>
   organizationName?: string
-  brandColor?: string // Single brand color from metadata
+  brandColor?: string
   collectionAddress: string
-  qrCodeUrl: string // URL for program page
+  qrCodeUrl: string
+  bannerImage?: string | null
 }
 
 export default function ProgramCard({
@@ -22,9 +25,10 @@ export default function ProgramCard({
   creator = '7YarZW...',
   pointsPerAction = { purchase: 100, review: 50 },
   organizationName = 'Verxio Protocol',
-  brandColor = '#9d4edd', // Default purple if no brand color provided
+  brandColor = '#9d4edd',
   collectionAddress,
   qrCodeUrl,
+  bannerImage = null,
 }: ProgramCardProps) {
   const cardRef = useRef<HTMLDivElement>(null)
   const totalEarnablePoints = Object.values(pointsPerAction).reduce((sum, points) => sum + points, 0)
@@ -40,14 +44,23 @@ export default function ProgramCard({
   const downloadAsImage = async () => {
     if (!cardRef.current) return
     try {
-      const canvas = await html2canvas(cardRef.current)
-      const image = canvas.toDataURL('image/png')
+      // Use htmlToImage for better quality
+      const dataUrl = await htmlToImage.toPng(cardRef.current, {
+        quality: 1,
+        pixelRatio: 2, // Higher resolution
+        style: {
+          transform: 'scale(1)', // Remove any active animations
+          opacity: '1',
+        },
+      })
+
       const link = document.createElement('a')
-      link.href = image
+      link.href = dataUrl
       link.download = `${programName}-program-card.png`
       link.click()
       toast.success('Program card downloaded successfully!')
     } catch (error) {
+      console.error('PNG download error:', error)
       toast.error('Failed to download program card')
     }
   }
@@ -100,18 +113,22 @@ export default function ProgramCard({
             </div>
           </div>
 
-          {/* QR Code Section - Increased size */}
+          {/* Banner Image Section - Increased size */}
           <div className="flex-grow flex justify-center items-center mb-4">
             <div
-              className="p-4 rounded-2xl"
+              className="w-full h-[250px] rounded-2xl overflow-hidden"
               style={{
                 background: `linear-gradient(135deg, ${brandColor}, ${brandColor}dd)`,
                 boxShadow: `0 0 15px ${brandColor}40`,
               }}
             >
-              <div className="bg-white p-2 rounded-lg">
-                <QRCode value={qrCodeUrl} size={250} style={{ height: 'auto', maxWidth: '100%', width: '100%' }} />
-              </div>
+              <Image
+                src={bannerImage || demoImage}
+                alt="Program Preview"
+                width={400}
+                height={250}
+                className="w-full h-full object-cover"
+              />
             </div>
           </div>
 
@@ -139,9 +156,14 @@ export default function ProgramCard({
               </p>
             </div>
             <div className="pt-4 border-t border-white/10">
-              <div className="flex items-center gap-2 text-white/50 text-sm">
-                <Users className="w-4 h-4" />
-                <span>Scan QR to join program</span>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2 text-white/50 text-sm">
+                  <Users className="w-4 h-4" />
+                  <span>Scan QR to join program</span>
+                </div>
+                <div className="bg-white p-1 rounded">
+                  <QRCode value={qrCodeUrl} size={40} style={{ height: 'auto', maxWidth: '100%', width: '100%' }} />
+                </div>
               </div>
               <div className="pt-2 text-center">
                 <p className="text-[10px] text-white/30">Powered by Verxio Protocol</p>

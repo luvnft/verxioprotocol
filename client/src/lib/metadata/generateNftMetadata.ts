@@ -1,11 +1,11 @@
 import { CreateLoyaltyProgramParams } from '@/lib/methods/createLoyaltyProgram'
 
-export function generateNftMetadata(
+export async function generateNftMetadata(
   params: CreateLoyaltyProgramParams,
   imageUri: string,
   creatorAddress: string,
   fileType: string = 'image/png', // allow override if needed
-): any {
+): Promise<{ metadata: any; uri: string }> {
   const { loyaltyProgramName, metadata, tiers, pointsPerAction } = params
 
   const attributes = [
@@ -29,7 +29,7 @@ export function generateNftMetadata(
     ]),
   ]
 
-  return {
+  const metadataObj = {
     name: loyaltyProgramName,
     symbol: 'VERXIO',
     description:
@@ -47,5 +47,25 @@ export function generateNftMetadata(
       ],
       ...metadata,
     },
+  }
+
+  try {
+    const response = await fetch('/api/metadata', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(metadataObj),
+    })
+
+    if (!response.ok) {
+      throw new Error('Failed to upload metadata')
+    }
+
+    const uri = await response.json()
+    return { metadata: metadataObj, uri }
+  } catch (error) {
+    console.error('Error uploading metadata:', error)
+    throw new Error('Failed to upload metadata to IPFS')
   }
 }

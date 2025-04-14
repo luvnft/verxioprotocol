@@ -48,8 +48,6 @@ interface LoyaltyPass {
   assetData?: AssetData
 }
 
-const CARDS_PER_PAGE = 4
-
 export default function MyLoyaltyPasses() {
   const router = useRouter()
   const context = useVerxioProgram()
@@ -58,13 +56,13 @@ export default function MyLoyaltyPasses() {
   const [isLoading, setIsLoading] = useState(true)
   const [loyaltyPasses, setLoyaltyPasses] = useState<LoyaltyPass[]>([])
   const [hasInitialLoad, setHasInitialLoad] = useState(false)
-  const totalPages = Math.ceil(loyaltyPasses.length / CARDS_PER_PAGE)
-
-  // Add refs to track mounted state and fetching state
+  const [dbPasses, setDbPasses] = useState<any[]>([]) // Store database passes
   const mounted = useRef(false)
   const isFetching = useRef(false)
 
-  // Calculate the cards to show on the current page
+  // Calculate pagination
+  const CARDS_PER_PAGE = 4
+  const totalPages = Math.ceil(loyaltyPasses.length / CARDS_PER_PAGE)
   const startIndex = (currentPage - 1) * CARDS_PER_PAGE
   const endIndex = startIndex + CARDS_PER_PAGE
   const currentCards = loyaltyPasses.slice(startIndex, endIndex)
@@ -76,9 +74,32 @@ export default function MyLoyaltyPasses() {
     }
   }, [])
 
+  // Fetch database passes only once
   useEffect(() => {
-    async function fetchLoyaltyPasses() {
-      if (!walletPublicKey || !context || isFetching.current) return
+    async function fetchDbPasses() {
+      if (!walletPublicKey || isFetching.current) return
+
+      try {
+        isFetching.current = true
+        const response = await fetch(`/api/getLoyaltyPasses?recipient=${walletPublicKey.toString()}`)
+        const passes = await response.json()
+        if (mounted.current) {
+          setDbPasses(passes)
+        }
+      } catch (error) {
+        console.error('Error fetching database passes:', error)
+      } finally {
+        isFetching.current = false
+      }
+    }
+
+    fetchDbPasses()
+  }, [walletPublicKey?.toString()])
+
+  // Fetch asset data when dbPasses or context changes
+  useEffect(() => {
+    async function fetchAssetData() {
+      if (!context || !dbPasses.length || isFetching.current) return
 
       try {
         isFetching.current = true
@@ -86,11 +107,6 @@ export default function MyLoyaltyPasses() {
           setIsLoading(true)
         }
 
-        // First fetch passes from database
-        const response = await fetch(`/api/getLoyaltyPasses?recipient=${walletPublicKey.toString()}`)
-        const dbPasses = await response.json()
-
-        // Then fetch asset data for each pass
         const passesWithData = await Promise.all(
           dbPasses.map(async (pass: any) => {
             const data = await getAssetData(context, publicKey(pass.publicKey))
@@ -98,11 +114,11 @@ export default function MyLoyaltyPasses() {
               return {
                 programName: data.name,
                 owner: data.owner,
-                pointsPerAction: {}, // This will be fetched separately
+                pointsPerAction: {},
                 organizationName: data.metadata.organizationName,
                 brandColor: data.metadata.brandColor!,
                 loyaltyPassAddress: pass.publicKey,
-                qrCodeUrl: `/dashboard/${pass.publicKey}`,
+                qrCodeUrl: `${window.location.origin}/dashboard/${pass.publicKey}`,
                 totalEarnedPoints: data.xp,
                 tier: data.currentTier,
                 assetData: data,
@@ -112,14 +128,13 @@ export default function MyLoyaltyPasses() {
           }),
         )
 
-        // Only update state if component is still mounted
         if (mounted.current) {
-          setLoyaltyPasses(passesWithData.filter(Boolean))
+          setLoyaltyPasses(passesWithData.filter((pass): pass is NonNullable<typeof pass> => pass !== null))
           setHasInitialLoad(true)
           setIsLoading(false)
         }
       } catch (error) {
-        console.error('Error fetching loyalty passes:', error)
+        console.error('Error fetching asset data:', error)
         if (mounted.current) {
           setIsLoading(false)
         }
@@ -128,10 +143,9 @@ export default function MyLoyaltyPasses() {
       }
     }
 
-    fetchLoyaltyPasses()
-  }, [context, walletPublicKey?.toString()])
+    fetchAssetData()
+  }, [context, dbPasses])
 
-  // Show loading screen only during initial load
   if (isLoading && !hasInitialLoad) {
     return (
       <div className="min-h-screen bg-gradient-to-b from-black via-purple-950/20 to-black flex items-center justify-center">
@@ -144,11 +158,7 @@ export default function MyLoyaltyPasses() {
   }
 
   return (
-    <div className="space-y-10 max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8">
-      {/* <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold text-white orbitron">My Loyalty Cards</h1>
-      </div> */}
-
+    <div className="space-y-6 max-w-[1200px] mx-auto px-4 sm:px-6 lg:px-8">
       {currentCards.length === 0 ? (
         <Card className="bg-black/20 backdrop-blur-sm border-slate-800/20">
           <CardContent className="flex flex-col items-center justify-center py-12">
@@ -163,14 +173,16 @@ export default function MyLoyaltyPasses() {
         </Card>
       ) : (
         <>
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 px-4 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-1 sm:grid-cols-1 lg:grid-cols-2 xl:grid-cols-2 gap-16">
             {currentCards.map((pass, index) => (
               <div
                 key={index}
                 className="flex justify-center cursor-pointer transform transition-transform hover:scale-105"
                 onClick={() => router.push(`/dashboard/${pass.loyaltyPassAddress}`)}
               >
-                <div className="w-full max-w-[320px] mx-auto">
+                <div className="w-full max-w-[400px]">
+                  {' '}
+                  {/* Reduced from 280px to 240px */}
                   <LoyaltyCard
                     programName={pass.programName}
                     owner={pass.owner}
@@ -191,7 +203,7 @@ export default function MyLoyaltyPasses() {
 
           {/* Pagination */}
           {totalPages > 1 && (
-            <div className="flex justify-center items-center gap-2 mt-10">
+            <div className="flex justify-center items-center gap-2 mt-6">
               <button
                 className="bg-black/20 border border-verxio-purple/20 text-white px-4 py-2 rounded-lg hover:bg-black/30 transition-colors"
                 onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}

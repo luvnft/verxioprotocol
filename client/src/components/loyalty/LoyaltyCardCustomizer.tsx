@@ -16,6 +16,10 @@ import { useRouter } from 'next/navigation'
 import ProgramCard from './ProgramCard'
 import bs58 from 'bs58'
 import { SuccessModal } from '@/components/ui/success-modal'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import { Info, Upload } from 'lucide-react'
+import { generateImageUri } from '@/lib/metadata/generateImageUri'
+import { generateNftMetadata } from '@/lib/metadata/generateNftMetadata'
 
 const colorOptions = [
   { name: 'Purple', value: 'purple' },
@@ -38,7 +42,8 @@ export default function LoyaltyCardCustomizer({ onRotationComplete }: LoyaltyCar
   const [isLoading, setIsLoading] = useState(false)
   const [formData, setFormData] = useState({
     loyaltyProgramName: '',
-    metadataUri: '',
+    description: '',
+    bannerImage: null as File | null,
     metadata: {
       organizationName: '',
       brandColor: '#9d4edd', // Default purple
@@ -51,9 +56,9 @@ export default function LoyaltyCardCustomizer({ onRotationComplete }: LoyaltyCar
 
   const [rotationCount, setRotationCount] = useState(0)
   const [currentThemeIndex, setCurrentThemeIndex] = useState(0)
-  const [qrCodeData, setQrCodeData] = useState<string>('')
   const [showSuccessModal, setShowSuccessModal] = useState(false)
   const [successData, setSuccessData] = useState<{ title: string; message: string; signature?: string } | null>(null)
+  const [bannerPreview, setBannerPreview] = useState<string | null>(null)
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target
@@ -65,6 +70,17 @@ export default function LoyaltyCardCustomizer({ onRotationComplete }: LoyaltyCar
           organizationName: value,
         },
       })
+    } else if (name === 'bannerImage' && e.target.files && e.target.files[0]) {
+      const file = e.target.files[0]
+      setFormData({
+        ...formData,
+        bannerImage: file,
+      })
+      const reader = new FileReader()
+      reader.onloadend = () => {
+        setBannerPreview(reader.result as string)
+      }
+      reader.readAsDataURL(file)
     } else {
       setFormData({
         ...formData,
@@ -140,17 +156,52 @@ export default function LoyaltyCardCustomizer({ onRotationComplete }: LoyaltyCar
       return
     }
 
+    if (!formData.loyaltyProgramName) {
+      toast.error('Please provide a loyalty program name')
+      return
+    }
+
+    if (!formData.description) {
+      toast.error('Please provide a loyalty program description')
+      return
+    }
+
+    if (!formData.bannerImage) {
+      toast.error('Please upload a banner image')
+      return
+    }
+
     if (!formData.metadata.organizationName) {
-      toast.error('Please provide a host name')
+      toast.error('Please provide name of host organization')
       return
     }
 
     setIsLoading(true)
     try {
-      console.log(formData)
+      let imageUri = ''
+      if (formData.bannerImage) {
+        imageUri = await generateImageUri(formData.bannerImage)
+      }
+
+      const { uri } = await generateNftMetadata(
+        {
+          loyaltyProgramName: formData.loyaltyProgramName,
+          metadata: {
+            organizationName: formData.metadata.organizationName,
+            brandColor: formData.metadata.brandColor,
+          },
+          tiers: formData.tiers,
+          pointsPerAction: formData.pointsPerAction,
+          metadataUri: imageUri,
+        },
+        imageUri,
+        address?.toString() || '',
+        formData.bannerImage?.type,
+      )
+
       const result = await createNewLoyaltyProgram(context, {
         loyaltyProgramName: formData.loyaltyProgramName,
-        metadataUri: formData.metadataUri,
+        metadataUri: uri,
         metadata: {
           organizationName: formData.metadata.organizationName,
           brandColor: formData.metadata.brandColor,
@@ -188,7 +239,8 @@ export default function LoyaltyCardCustomizer({ onRotationComplete }: LoyaltyCar
       // Clear form
       setFormData({
         loyaltyProgramName: '',
-        metadataUri: '',
+        description: '',
+        bannerImage: null,
         metadata: {
           organizationName: '',
           brandColor: '#9d4edd',
@@ -198,16 +250,6 @@ export default function LoyaltyCardCustomizer({ onRotationComplete }: LoyaltyCar
           '': 0,
         },
       })
-
-      // Generate QR code data with program details
-      const qrData = {
-        name: formData.loyaltyProgramName,
-        collectionAddress: result.collection.publicKey.toString(),
-        creator: address?.toString(),
-        uri: formData.metadataUri,
-      }
-
-      setQrCodeData(JSON.stringify(qrData))
 
       // Redirect to dashboard
       router.push('/dashboard')
@@ -263,8 +305,61 @@ export default function LoyaltyCardCustomizer({ onRotationComplete }: LoyaltyCar
                 </div>
 
                 <div className="space-y-2">
+                  <Label htmlFor="description" className="pixel-font">
+                    Description
+                  </Label>
+                  <Input
+                    id="description"
+                    name="description"
+                    value={formData.description}
+                    onChange={handleInputChange}
+                    className="bg-verxio-dark/50 border-verxio-purple/20 focus:border-verxio-purple orbitron placeholder:text-white/50 text-[10px] text-white/50 placeholder:orbitron placeholder:text-[10px]"
+                    placeholder="Enter program description"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <Label htmlFor="bannerImage" className="pixel-font">
+                      Loyalty Banner
+                    </Label>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button variant="ghost" size="icon" className="h-4 w-4 p-0">
+                          <Info className="h-4 w-4 text-white/50" />
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-80 bg-slate-900 border-slate-700/20">
+                        <div className="space-y-2">
+                          <h4 className="font-medium orbitron">Recommended Dimensions</h4>
+                          <p className="text-sm text-white/90">For best results, use an image with:</p>
+                          <ul className="text-sm text-white/90 list-disc list-inside">
+                            <li>Width: 400px</li>
+                            <li>Height: 250px</li>
+                            <li>Format: PNG, JPG, or GIF</li>
+                          </ul>
+                        </div>
+                      </PopoverContent>
+                    </Popover>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Input
+                      id="bannerImage"
+                      name="bannerImage"
+                      type="file"
+                      accept="image/*,.gif"
+                      onChange={handleInputChange}
+                      className="bg-verxio-dark/50 border-verxio-purple/20 focus:border-verxio-purple orbitron placeholder:text-white/50 text-[10px] text-white/50 placeholder:orbitron placeholder:text-[10px] cursor-pointer"
+                    />
+                    <Button variant="outline" size="icon" className="h-10 w-10">
+                      <Upload className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
                   <Label htmlFor="organizationName" className="pixel-font">
-                    Host Name
+                    Organization Name
                   </Label>
                   <Input
                     id="organizationName"
@@ -272,21 +367,7 @@ export default function LoyaltyCardCustomizer({ onRotationComplete }: LoyaltyCar
                     value={formData.metadata.organizationName}
                     onChange={handleInputChange}
                     className="bg-verxio-dark/50 border-verxio-purple/20 focus:border-verxio-purple orbitron placeholder:text-white/50 text-[10px] text-white/50 placeholder:orbitron placeholder:text-[10px]"
-                    placeholder="Enter host name"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="metadataUri" className="pixel-font">
-                    Metadata URI
-                  </Label>
-                  <Input
-                    id="metadataUri"
-                    name="metadataUri"
-                    value={formData.metadataUri}
-                    onChange={handleInputChange}
-                    className="bg-verxio-dark/50 border-verxio-purple/20 focus:border-verxio-purple orbitron placeholder:text-white/50 text-[10px] text-white/50 placeholder:orbitron placeholder:text-[10px]"
-                    placeholder="Enter metadata URI"
+                    placeholder="Enter organization name"
                   />
                 </div>
               </TabsContent>
@@ -523,13 +604,14 @@ export default function LoyaltyCardCustomizer({ onRotationComplete }: LoyaltyCar
                 }}
               >
                 <ProgramCard
-                  programName={formData.loyaltyProgramName || 'Loyalty Program'}
+                  programName={formData.loyaltyProgramName || 'Verxio Loyalty Program'}
                   organizationName={formData.metadata.organizationName || 'Verxio Protocol'}
+                  brandColor={formData.metadata.brandColor}
                   creator={address?.toString() || 'VERXIO76abNGYsQa4vjLcCJ4zx8vbtrVWTR'}
                   pointsPerAction={formData.pointsPerAction}
                   collectionAddress="VERXIO25rNGYsQa4vjLAcCJ4zx8vZ4BSqQoCb"
-                  qrCodeUrl={qrCodeData}
-                  brandColor={formData.metadata.brandColor}
+                  qrCodeUrl={''}
+                  bannerImage={bannerPreview}
                 />
               </motion.div>
             </div>
@@ -537,15 +619,13 @@ export default function LoyaltyCardCustomizer({ onRotationComplete }: LoyaltyCar
         </div>
       </div>
 
-      {successData && (
-        <SuccessModal
-          isOpen={showSuccessModal}
-          onClose={() => setShowSuccessModal(false)}
-          title={successData.title}
-          message={successData.message}
-          transactionSignature={successData.signature}
-        />
-      )}
+      <SuccessModal
+        isOpen={showSuccessModal}
+        onClose={() => setShowSuccessModal(false)}
+        title={successData?.title || ''}
+        message={successData?.message || ''}
+        transactionSignature={successData?.signature}
+      />
     </div>
   )
 }
