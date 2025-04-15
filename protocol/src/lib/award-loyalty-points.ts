@@ -44,18 +44,23 @@ export async function awardLoyaltyPoints(
       throw new Error(`Action '${config.action}' is not defined in points per action configuration`)
     }
 
-    const points = pointsPerAction[config.action] * (config.multiplier || 1)
-    const newXp = currentXp + points
+    const pointsToAward = pointsPerAction[config.action] * (config.multiplier || 1)
+    const newXp = currentXp + pointsToAward
     const newTier = await calculateNewTier(context, newXp)
 
     try {
-      return await updatePassData(context, config.passAddress, config.signer, appDataPlugin, {
+      const result = await updatePassData(context, config.passAddress, config.signer, appDataPlugin, {
         xp: newXp,
         action: config.action,
-        points,
+        points: pointsToAward,
         currentData,
         newTier,
       })
+
+      return {
+        points: newXp,
+        signature: result.signature,
+      }
     } catch (error: any) {
       if (error.message?.includes('Invalid Authority')) {
         throw new Error('Failed to award points: Signer is not the pass owner')
@@ -63,11 +68,9 @@ export async function awardLoyaltyPoints(
       throw error
     }
   } catch (error) {
-    // If it's already an Error object, rethrow it
     if (error instanceof Error) {
       throw error
     }
-    // Otherwise wrap it in a new Error
     throw new Error(`Failed to award points: ${error}`)
   }
 }

@@ -41,7 +41,7 @@
     "bs58": "^6.0.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
-    "framer-motion": "^12.6.2",
+    "framer-motion": "^12.6.3",
     "gifshot": "^0.4.5",
     "gill": "^0.8.2",
     "helius-sdk": "^1.4.2",

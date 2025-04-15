@@ -48,6 +48,7 @@ export async function revokeLoyaltyPoints(
 
     // Calculate new points (ensure we don't go below 0)
     const newPoints = Math.max(0, currentPoints - config.pointsToRevoke)
+    const pointsRevoked = currentPoints - newPoints
 
     // Calculate new tier based on updated points
     const newTier = await calculateNewTier(context, newPoints)
@@ -57,7 +58,7 @@ export async function revokeLoyaltyPoints(
       const result = await updatePassData(context, config.passAddress, config.signer, appDataPlugin, {
         xp: newPoints,
         action: 'revoke',
-        points: -config.pointsToRevoke,
+        points: -pointsRevoked,
         currentData,
         newTier,
       })
