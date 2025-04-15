@@ -57,9 +57,7 @@ export default function MyLoyaltyPasses() {
   const [currentPage, setCurrentPage] = useState(1)
   const [isLoading, setIsLoading] = useState(true)
   const [loyaltyPasses, setLoyaltyPasses] = useState<LoyaltyPass[]>([])
-  const [hasInitialLoad, setHasInitialLoad] = useState(false)
-  const [dbPasses, setDbPasses] = useState<any[]>([]) // Store database passes
-  const mounted = useRef(false)
+  const mounted = useRef(true)
   const isFetching = useRef(false)
 
   // Calculate pagination
@@ -76,59 +74,49 @@ export default function MyLoyaltyPasses() {
     }
   }, [])
 
-  // Fetch database passes only once
   useEffect(() => {
-    async function fetchDbPasses() {
-      if (!walletPublicKey || isFetching.current) return
+    async function fetchPasses() {
+      if (!context || !walletPublicKey || isFetching.current) return
+
+      isFetching.current = true
+      setIsLoading(true)
 
       try {
-        isFetching.current = true
+        // First fetch passes from database
         const response = await fetch(`/api/getLoyaltyPasses?recipient=${walletPublicKey.toString()}`)
-        const passes = await response.json()
-        if (mounted.current) {
-          setDbPasses(passes)
-        }
-      } catch (error) {
-        console.error('Error fetching database passes:', error)
-      } finally {
-        isFetching.current = false
-      }
-    }
+        const dbPasses = await response.json()
 
-    fetchDbPasses()
-  }, [walletPublicKey?.toString()])
-
-  // Fetch asset data when dbPasses or context changes
-  useEffect(() => {
-    async function fetchAssetData() {
-      if (!context || !dbPasses.length || isFetching.current) return
-
-      try {
-        isFetching.current = true
-        if (!hasInitialLoad) {
-          setIsLoading(true)
+        if (!dbPasses || dbPasses.length === 0) {
+          if (mounted.current) {
+            setLoyaltyPasses([])
+            setIsLoading(false)
+          }
+          return
         }
 
+        // Then fetch asset data for each pass
         const passesWithData = await Promise.all(
           dbPasses.map(async (pass: any) => {
-            const data = await getAssetData(context, publicKey(pass.publicKey))
-            if (data) {
-              // Fetch the image URL from metadata
-              const bannerImage = await getImageFromMetadata(data.uri)
-
-              return {
-                programName: data.name,
-                owner: data.owner,
-                pointsPerAction: {},
-                organizationName: data.metadata.organizationName,
-                brandColor: data.metadata.brandColor!,
-                loyaltyPassAddress: pass.publicKey,
-                qrCodeUrl: `${window.location.origin}/dashboard/${pass.publicKey}`,
-                totalEarnedPoints: data.xp,
-                tier: data.currentTier,
-                assetData: data,
-                bannerImage, // Add the banner image URL
+            try {
+              const data = await getAssetData(context, publicKey(pass.publicKey))
+              if (data) {
+                const bannerImage = await getImageFromMetadata(data.uri)
+                return {
+                  programName: data.name,
+                  owner: data.owner,
+                  pointsPerAction: {},
+                  organizationName: data.metadata.organizationName,
+                  brandColor: data.metadata.brandColor || '#6F2FF0',
+                  loyaltyPassAddress: pass.publicKey,
+                  qrCodeUrl: `${window.location.origin}/dashboard/${pass.publicKey}`,
+                  totalEarnedPoints: data.xp,
+                  tier: data.currentTier,
+                  assetData: data,
+                  bannerImage,
+                }
               }
+            } catch (err) {
+              console.error(`Error fetching data for pass ${pass.publicKey}:`, err)
             }
             return null
           }),
@@ -136,23 +124,22 @@ export default function MyLoyaltyPasses() {
 
         if (mounted.current) {
           setLoyaltyPasses(passesWithData.filter((pass): pass is NonNullable<typeof pass> => pass !== null))
-          setHasInitialLoad(true)
-          setIsLoading(false)
         }
       } catch (error) {
-        console.error('Error fetching asset data:', error)
+        console.error('Error fetching passes:', error)
+      } finally {
         if (mounted.current) {
           setIsLoading(false)
         }
-      } finally {
         isFetching.current = false
       }
     }
 
-    fetchAssetData()
-  }, [context, dbPasses])
+    fetchPasses()
+  }, [context, walletPublicKey])
 
-  if (isLoading && !hasInitialLoad) {
+  // Only show loading state if we're actually loading and have no data
+  if (isLoading && loyaltyPasses.length === 0) {
     return (
       <div className="min-h-screen bg-gradient-to-b from-black via-purple-950/20 to-black flex items-center justify-center">
         <div className="text-center space-y-4">
@@ -187,8 +174,6 @@ export default function MyLoyaltyPasses() {
                 onClick={() => router.push(`/dashboard/${pass.loyaltyPassAddress}`)}
               >
                 <div className="w-full max-w-[400px]">
-                  {' '}
-                  {/* Reduced from 280px to 240px */}
                   <LoyaltyCard
                     programName={pass.programName}
                     owner={pass.owner}

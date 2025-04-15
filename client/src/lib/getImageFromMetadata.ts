@@ -1,4 +1,4 @@
-import demoImage from '@/app/public/demoImage.jpg'
+import loadingAsset from '@/app/public/loadingAsset.gif'
 
 export async function getImageFromMetadata(metadataUri: string): Promise<string> {
   try {
@@ -19,7 +19,7 @@ export async function getImageFromMetadata(metadataUri: string): Promise<string>
     return metadata.image
   } catch (error) {
     console.error('Error fetching image from metadata:', error)
-    // Return demo image path as fallback
-    return demoImage.src
+    // Return loading asset path as fallback
+    return loadingAsset.src
   }
 }

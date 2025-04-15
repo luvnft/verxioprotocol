@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button'
 import { toast } from 'sonner'
 import { useRef } from 'react'
 import Image from 'next/image'
-import demoImage from '@/app/public/demoImage.jpg'
+import demoImage from '@/app/public/demoImage.png'
 import * as htmlToImage from 'html-to-image'
 
 interface ProgramCardProps {
@@ -25,7 +25,7 @@ export default function ProgramCard({
   creator = '7YarZW...',
   pointsPerAction = { purchase: 100, review: 50 },
   organizationName = 'Verxio Protocol',
-  brandColor = '#9d4edd',
+  brandColor = '#00adef',
   collectionAddress,
   qrCodeUrl,
   bannerImage = null,

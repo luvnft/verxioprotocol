@@ -46,7 +46,7 @@ export default function LoyaltyCardCustomizer({ onRotationComplete }: LoyaltyCar
     bannerImage: null as File | null,
     metadata: {
       organizationName: '',
-      brandColor: '#9d4edd', // Default purple
+      brandColor: '#00adef', // Default
     },
     tiers: [{ name: '', xpRequired: 0, rewards: [''] }] as Tier[],
     pointsPerAction: {
