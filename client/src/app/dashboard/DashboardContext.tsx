@@ -10,7 +10,7 @@ interface DashboardContextType {
 const DashboardContext = createContext<DashboardContextType | undefined>(undefined)
 
 export function DashboardProvider({ children }: { children: ReactNode }) {
-  const [isOrganization, setIsOrganization] = useState(false)
+  const [isOrganization, setIsOrganization] = useState(true)
 
   return <DashboardContext.Provider value={{ isOrganization, setIsOrganization }}>{children}</DashboardContext.Provider>
 }
