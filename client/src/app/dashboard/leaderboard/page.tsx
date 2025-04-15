@@ -17,7 +17,7 @@ export default function LeaderboardPage() {
           </div>
           <h2 className="text-xl font-semibold text-white orbitron mb-2">Coming Soon</h2>
           <p className="text-white/70 text-center max-w-md">
-            , manage rewards, and analyze engagement. We're working on something exciting! Soon you'll be able to track
+            We're working on something exciting! Soon you'll be able to track , manage rewards, and analyze engagement.
             loyalty points{' '}
           </p>
         </CardContent>

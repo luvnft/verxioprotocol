@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button'
 import { toast } from 'sonner'
 import * as htmlToImage from 'html-to-image'
 import Image from 'next/image'
-import demoImage from '@/app/public/demoImage.jpg'
+import demoImage from '@/app/public/demoImage.png'
 
 interface LoyaltyCardProps {
   programName: string
@@ -30,7 +30,7 @@ export default function LoyaltyCard({
   programName = 'Sample Program',
   owner = '7YarZW...',
   organizationName = 'Verxio Protocol',
-  brandColor = '#9d4edd',
+  brandColor = '#00adef',
   loyaltyPassAddress,
   qrCodeUrl,
   totalEarnedPoints = 0,

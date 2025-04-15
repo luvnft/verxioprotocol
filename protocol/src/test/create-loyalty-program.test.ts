@@ -39,8 +39,8 @@ describe('create-loyalty-program', { sequential: true }, () => {
       expect(result).toBeTruthy()
       expect(result.collection).toBeTruthy()
       expect(result.signature).toBeTruthy()
-      // Verify the transaction includes the fee instruction
-      expect(result.signature).toHaveLength(88) // Base58 encoded signature length
+      // Verify the transaction signature format (base58 string between 86-88 characters)
+      expect(result.signature).toMatch(/^[1-9A-HJ-NP-Za-km-z]{86,88}$/)
     })
 
     it('should create a new loyalty program with a provided collection signer', async () => {
