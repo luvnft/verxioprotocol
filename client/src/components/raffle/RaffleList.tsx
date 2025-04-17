@@ -172,7 +172,7 @@ export function RaffleList() {
               <div className="flex justify-between items-center">
                 {status === 'ACTIVE' && (
                   <Button variant="outline" className="text-white hover:opacity-90 orbitron" asChild>
-                    <Link href={`/dashboard/raffle/${raffle.id}/draw`}>Start Raffle</Link>
+                    <Link href={`/dashboard/raffle/draw/${raffle.id}`}>Start Raffle</Link>
                   </Button>
                 )}
                 {status === 'COMPLETED' && (
