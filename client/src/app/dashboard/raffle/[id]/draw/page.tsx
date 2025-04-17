@@ -22,7 +22,7 @@ const DEMO_ADDRESSES = [
   '4d4p1Q5vVWe2v0Ae3u3b3b3b3b3b3b3b3b3b3b3b3b3b',
   '5e5q2R6vWXf3w1Bf4v4c4c4c4c4c4c4c4c4c4c4c4c4c',
   '6f6r3S7vXYg4x2Cg5w5d5d5d5d5d5d5d5d5d5d5d5d5d',
-  '7g7s4T8vYZh5y3Dh6x6e6e6e6e6e6e6e6e6e6e6e6e6e'
+  '7g7s4T8vYZh5y3Dh6x6e6e6e6e6e6e6e6e6e6e6e6e6e',
 ]
 
 export default function RaffleDrawPage() {
@@ -162,13 +162,19 @@ export default function RaffleDrawPage() {
               <p className="text-white/70">{raffle.description}</p>
             </div>
             <div className="flex items-center gap-2">
-              <span className={`px-3 py-1 rounded-full text-sm ${
-                status === 'UPCOMING' ? 'bg-yellow-500/20 text-yellow-500' :
-                status === 'ACTIVE' ? 'bg-green-500/20 text-green-500' :
-                status === 'DRAWING' ? 'bg-purple-500/20 text-purple-500' :
-                status === 'ENDED' ? 'bg-red-500/20 text-red-500' :
-                'bg-blue-500/20 text-blue-500'
-              }`}>
+              <span
+                className={`px-3 py-1 rounded-full text-sm ${
+                  status === 'UPCOMING'
+                    ? 'bg-yellow-500/20 text-yellow-500'
+                    : status === 'ACTIVE'
+                      ? 'bg-green-500/20 text-green-500'
+                      : status === 'DRAWING'
+                        ? 'bg-purple-500/20 text-purple-500'
+                        : status === 'ENDED'
+                          ? 'bg-red-500/20 text-red-500'
+                          : 'bg-blue-500/20 text-blue-500'
+                }`}
+              >
                 {status}
               </span>
             </div>
@@ -187,14 +193,12 @@ export default function RaffleDrawPage() {
                         <span className="text-white">Position {index + 1}:</span> {winner}
                       </p>
                     </div>
-                    <Button onClick={() => handlePayout(winner)}>
-                      Pay Winner
-                    </Button>
+                    <Button onClick={() => handlePayout(winner)}>Pay Winner</Button>
                   </div>
                 ))}
               </div>
             ) : (
-              <Button 
+              <Button
                 onClick={handleDrawWinners}
                 disabled={participants.length === 0}
                 className="bg-gradient-to-r from-[#00FFE0] via-[#0085FF] to-[#7000FF] text-white hover:opacity-90 orbitron"
@@ -207,9 +211,7 @@ export default function RaffleDrawPage() {
           <div className="mt-8">
             <h3 className="text-lg font-semibold text-white orbitron mb-4">Participants</h3>
             <div className="space-y-4">
-              <p className="text-white/70">
-                Total eligible participants: {participants.length}
-              </p>
+              <p className="text-white/70">Total eligible participants: {participants.length}</p>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {currentParticipants.map((participant) => (
                   <div key={participant} className="p-2 bg-black/20 rounded">
@@ -217,13 +219,13 @@ export default function RaffleDrawPage() {
                   </div>
                 ))}
               </div>
-              
+
               {/* Pagination Controls */}
               {totalPages > 1 && (
                 <div className="flex justify-center items-center gap-4 mt-4">
                   <Button
                     variant="outline"
-                    onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                    onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
                     disabled={currentPage === 1}
                     className="text-white/70 hover:text-white"
                   >
@@ -234,7 +236,7 @@ export default function RaffleDrawPage() {
                   </span>
                   <Button
                     variant="outline"
-                    onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                    onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
                     disabled={currentPage === totalPages}
                     className="text-white/70 hover:text-white"
                   >

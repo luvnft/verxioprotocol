@@ -39,7 +39,7 @@ export function Wheel({ participants }: WheelProps) {
     <div className="relative w-[400px] h-[400px]">
       {/* Outer ring */}
       <div className="absolute inset-0 rounded-full border-8 border-verxio-purple/30 shadow-lg" />
-      
+
       {/* Wheel */}
       <motion.div
         ref={wheelRef}
@@ -49,7 +49,7 @@ export function Wheel({ participants }: WheelProps) {
         }}
         transition={{
           duration: 3,
-          ease: "easeInOut",
+          ease: 'easeInOut',
         }}
       >
         {participants.map((_, index) => (
@@ -85,4 +85,4 @@ export function Wheel({ participants }: WheelProps) {
       <div className="absolute inset-0 rounded-full bg-verxio-purple/10 blur-xl" />
     </div>
   )
-} 
+}

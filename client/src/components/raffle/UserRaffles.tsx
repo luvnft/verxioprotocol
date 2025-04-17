@@ -19,7 +19,7 @@ export function UserRaffles() {
 
     async function fetchRaffles() {
       if (!publicKey) return
-      
+
       try {
         const response = await fetch(`/api/raffles?wallet=${publicKey.toString()}`)
         if (!response.ok) throw new Error('Failed to fetch raffles')
@@ -58,9 +58,7 @@ export function UserRaffles() {
     return (
       <div className="flex flex-col items-center justify-center py-12">
         <h2 className="text-xl font-semibold text-white orbitron mb-2">No Raffles</h2>
-        <p className="text-white/70 text-center max-w-md mb-4">
-          You haven't participated in any raffles yet.
-        </p>
+        <p className="text-white/70 text-center max-w-md mb-4">You haven't participated in any raffles yet.</p>
       </div>
     )
   }
@@ -76,12 +74,17 @@ export function UserRaffles() {
                 <p className="text-white/70">{raffle.description}</p>
               </div>
               <div className="flex items-center gap-2">
-                <span className={`px-3 py-1 rounded-full text-sm ${
-                  raffle.status === 'UPCOMING' ? 'bg-yellow-500/20 text-yellow-500' :
-                  raffle.status === 'ACTIVE' ? 'bg-green-500/20 text-green-500' :
-                  raffle.status === 'COMPLETED' ? 'bg-blue-500/20 text-blue-500' :
-                  'bg-red-500/20 text-red-500'
-                }`}>
+                <span
+                  className={`px-3 py-1 rounded-full text-sm ${
+                    raffle.status === 'UPCOMING'
+                      ? 'bg-yellow-500/20 text-yellow-500'
+                      : raffle.status === 'ACTIVE'
+                        ? 'bg-green-500/20 text-green-500'
+                        : raffle.status === 'COMPLETED'
+                          ? 'bg-blue-500/20 text-blue-500'
+                          : 'bg-red-500/20 text-red-500'
+                  }`}
+                >
                   {raffle.status}
                 </span>
               </div>
@@ -89,9 +92,7 @@ export function UserRaffles() {
 
             <div className="flex justify-between items-center">
               <Button variant="outline" asChild>
-                <Link href={`/dashboard/raffle/${raffle.id}`}>
-                  View Details
-                </Link>
+                <Link href={`/dashboard/raffle/${raffle.id}`}>View Details</Link>
               </Button>
             </div>
           </CardContent>
@@ -99,4 +100,4 @@ export function UserRaffles() {
       ))}
     </div>
   )
-} 
+}

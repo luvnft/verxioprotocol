@@ -3,10 +3,7 @@ import prisma from '@/lib/prisma'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 
-export async function POST(
-  req: Request,
-  { params }: { params: { id: string } }
-) {
+export async function POST(req: Request, { params }: { params: { id: string } }) {
   try {
     const session = await getServerSession(authOptions)
     if (!session?.user?.email) {
@@ -20,11 +17,11 @@ export async function POST(
       where: {
         raffleId: params.id,
         passPublicKey,
-        claimed: false
+        claimed: false,
       },
       include: {
-        raffle: true
-      }
+        raffle: true,
+      },
     })
 
     if (!winner) {
@@ -36,8 +33,8 @@ export async function POST(
       where: { id: winner.id },
       data: {
         claimed: true,
-        claimedAt: new Date()
-      }
+        claimedAt: new Date(),
+      },
     })
 
     return NextResponse.json({ success: true })
@@ -45,4 +42,4 @@ export async function POST(
     console.error('Error claiming prize:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
-} 
+}

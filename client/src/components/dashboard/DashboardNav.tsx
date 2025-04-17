@@ -21,19 +21,19 @@ export default function DashboardNav({ isOrganization }: DashboardNavProps) {
       title: 'Overview',
       href: '/dashboard',
       icon: LayoutDashboard,
-      exact: true
+      exact: true,
     },
     {
       title: 'Contests',
       href: '/dashboard/contest',
       icon: Award,
-      exact: false
+      exact: false,
     },
     {
       title: 'Raffles',
       href: '/dashboard/raffle',
       icon: Gift,
-      exact: false
+      exact: false,
     },
   ]
 
@@ -42,37 +42,37 @@ export default function DashboardNav({ isOrganization }: DashboardNavProps) {
       title: 'Overview',
       href: '/dashboard',
       icon: LayoutDashboard,
-      exact: true
+      exact: true,
     },
     {
       title: 'Programs',
       href: '/dashboard/programs',
       icon: Building2,
-      exact: false
+      exact: false,
     },
     {
       title: 'Contests',
       href: '/dashboard/contest',
       icon: Award,
-      exact: false
+      exact: false,
     },
     {
       title: 'Raffles',
       href: '/dashboard/raffle',
       icon: Gift,
-      exact: false
+      exact: false,
     },
     {
       title: 'Members',
       href: '/dashboard/members',
       icon: Users,
-      exact: false
+      exact: false,
     },
     {
       title: 'Leaderboard',
       href: '/dashboard/leaderboard',
       icon: Trophy,
-      exact: false
+      exact: false,
     },
     // {
     //   title: 'Settings',
@@ -101,9 +101,9 @@ export default function DashboardNav({ isOrganization }: DashboardNavProps) {
         <nav className="space-y-1">
           {navItems.map((item) => {
             const Icon = item.icon
-            const isActive = item.exact 
-              ? pathname === item.href 
-              : pathname.startsWith(item.href) && 
+            const isActive = item.exact
+              ? pathname === item.href
+              : pathname.startsWith(item.href) &&
                 (item.href === '/dashboard' || pathname.startsWith(`${item.href}/`) || pathname === item.href)
             return (
               <Link

@@ -18,9 +18,10 @@ export default function RafflePage() {
       <div className="flex justify-between items-center">
         <h1 className="text-3xl font-bold text-white orbitron">Raffles</h1>
         {isOrganization && (
-          <Button 
-          className="bg-gradient-to-r from-[#00FFE0] via-[#0085FF] to-[#7000FF] text-white hover:opacity-90 orbitron"
-          asChild>
+          <Button
+            className="bg-gradient-to-r from-[#00FFE0] via-[#0085FF] to-[#7000FF] text-white hover:opacity-90 orbitron"
+            asChild
+          >
             <Link href="/dashboard/raffle/create">
               <Plus className="w-4 h-4 mr-2" />
               Create Raffle

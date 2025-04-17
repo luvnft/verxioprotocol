@@ -87,9 +87,7 @@ export function RaffleList() {
     return (
       <div className="flex flex-col items-center justify-center py-12">
         <h2 className="text-xl font-semibold text-white orbitron mb-2">No Raffles</h2>
-        <p className="text-white/70 text-center max-w-md mb-4">
-          You haven't created any raffles yet.
-        </p>
+        <p className="text-white/70 text-center max-w-md mb-4">You haven't created any raffles yet.</p>
       </div>
     )
   }
@@ -107,13 +105,19 @@ export function RaffleList() {
                   <p className="text-white/70">{raffle.description}</p>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className={`px-3 py-1 rounded-full text-sm ${
-                    status === 'UPCOMING' ? 'bg-yellow-500/20 text-yellow-500' :
-                    status === 'ACTIVE' ? 'bg-green-500/20 text-green-500' :
-                    status === 'DRAWING' ? 'bg-purple-500/20 text-purple-500' :
-                    status === 'ENDED' ? 'bg-red-500/20 text-red-500' :
-                    'bg-blue-500/20 text-blue-500'
-                  }`}>
+                  <span
+                    className={`px-3 py-1 rounded-full text-sm ${
+                      status === 'UPCOMING'
+                        ? 'bg-yellow-500/20 text-yellow-500'
+                        : status === 'ACTIVE'
+                          ? 'bg-green-500/20 text-green-500'
+                          : status === 'DRAWING'
+                            ? 'bg-purple-500/20 text-purple-500'
+                            : status === 'ENDED'
+                              ? 'bg-red-500/20 text-red-500'
+                              : 'bg-blue-500/20 text-blue-500'
+                    }`}
+                  >
                     {status}
                   </span>
                 </div>
@@ -152,7 +156,8 @@ export function RaffleList() {
                       <span className="text-white">Draw Date:</span> {new Date(raffle.drawDate).toLocaleDateString()}
                     </p>
                     <p className="text-white/70">
-                      <span className="text-white">Entry Cost:</span> {raffle.entryCost ? `${raffle.entryCost} XP` : 'Free'}
+                      <span className="text-white">Entry Cost:</span>{' '}
+                      {raffle.entryCost ? `${raffle.entryCost} XP` : 'Free'}
                     </p>
                     <p className="text-white/70">
                       <span className="text-white">Program Address:</span> {raffle.programAddress}
@@ -166,16 +171,12 @@ export function RaffleList() {
 
               <div className="flex justify-between items-center">
                 {status === 'ACTIVE' && (
-                  <Button variant="outline" asChild>
-                    <Link href={`/dashboard/raffle/${raffle.id}/draw`}>
-                      Draw Winners
-                    </Link>
+                  <Button variant="outline" className="text-white hover:opacity-90 orbitron" asChild>
+                    <Link href={`/dashboard/raffle/${raffle.id}/draw`}>Start Raffle</Link>
                   </Button>
                 )}
                 {status === 'COMPLETED' && (
-                  <p className="text-white/70">
-                    {raffle.winners?.length || 0} winners selected
-                  </p>
+                  <p className="text-white/70">{raffle.winners?.length || 0} winners selected</p>
                 )}
               </div>
             </CardContent>
@@ -184,4 +185,4 @@ export function RaffleList() {
       })}
     </div>
   )
-} 
+}

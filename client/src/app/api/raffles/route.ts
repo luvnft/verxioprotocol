@@ -2,11 +2,10 @@ import { NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
 import { CreateRaffleData, RaffleFilter } from '@/types/raffle'
 
-
 export async function POST(req: Request) {
   try {
     const data: CreateRaffleData = await req.json()
-    
+
     // Validate dates
     const now = new Date()
     if (new Date(data.startDate) < now) {
@@ -33,7 +32,7 @@ export async function POST(req: Request) {
         numWinners: data.numWinners,
         programAddress: data.programAddress,
         creator: data.creator || '',
-      }
+      },
     })
 
     return NextResponse.json(raffle)
@@ -58,11 +57,11 @@ export async function GET(req: Request) {
     const raffles = await prisma.raffle.findMany({
       where: filter,
       include: {
-        winners: true
+        winners: true,
       },
       orderBy: {
-        createdAt: 'desc'
-      }
+        createdAt: 'desc',
+      },
     })
 
     // Get eligible participants count for each raffle
@@ -71,14 +70,14 @@ export async function GET(req: Request) {
         const passes = await prisma.loyaltyPass.findMany({
           where: {
             collection: raffle.programAddress,
-            ...(raffle.minTier ? { tier: { gte: raffle.minTier } } : {})
-          }
+            ...(raffle.minTier ? { tier: { gte: raffle.minTier } } : {}),
+          },
         })
         return {
           ...raffle,
-          eligibleParticipants: passes.length
+          eligibleParticipants: passes.length,
         }
-      })
+      }),
     )
 
     return NextResponse.json(rafflesWithParticipants)
@@ -86,4 +85,4 @@ export async function GET(req: Request) {
     console.error('Error fetching raffles:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
-} 
+}

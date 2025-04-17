@@ -162,11 +162,8 @@ export default function LoyaltyCardCustomizer({ onRotationComplete }: LoyaltyCar
     }
   }
 
-  const isBasicsValid = formData.loyaltyProgramName && 
-                       formData.description && 
-                       formData.metadata.organizationName
-  const isRewardsValid = formData.tiers.length > 0 && 
-                        formData.tiers.every(tier => tier.name && tier.xpRequired >= 0)
+  const isBasicsValid = formData.loyaltyProgramName && formData.description && formData.metadata.organizationName
+  const isRewardsValid = formData.tiers.length > 0 && formData.tiers.every((tier) => tier.name && tier.xpRequired >= 0)
   const isAppearanceValid = formData.metadata.brandColor
 
   const handleSave = async () => {
@@ -566,12 +563,7 @@ export default function LoyaltyCardCustomizer({ onRotationComplete }: LoyaltyCar
 
               <div className="flex justify-between mt-8">
                 {activeTab !== 'basics' && (
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={handleBack}
-                    className="pixel-font"
-                  >
+                  <Button type="button" variant="outline" onClick={handleBack} className="pixel-font">
                     Back
                   </Button>
                 )}
@@ -581,8 +573,7 @@ export default function LoyaltyCardCustomizer({ onRotationComplete }: LoyaltyCar
                       type="button"
                       onClick={handleNext}
                       disabled={
-                        (activeTab === 'basics' && !isBasicsValid) ||
-                        (activeTab === 'rewards' && !isRewardsValid)
+                        (activeTab === 'basics' && !isBasicsValid) || (activeTab === 'rewards' && !isRewardsValid)
                       }
                       className="pixel-font bg-gradient-to-r from-[#00FFE0] via-[#0085FF] to-[#7000FF] text-white hover:opacity-90"
                     >

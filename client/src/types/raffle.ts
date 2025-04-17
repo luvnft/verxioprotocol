@@ -1,6 +1,6 @@
 export type PrizeType = 'TOKEN' | 'MERCH' | 'NFT' | 'OTHER'
 
-// USDC Token Supported 
+// USDC Token Supported
 // 'MERCH' | 'NFT' | 'OTHER' --Coming Soon
 
 export type RaffleStatus = 'UPCOMING' | 'ACTIVE' | 'COMPLETED' | 'CANCELLED'
@@ -73,4 +73,4 @@ export interface RaffleFilter {
   status?: RaffleStatus
   programId?: string
   creator?: string
-} 
+}

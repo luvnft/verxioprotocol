@@ -1,17 +1,13 @@
 import { NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
 
-export async function GET(
-  req: Request,
-  { params }: { params: { id: string } }
-) {
+export async function GET(req: Request, { params }: { params: { id: string } }) {
   try {
-    
     const raffle = await prisma.raffle.findUnique({
       where: { id: params.id },
       include: {
-        winners: true
-      }
+        winners: true,
+      },
     })
 
     if (!raffle) {

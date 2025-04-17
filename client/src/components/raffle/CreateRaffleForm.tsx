@@ -20,21 +20,29 @@ const formSchema = z.object({
   description: z.string().min(1, 'Description is required'),
   prizeType: z.enum(['TOKEN', 'MERCH', 'NFT', 'OTHER']),
   prizeDetails: z.object({
-    token: z.object({
-      amount: z.number(),
-      mint: z.string()
-    }).optional(),
-    merch: z.object({
-      description: z.string(),
-      shippingInfo: z.string()
-    }).optional(),
-    nft: z.object({
-      collection: z.string(),
-      name: z.string()
-    }).optional(),
-    other: z.object({
-      description: z.string()
-    }).optional()
+    token: z
+      .object({
+        amount: z.number(),
+        mint: z.string(),
+      })
+      .optional(),
+    merch: z
+      .object({
+        description: z.string(),
+        shippingInfo: z.string(),
+      })
+      .optional(),
+    nft: z
+      .object({
+        collection: z.string(),
+        name: z.string(),
+      })
+      .optional(),
+    other: z
+      .object({
+        description: z.string(),
+      })
+      .optional(),
   }),
   programAddress: z.string().min(1, 'Program address is required'),
   startDate: z.date(),
@@ -42,7 +50,7 @@ const formSchema = z.object({
   drawDate: z.date(),
   entryCost: z.number().optional(),
   minTier: z.string().optional(),
-  numWinners: z.number().min(1, 'At least one winner is required')
+  numWinners: z.number().min(1, 'At least one winner is required'),
 })
 
 interface CreateRaffleFormProps {
@@ -69,8 +77,8 @@ export function CreateRaffleForm({ programs }: CreateRaffleFormProps) {
       prizeDetails: {
         token: {
           amount: 0,
-          mint: 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v' // USDC mint
-        }
+          mint: 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v', // USDC mint
+        },
       },
       numWinners: 1,
       entryCost: 0,
@@ -78,27 +86,28 @@ export function CreateRaffleForm({ programs }: CreateRaffleFormProps) {
       endDate: undefined,
       drawDate: undefined,
       minTier: '',
-      programAddress: ''
+      programAddress: '',
     },
-    mode: 'onChange'
+    mode: 'onChange',
   })
 
   const prizeType = form.watch('prizeType')
   const formValues = form.watch()
-  const isFormValid = formValues.name && 
-                     formValues.description && 
-                     formValues.programAddress && 
-                     formValues.numWinners > 0 &&
-                     formValues.startDate &&
-                     formValues.endDate &&
-                     formValues.drawDate &&
-                     (prizeType !== 'TOKEN' || (formValues.prizeDetails?.token?.amount && formValues.prizeDetails?.token?.mint))
+  const isFormValid =
+    formValues.name &&
+    formValues.description &&
+    formValues.programAddress &&
+    formValues.numWinners > 0 &&
+    formValues.startDate &&
+    formValues.endDate &&
+    formValues.drawDate &&
+    (prizeType !== 'TOKEN' || (formValues.prizeDetails?.token?.amount && formValues.prizeDetails?.token?.mint))
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     let isMounted = true
     try {
       setIsLoading(true)
-      
+
       if (!publicKey) {
         throw new Error('Wallet not connected')
       }
@@ -112,7 +121,7 @@ export function CreateRaffleForm({ programs }: CreateRaffleFormProps) {
         startDate: new Date(values.startDate),
         endDate: new Date(values.endDate),
         drawDate: new Date(values.drawDate),
-        prizeDetails: values.prizeDetails
+        prizeDetails: values.prizeDetails,
       }
 
       console.log('Submitting raffle data:', formattedData)
@@ -120,9 +129,9 @@ export function CreateRaffleForm({ programs }: CreateRaffleFormProps) {
       const response = await fetch('/api/raffles', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
         },
-        body: JSON.stringify(formattedData)
+        body: JSON.stringify(formattedData),
       })
 
       if (!response.ok) {
@@ -164,17 +173,18 @@ export function CreateRaffleForm({ programs }: CreateRaffleFormProps) {
   }
 
   const isBasicsValid = formValues.name && formValues.description && formValues.programAddress
-  const isPrizeValid = prizeType !== 'TOKEN' || (formValues.prizeDetails?.token?.amount && formValues.prizeDetails?.token?.mint)
- 
+  const isPrizeValid =
+    prizeType !== 'TOKEN' || (formValues.prizeDetails?.token?.amount && formValues.prizeDetails?.token?.mint)
+
   return (
     <Form {...form}>
-      <form 
+      <form
         onSubmit={(e) => {
           e.preventDefault()
           if (activeTab === 'settings' && !isLoading) {
             form.handleSubmit(onSubmit)(e)
           }
-        }} 
+        }}
         className="space-y-8"
       >
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
@@ -198,9 +208,9 @@ export function CreateRaffleForm({ programs }: CreateRaffleFormProps) {
                 <FormItem>
                   <FormLabel className="pixel-font">Raffle Title</FormLabel>
                   <FormControl>
-                    <Input 
-                      placeholder="Enter raffle name" 
-                      {...field} 
+                    <Input
+                      placeholder="Enter raffle name"
+                      {...field}
                       className="bg-verxio-dark/50 border-verxio-purple/20 focus:border-verxio-purple orbitron placeholder:text-white/50 text-[10px] text-white/50 placeholder:orbitron placeholder:text-[10px]"
                     />
                   </FormControl>
@@ -216,9 +226,9 @@ export function CreateRaffleForm({ programs }: CreateRaffleFormProps) {
                 <FormItem>
                   <FormLabel className="pixel-font">Description</FormLabel>
                   <FormControl>
-                    <Textarea 
-                      placeholder="Enter raffle description" 
-                      {...field} 
+                    <Textarea
+                      placeholder="Enter raffle description"
+                      {...field}
                       className="bg-verxio-dark/50 border-verxio-purple/20 focus:border-verxio-purple orbitron placeholder:text-white/50 text-[10px] text-white/50 placeholder:orbitron placeholder:text-[10px]"
                     />
                   </FormControl>
@@ -234,9 +244,9 @@ export function CreateRaffleForm({ programs }: CreateRaffleFormProps) {
                 <FormItem>
                   <FormLabel className="pixel-font">Loyalty Program</FormLabel>
                   <FormControl>
-                    <Input 
-                      placeholder="Enter verxio loyalty program address or a metaplex collection address" 
-                      {...field} 
+                    <Input
+                      placeholder="Enter verxio loyalty program address or a metaplex collection address"
+                      {...field}
                       className="bg-verxio-dark/50 border-verxio-purple/20 focus:border-verxio-purple orbitron placeholder:text-white/50 text-[10px] text-white/50 placeholder:orbitron placeholder:text-[10px]"
                     />
                   </FormControl>
@@ -260,32 +270,41 @@ export function CreateRaffleForm({ programs }: CreateRaffleFormProps) {
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent className="bg-verxio-dark border-verxio-purple/20">
-                      <SelectItem 
-                        value="TOKEN" 
+                      <SelectItem
+                        value="TOKEN"
                         className="orbitron text-[10px] text-white/50 hover:bg-verxio-purple/20"
                       >
                         Token
                       </SelectItem>
-                      <SelectItem 
-                        value="MERCH" 
+                      <SelectItem
+                        value="MERCH"
                         className="orbitron text-[10px] text-white/50 hover:bg-verxio-purple/20"
                         disabled
                       >
-                        Merchandise <Badge variant="secondary" className="ml-2">Coming Soon</Badge>
+                        Merchandise{' '}
+                        <Badge variant="secondary" className="ml-2">
+                          Coming Soon
+                        </Badge>
                       </SelectItem>
-                      <SelectItem 
-                        value="NFT" 
+                      <SelectItem
+                        value="NFT"
                         className="orbitron text-[10px] text-white/50 hover:bg-verxio-purple/20"
                         disabled
                       >
-                        NFT <Badge variant="secondary" className="ml-2">Coming Soon</Badge>
+                        NFT{' '}
+                        <Badge variant="secondary" className="ml-2">
+                          Coming Soon
+                        </Badge>
                       </SelectItem>
-                      <SelectItem 
-                        value="OTHER" 
+                      <SelectItem
+                        value="OTHER"
                         className="orbitron text-[10px] text-white/50 hover:bg-verxio-purple/20"
                         disabled
                       >
-                        Other <Badge variant="secondary" className="ml-2">Coming Soon</Badge>
+                        Other{' '}
+                        <Badge variant="secondary" className="ml-2">
+                          Coming Soon
+                        </Badge>
                       </SelectItem>
                     </SelectContent>
                   </Select>
@@ -303,10 +322,10 @@ export function CreateRaffleForm({ programs }: CreateRaffleFormProps) {
                     <FormItem>
                       <FormLabel className="pixel-font">Token Amount</FormLabel>
                       <FormControl>
-                        <Input 
-                          type="number" 
-                          placeholder="Enter token amount" 
-                          {...field} 
+                        <Input
+                          type="number"
+                          placeholder="Enter token amount"
+                          {...field}
                           onChange={(e) => field.onChange(Number(e.target.value))}
                           className="bg-verxio-dark/50 border-verxio-purple/20 focus:border-verxio-purple orbitron placeholder:text-white/50 text-[10px] text-white/50 placeholder:orbitron placeholder:text-[10px]"
                         />
@@ -328,18 +347,21 @@ export function CreateRaffleForm({ programs }: CreateRaffleFormProps) {
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent className="bg-verxio-dark border-verxio-purple/20">
-                          <SelectItem 
+                          <SelectItem
                             value="EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"
                             className="orbitron text-[10px] text-white/50 hover:bg-verxio-purple/20"
                           >
                             USDC
                           </SelectItem>
-                          <SelectItem 
+                          <SelectItem
                             value="custom"
                             className="orbitron text-[10px] text-white/50 hover:bg-verxio-purple/20"
                             disabled
                           >
-                            Custom Token <Badge variant="secondary" className="ml-2">Coming Soon</Badge>
+                            Custom Token{' '}
+                            <Badge variant="secondary" className="ml-2">
+                              Coming Soon
+                            </Badge>
                           </SelectItem>
                         </SelectContent>
                       </Select>
@@ -375,7 +397,10 @@ export function CreateRaffleForm({ programs }: CreateRaffleFormProps) {
               <div className="flex items-start gap-2 text-sm text-white/70">
                 <Info className="h-4 w-4 mt-0.5 flex-shrink-0" />
                 <p>
-                  {form.watch('prizeDetails.token.amount')} USDC will be distributed across {form.watch('numWinners')} winner{form.watch('numWinners') > 1 ? 's' : ''} ({Number((form.watch('prizeDetails.token.amount') / form.watch('numWinners')).toFixed(1))} USDC per winner)
+                  {form.watch('prizeDetails.token.amount')} USDC will be distributed across {form.watch('numWinners')}{' '}
+                  winner{form.watch('numWinners') > 1 ? 's' : ''} (
+                  {Number((form.watch('prizeDetails.token.amount') / form.watch('numWinners')).toFixed(1))} USDC per
+                  winner)
                 </p>
               </div>
             )}
@@ -492,12 +517,7 @@ export function CreateRaffleForm({ programs }: CreateRaffleFormProps) {
 
         <div className="flex justify-between mt-8">
           {activeTab !== 'basics' ? (
-            <Button
-              type="button"
-              variant="outline"
-              onClick={handleBack}
-              className="pixel-font"
-            >
+            <Button type="button" variant="outline" onClick={handleBack} className="pixel-font">
               Back
             </Button>
           ) : (
@@ -515,10 +535,7 @@ export function CreateRaffleForm({ programs }: CreateRaffleFormProps) {
               <Button
                 type="button"
                 onClick={handleNext}
-                disabled={
-                  (activeTab === 'basics' && !isBasicsValid) ||
-                  (activeTab === 'prize' && !isPrizeValid)
-                }
+                disabled={(activeTab === 'basics' && !isBasicsValid) || (activeTab === 'prize' && !isPrizeValid)}
                 className="pixel-font bg-gradient-to-r from-[#00FFE0] via-[#0085FF] to-[#7000FF] text-white hover:opacity-90"
               >
                 Next
@@ -544,4 +561,4 @@ export function CreateRaffleForm({ programs }: CreateRaffleFormProps) {
       </form>
     </Form>
   )
-} 
+}

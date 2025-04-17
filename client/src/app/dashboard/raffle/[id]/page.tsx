@@ -71,12 +71,17 @@ export default function RaffleDetailsPage() {
               <p className="text-white/70">{raffle.description}</p>
             </div>
             <div className="flex items-center gap-2">
-              <span className={`px-3 py-1 rounded-full text-sm ${
-                raffle.status === 'UPCOMING' ? 'bg-yellow-500/20 text-yellow-500' :
-                raffle.status === 'ACTIVE' ? 'bg-green-500/20 text-green-500' :
-                raffle.status === 'COMPLETED' ? 'bg-blue-500/20 text-blue-500' :
-                'bg-red-500/20 text-red-500'
-              }`}>
+              <span
+                className={`px-3 py-1 rounded-full text-sm ${
+                  raffle.status === 'UPCOMING'
+                    ? 'bg-yellow-500/20 text-yellow-500'
+                    : raffle.status === 'ACTIVE'
+                      ? 'bg-green-500/20 text-green-500'
+                      : raffle.status === 'COMPLETED'
+                        ? 'bg-blue-500/20 text-blue-500'
+                        : 'bg-red-500/20 text-red-500'
+                }`}
+              >
                 {raffle.status}
               </span>
             </div>
@@ -140,8 +145,7 @@ export default function RaffleDetailsPage() {
                             <span className="text-white">Pass:</span> {winner.passPublicKey}
                           </p>
                           <p className="text-white/70">
-                            <span className="text-white">Status:</span>{' '}
-                            {winner.claimed ? 'Claimed' : 'Not Claimed'}
+                            <span className="text-white">Status:</span> {winner.claimed ? 'Claimed' : 'Not Claimed'}
                           </p>
                         </div>
                       </div>
@@ -166,13 +170,11 @@ export default function RaffleDetailsPage() {
                 Raffle ends {formatDistanceToNow(new Date(raffle.endDate), { addSuffix: true })}
               </p>
               {isCreator && (
-                <Button 
+                <Button
                   className="mt-4 bg-gradient-to-r from-[#00FFE0] via-[#0085FF] to-[#7000FF] text-white hover:opacity-90 orbitron"
                   asChild
                 >
-                  <a href={`/dashboard/raffle/${raffle.id}/draw`}>
-                    Draw Winners
-                  </a>
+                  <a href={`/dashboard/raffle/${raffle.id}/draw`}>Draw Winners</a>
                 </Button>
               )}
             </div>
@@ -181,4 +183,4 @@ export default function RaffleDetailsPage() {
       </Card>
     </div>
   )
-} 
+}

@@ -23,9 +23,7 @@ export default function CreateRafflePage() {
     return (
       <div className="flex flex-col items-center justify-center py-12">
         <h2 className="text-xl font-semibold text-white orbitron mb-2">Connect Wallet</h2>
-        <p className="text-white/70 text-center max-w-md">
-          Please connect your wallet to create a raffle.
-        </p>
+        <p className="text-white/70 text-center max-w-md">Please connect your wallet to create a raffle.</p>
       </div>
     )
   }
@@ -43,4 +41,4 @@ export default function CreateRafflePage() {
       </Card>
     </div>
   )
-} 
+}
