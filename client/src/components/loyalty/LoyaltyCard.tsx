@@ -44,8 +44,8 @@ export default function LoyaltyCard({
   // Create gradient colors based on brand color
   const gradientColors = {
     primary: brandColor,
-    glow: 'shadow-neon-purple',
-    textGlow: 'text-glow',
+      glow: 'shadow-neon-purple',
+      textGlow: 'text-glow',
     borderStyle: `border-2 border-opacity-30 shadow-[0_0_15px_rgba(157,78,221,0.3)]`,
   }
 
@@ -84,11 +84,11 @@ export default function LoyaltyCard({
 
   return (
     <div className="space-y-2">
-      <motion.div
+    <motion.div
         ref={cardRef}
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5 }}
         className="card-border-gradient w-[450px] h-[650px]"
         style={{
           borderColor: brandColor,
@@ -97,7 +97,7 @@ export default function LoyaltyCard({
       >
         <div className="p-6 backdrop-blur-md h-full flex flex-col">
           {/* Header */}
-          <div className="flex items-start justify-between mb-4">
+        <div className="flex items-start justify-between mb-4">
             <div className="flex-1 min-w-0 mr-4">
               <h2
                 className={`pixel-font text-xl font-bold text-white ${gradientColors.textGlow} mb-1 truncate`}
@@ -133,7 +133,7 @@ export default function LoyaltyCard({
           <div className="flex-grow flex justify-center items-center mb-4">
             <div
               className="w-full h-[250px] rounded-2xl overflow-hidden"
-              style={{
+            style={{
                 background: `linear-gradient(135deg, ${brandColor}, ${brandColor}dd)`,
                 boxShadow: `0 0 15px ${brandColor}40`,
               }}
@@ -145,12 +145,12 @@ export default function LoyaltyCard({
                 height={250}
                 className="w-full h-full object-cover"
               />
-            </div>
+        </div>
           </div>
 
           {/* Card Details */}
           <div className="space-y-2">
-            <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between">
               <span className="text-white/70">Total Earned Points</span>
               <Badge
                 className="pixel-font py-1 px-3"
@@ -167,14 +167,14 @@ export default function LoyaltyCard({
               <div className="flex items-center justify-between">
                 <span className="text-white/70">Last Action</span>
                 <span className="text-white/90 text-sm">{lastAction}</span>
-              </div>
+          </div>
             )}
             {rewards.length > 0 && (
               <div className="flex items-center justify-between">
                 <span className="text-white/70">Current Reward</span>
                 <Badge
                   className="pixel-font py-1 px-2 text-[10px]"
-                  style={{
+            style={{
                     backgroundColor: `${brandColor}40`,
                     color: 'white',
                   }}
@@ -198,18 +198,18 @@ export default function LoyaltyCard({
                   <span>Scan QR to view pass details</span>
                 </div>
                 <div className="bg-white p-2 rounded-lg">
-                  <QRCode
+            <QRCode
                     value={qrCodeUrl}
                     size={80}
                     style={{ height: 'auto', maxWidth: '100%', width: '100%' }}
                     level="H"
-                  />
-                </div>
-              </div>
+            />
+          </div>
+        </div>
               <div className="pt-2 text-center">
                 <p className="text-[10px] text-white/30">Powered by Verxio Protocol</p>
               </div>
-            </div>
+          </div>
           </div>
         </div>
       </motion.div>
