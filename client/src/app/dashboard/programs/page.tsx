@@ -60,6 +60,7 @@ export default function ProgramsPage() {
         // First fetch programs from database
         const response = await fetch(`/api/getPrograms?creator=${walletPublicKey.toString()}`)
         const dbPrograms = await response.json()
+        console.log('dbPrograms', dbPrograms)
 
         // Then fetch program details for each program
         const programsWithDetails = await Promise.all(
