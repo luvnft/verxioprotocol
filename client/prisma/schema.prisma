@@ -18,7 +18,8 @@ model LoyaltyProgram {
   creator     String   
   publicKey   String 
   privateKey  String   ///@encrypted
-  signature   String 
+  signature   String
+  network     String
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 }
@@ -29,6 +30,7 @@ model LoyaltyPass {
   recipient   String  
   publicKey   String 
   privateKey  String   ///@encrypted
+  network     String
   signature   String 
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt

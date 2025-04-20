@@ -3,8 +3,6 @@
 import { useEffect, useState, use } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { useVerxioProgram } from '@/lib/methods/initializeProgram'
-import { getProgramDetails } from '@verxioprotocol/core'
-import { publicKey } from '@metaplex-foundation/umi'
 import ProgramCard from '@/components/loyalty/ProgramCard'
 import { Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -14,6 +12,7 @@ import { getImageFromMetadata } from '@/lib/getImageFromMetadata'
 import { mintLoyaltyPass } from '@/components/program/mintLoyaltyPass'
 import { SuccessModal } from '@/components/ui/success-modal'
 import { toast } from 'sonner'
+import { useNetwork } from '@/lib/network-context'
 
 interface ProgramTier {
   name: string
@@ -35,16 +34,18 @@ interface ProgramDetails {
     brandColor?: string
     [key: string]: any
   }
+  network: string
 }
 
 export default function PublicProgramPage({ params }: { params: Promise<{ programId: string }> }) {
+  const resolvedParams = use(params)
   const [program, setProgram] = useState<ProgramDetails | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [bannerImage, setBannerImage] = useState<string | null>(null)
   const context = useVerxioProgram()
   const { connected, publicKey: address } = useWallet()
-  const resolvedParams = use(params)
+  const { network } = useNetwork()
   const qrCodeUrl = program ? `${window.location.origin}/program/${program.collectionAddress}` : ''
   const [isMinting, setIsMinting] = useState(false)
   const [showSuccessModal, setShowSuccessModal] = useState(false)
@@ -54,15 +55,20 @@ export default function PublicProgramPage({ params }: { params: Promise<{ progra
     let isMounted = true
 
     async function fetchProgram() {
-      if (!context) {
+      if (!network) {
         setIsLoading(false)
         return
       }
 
       try {
         setError(null)
-        context.collectionAddress = publicKey(resolvedParams.programId)
-        const details = await getProgramDetails(context)
+        const response = await fetch(`/api/getProgramDetails?programId=${resolvedParams.programId}&network=${network}`)
+        const details = await response.json()
+
+        if (!response.ok) {
+          throw new Error(details.error || 'Failed to fetch program details')
+        }
+
         if (isMounted) {
           setProgram(details)
           // Fetch the image URL from metadata
@@ -88,7 +94,7 @@ export default function PublicProgramPage({ params }: { params: Promise<{ progra
     return () => {
       isMounted = false
     }
-  }, [context, resolvedParams.programId])
+  }, [resolvedParams.programId, network])
 
   const handleMintPass = async () => {
     if (!address) {
@@ -106,6 +112,16 @@ export default function PublicProgramPage({ params }: { params: Promise<{ progra
       return
     }
 
+    if (!network) {
+      toast.error('Network not selected')
+      return
+    }
+
+    if (program.network !== network) {
+      toast.error(`Please switch to ${program.network} network to mint this pass`)
+      return
+    }
+
     setIsMinting(true)
     try {
       const result = await mintLoyaltyPass(
@@ -114,9 +130,11 @@ export default function PublicProgramPage({ params }: { params: Promise<{ progra
         program.name,
         program.uri,
         address.toString(),
+        network,
       )
 
       if (result) {
+        toast.success('Loyalty pass minted successfully!')
         setSuccessData({
           title: 'Passes Issued Successfully',
           message: `Your loyalty pass has been issued successfully`,
@@ -124,7 +142,6 @@ export default function PublicProgramPage({ params }: { params: Promise<{ progra
         })
       }
       setShowSuccessModal(true)
-      toast.success('Loyalty pass minted successfully!')
     } catch (error) {
       console.error('Error minting pass:', error)
       toast.error('Failed to mint loyalty pass')
