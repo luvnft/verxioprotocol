@@ -17,6 +17,7 @@ import { convertSecretKeyToKeypair } from '@/lib/utils'
 import bs58 from 'bs58'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { SuccessModal } from '@/components/ui/success-modal'
+import { useNetwork } from '@/lib/network-context'
 
 interface ProgramActionsProps {
   programId: string
@@ -37,6 +38,7 @@ export function ProgramActions({ programId, pointsPerAction, programName, progra
   const [showSuccessModal, setShowSuccessModal] = useState(false)
   const [successData, setSuccessData] = useState<{ title: string; message: string; signature?: string } | null>(null)
   const context = useVerxioProgram()
+  const { network } = useNetwork()
 
   const handleTabChange = (value: string) => {
     setActiveTab(value)
@@ -67,16 +69,19 @@ export function ProgramActions({ programId, pointsPerAction, programName, progra
             passMetadataUri: programUri,
             assetSigner,
           })
-          // Store in database
+          // Store in database with network
           await fetch('/api/storeLoyaltyPass', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
             },
             body: JSON.stringify({
+              collection: programId,
+              recipient: addr,
               publicKey: result.asset.publicKey.toString(),
               privateKey: bs58.encode(result.asset.secretKey),
               signature: result.signature,
+              network: network, // Add network to the request
             }),
           })
           setSuccessData({
@@ -98,7 +103,7 @@ export function ProgramActions({ programId, pointsPerAction, programName, progra
           assetSigner,
         })
 
-        // Store in database
+        // Store in database with network
         await fetch('/api/storeLoyaltyPass', {
           method: 'POST',
           headers: {
@@ -110,6 +115,7 @@ export function ProgramActions({ programId, pointsPerAction, programName, progra
             publicKey: result.asset.publicKey.toString(),
             privateKey: bs58.encode(result.asset.secretKey),
             signature: result.signature,
+            network: network, // Add network to the request
           }),
         })
         setSuccessData({
@@ -575,6 +581,7 @@ export function ProgramActions({ programId, pointsPerAction, programName, progra
           title={successData.title}
           message={successData.message}
           transactionSignature={successData.signature}
+          network={network}
         />
       )}
     </>

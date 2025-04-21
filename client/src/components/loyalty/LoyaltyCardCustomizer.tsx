@@ -20,6 +20,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Info, Upload } from 'lucide-react'
 import { generateImageUri } from '@/lib/metadata/generateImageUri'
 import { generateNftMetadata } from '@/lib/metadata/generateNftMetadata'
+import { useNetwork } from '@/lib/network-context'
 
 const colorOptions = [
   { name: 'Purple', value: 'purple' },
@@ -37,6 +38,7 @@ interface LoyaltyCardCustomizerProps {
 
 export default function LoyaltyCardCustomizer({ onRotationComplete }: LoyaltyCardCustomizerProps) {
   const { connected, publicKey: address } = useWallet()
+  const { network } = useNetwork()
   const context = useVerxioProgram()
   const router = useRouter()
   const [isLoading, setIsLoading] = useState(false)
@@ -231,7 +233,7 @@ export default function LoyaltyCardCustomizer({ onRotationComplete }: LoyaltyCar
         pointsPerAction: formData.pointsPerAction,
       })
 
-      // Store in database
+      // Store in database with network
       if (!address) {
         toast.error('No account address available')
         return
@@ -247,6 +249,7 @@ export default function LoyaltyCardCustomizer({ onRotationComplete }: LoyaltyCar
           publicKey: result.collection.publicKey.toString(),
           privateKey: bs58.encode(result.collection.secretKey),
           signature: result.signature,
+          network: network,
         }),
       })
 

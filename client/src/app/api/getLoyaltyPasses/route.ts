@@ -1,25 +1,50 @@
 import { NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
+import { createServerProgram, Network } from '@/lib/methods/serverProgram'
+import { getAssetData } from '@verxioprotocol/core'
+import { publicKey } from '@metaplex-foundation/umi'
 
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url)
     const recipient = searchParams.get('recipient')
+    const network = searchParams.get('network') as Network
 
     if (!recipient) {
       return NextResponse.json({ error: 'Recipient address is required' }, { status: 400 })
     }
 
-    const loyaltyPasses = await prisma.loyaltyPass.findMany({
+    if (!network) {
+      return NextResponse.json({ error: 'Network is required' }, { status: 400 })
+    }
+
+    // First, get passes from database
+    const dbPasses = await prisma.loyaltyPass.findMany({
       where: {
         recipient: recipient,
+        network: network,
       },
       orderBy: {
         createdAt: 'desc',
       },
     })
 
-    return NextResponse.json(loyaltyPasses)
+    // Then fetch asset data for each pass
+    const passesWithDetails = await Promise.all(
+      dbPasses.map(async (pass) => {
+        try {
+          // Create server context for this pass
+          const context = createServerProgram(pass.recipient, pass.publicKey, network)
+          const details = await getAssetData(context, publicKey(pass.publicKey))
+          return { ...pass, details }
+        } catch (error) {
+          // Silently handle errors and return just the database data
+          return pass
+        }
+      }),
+    )
+
+    return NextResponse.json(passesWithDetails)
   } catch (error) {
     console.error('Error fetching loyalty passes:', error)
     return NextResponse.json({ error: 'Failed to fetch loyalty passes' }, { status: 500 })

@@ -2,14 +2,12 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Loader2 } from 'lucide-react'
 import { useState, useEffect, useRef } from 'react'
 import LoyaltyCard from '@/components/loyalty/LoyaltyCard'
-import { getAssetData } from '@verxioprotocol/core'
 import { useRouter } from 'next/navigation'
-import { useVerxioProgram } from '@/lib/methods/initializeProgram'
-import { publicKey } from '@metaplex-foundation/umi'
 import { useWallet } from '@solana/wallet-adapter-react'
+import { useNetwork } from '@/lib/network-context'
 import { getImageFromMetadata } from '@/lib/getImageFromMetadata'
 
-export interface AssetData {
+export interface PassDetails {
   xp: number
   lastAction: string | null
   actionHistory: Array<{
@@ -24,6 +22,7 @@ export interface AssetData {
   name: string
   uri: string
   owner: string
+  pass: string
   metadata: {
     organizationName: string
     brandColor?: string
@@ -36,27 +35,18 @@ export interface AssetData {
   }>
 }
 
-interface LoyaltyPass {
-  programName: string
-  owner: string
-  pointsPerAction: Record<string, number>
-  organizationName: string
-  brandColor: string
-  loyaltyPassAddress: string
-  qrCodeUrl: string
-  totalEarnedPoints: number
-  tier: string
-  assetData?: AssetData
-  bannerImage: string
+interface PassWithImage {
+  details: PassDetails
+  bannerImage?: string
 }
 
 export default function MyLoyaltyPasses() {
   const router = useRouter()
-  const context = useVerxioProgram()
   const { publicKey: walletPublicKey } = useWallet()
+  const { network } = useNetwork()
   const [currentPage, setCurrentPage] = useState(1)
   const [isLoading, setIsLoading] = useState(true)
-  const [loyaltyPasses, setLoyaltyPasses] = useState<LoyaltyPass[]>([])
+  const [loyaltyPasses, setLoyaltyPasses] = useState<PassWithImage[]>([])
   const isFetching = useRef(false)
   const mounted = useRef(true)
 
@@ -75,48 +65,27 @@ export default function MyLoyaltyPasses() {
 
   useEffect(() => {
     async function fetchPasses() {
-      if (!context || !walletPublicKey || isFetching.current) return
+      if (!walletPublicKey || !network || isFetching.current) return
 
       isFetching.current = true
       setIsLoading(true)
 
       try {
-        // First fetch passes from database
-        const response = await fetch(`/api/getLoyaltyPasses?recipient=${walletPublicKey.toString()}`)
-        const dbPasses = await response.json()
+        const response = await fetch(`/api/getLoyaltyPasses?recipient=${walletPublicKey.toString()}&network=${network}`)
+        const data = await response.json()
 
-        // Then fetch asset data for each pass
-        const passesWithData = await Promise.all(
-          dbPasses.map(async (pass: any) => {
-            try {
-              const data = await getAssetData(context, publicKey(pass.publicKey))
-              if (data) {
-                const bannerImage = await getImageFromMetadata(data.uri)
-                return {
-                  programName: data.name,
-                  owner: data.owner,
-                  pointsPerAction: {},
-                  organizationName: data.metadata.organizationName,
-                  brandColor: data.metadata.brandColor || '#00adef',
-                  loyaltyPassAddress: pass.publicKey,
-                  qrCodeUrl:
-                    typeof window !== 'undefined' ? `${window.location.origin}/dashboard/${pass.publicKey}` : '',
-                  totalEarnedPoints: data.xp,
-                  tier: data.currentTier,
-                  assetData: data,
-                  bannerImage,
-                }
-              }
-            } catch (err) {
-              console.error(`Error fetching data for pass ${pass.publicKey}:`, err)
-            }
-            return null
-          }),
-        )
-
-        // Only update state if component is still mounted
         if (mounted.current) {
-          setLoyaltyPasses(passesWithData.filter(Boolean))
+          // Fetch images for each pass
+          const passesWithImages = await Promise.all(
+            data.map(async (pass: PassWithImage) => {
+              if (pass.details?.uri) {
+                const bannerImage = await getImageFromMetadata(pass.details.uri)
+                return { ...pass, bannerImage }
+              }
+              return pass
+            }),
+          )
+          setLoyaltyPasses(passesWithImages)
         }
       } catch (error) {
         console.error('Error fetching passes:', error)
@@ -129,7 +98,7 @@ export default function MyLoyaltyPasses() {
     }
 
     fetchPasses()
-  }, [context, walletPublicKey])
+  }, [walletPublicKey, network])
 
   if (isLoading) {
     return (
@@ -156,30 +125,35 @@ export default function MyLoyaltyPasses() {
       ) : (
         <>
           <div className="grid grid-cols-1 sm:grid-cols-1 lg:grid-cols-2 xl:grid-cols-2 gap-16">
-            {currentCards.map((pass, index) => (
-              <div
-                key={index}
-                className="flex justify-center cursor-pointer transform transition-transform hover:scale-105"
-                onClick={() => router.push(`/dashboard/${pass.loyaltyPassAddress}`)}
-              >
-                <div className="w-full max-w-[400px]">
-                  <LoyaltyCard
-                    programName={pass.programName}
-                    owner={pass.owner}
-                    pointsPerAction={pass.pointsPerAction}
-                    organizationName={pass.organizationName}
-                    brandColor={pass.brandColor}
-                    loyaltyPassAddress={pass.loyaltyPassAddress}
-                    qrCodeUrl={pass.qrCodeUrl}
-                    totalEarnedPoints={pass.totalEarnedPoints}
-                    tier={pass.tier}
-                    lastAction={pass.assetData?.lastAction}
-                    rewards={pass.assetData?.rewards}
-                    bannerImage={pass.bannerImage}
-                  />
-                </div>
-              </div>
-            ))}
+            {currentCards.map(
+              (pass, index) =>
+                pass.details && (
+                  <div
+                    key={index}
+                    className="flex justify-center cursor-pointer transform transition-transform hover:scale-105"
+                    onClick={() => router.push(`/dashboard/${pass.details?.pass}`)}
+                  >
+                    <div className="w-full max-w-[400px]">
+                      <LoyaltyCard
+                        programName={pass.details.name}
+                        owner={pass.details.owner}
+                        pointsPerAction={{}}
+                        organizationName={pass.details.metadata.organizationName}
+                        brandColor={pass.details.metadata.brandColor || '#00adef'}
+                        loyaltyPassAddress={pass.details.owner}
+                        qrCodeUrl={
+                          typeof window !== 'undefined' ? `${window.location.origin}/pass/${pass.details.pass}` : ''
+                        }
+                        totalEarnedPoints={pass.details.xp}
+                        tier={pass.details.currentTier}
+                        lastAction={pass.details.lastAction}
+                        rewards={pass.details.rewards}
+                        bannerImage={pass.bannerImage || ''}
+                      />
+                    </div>
+                  </div>
+                ),
+            )}
           </div>
 
           {/* Pagination */}

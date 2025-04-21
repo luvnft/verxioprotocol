@@ -3,7 +3,7 @@ import prisma from '@/lib/prisma'
 
 export async function POST(request: Request) {
   try {
-    const { publicKey, privateKey, signature, collection, recipient } = await request.json()
+    const { collection, recipient, publicKey, privateKey, signature, network } = await request.json()
 
     const pass = await prisma.loyaltyPass.create({
       data: {
@@ -12,6 +12,7 @@ export async function POST(request: Request) {
         publicKey,
         privateKey,
         signature,
+        network,
       },
     })
 

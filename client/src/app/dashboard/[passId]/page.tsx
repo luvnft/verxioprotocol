@@ -9,7 +9,7 @@ import LoyaltyCard from '@/components/loyalty/LoyaltyCard'
 import { getAssetData } from '@verxioprotocol/core'
 import { useVerxioProgram } from '@/lib/methods/initializeProgram'
 import { publicKey } from '@metaplex-foundation/umi'
-import { AssetData } from '@/components/dashboard/MyLoyaltyPass'
+import { PassDetails } from '@/components/dashboard/MyLoyaltyPass'
 import { getImageFromMetadata } from '@/lib/getImageFromMetadata'
 
 interface PageProps {
@@ -22,7 +22,7 @@ export default function LoyaltyPassDetails({ params }: PageProps) {
   const [isLoading, setIsLoading] = useState(true)
   const [currentPage, setCurrentPage] = useState(1)
   const [passId, setPassId] = useState<string>('')
-  const [assetData, setAssetData] = useState<AssetData | null>(null)
+  const [assetData, setAssetData] = useState<PassDetails | null>(null)
   const [bannerImage, setBannerImage] = useState<string | null>(null)
 
   useEffect(() => {
@@ -107,7 +107,7 @@ export default function LoyaltyPassDetails({ params }: PageProps) {
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
-                  {assetData.rewardTiers.map((tier: any, index: number) => (
+                  {assetData.rewardTiers.map((tier, index) => (
                     <div
                       key={index}
                       className="p-3 rounded-lg bg-black/40 border border-slate-800/20 hover:bg-black/50 transition-colors"
@@ -126,7 +126,7 @@ export default function LoyaltyPassDetails({ params }: PageProps) {
                         <span className="text-white/70 text-sm">({tier.xpRequired} XP)</span>
                       </div>
                       <div className="mt-2">
-                        {tier.rewards.map((reward: string, i: number) => (
+                        {tier.rewards.map((reward, i) => (
                           <div key={i} className="flex items-center gap-2 text-white/90">
                             <div className="w-1.5 h-1.5 rounded-full bg-white/50" />
                             <span>{reward}</span>
@@ -207,17 +207,17 @@ export default function LoyaltyPassDetails({ params }: PageProps) {
           <div className="flex justify-center">
             <div className="w-full max-w-[400px]">
               <LoyaltyCard
-                programName={assetData?.name || ''}
-                owner={assetData?.owner || ''}
+                programName={assetData.name}
+                owner={assetData.owner}
                 pointsPerAction={{}}
-                organizationName={assetData?.metadata.organizationName || ''}
-                brandColor={assetData?.metadata.brandColor || '#9d4edd'}
+                organizationName={assetData.metadata.organizationName}
+                brandColor={assetData.metadata.brandColor || '#9d4edd'}
                 loyaltyPassAddress={passId}
-                qrCodeUrl={`${window.location.origin}/dashboard/${passId}`}
-                totalEarnedPoints={assetData?.xp || 0}
-                tier={assetData?.currentTier || ''}
-                lastAction={assetData?.lastAction || null}
-                rewards={assetData?.rewards || []}
+                qrCodeUrl={`${window.location.origin}/pass/${passId}`}
+                totalEarnedPoints={assetData.xp}
+                tier={assetData.currentTier}
+                lastAction={assetData.lastAction}
+                rewards={assetData.rewards}
                 bannerImage={bannerImage}
               />
             </div>

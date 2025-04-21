@@ -10,6 +10,7 @@ export async function mintLoyaltyPass(
   programName: string,
   programUri: string,
   recipientAddress: string,
+  network: string,
 ): Promise<{ signature: string; publicKey: string } | null> {
   try {
     const assetSigner = generateSigner(context.umi)
@@ -33,6 +34,7 @@ export async function mintLoyaltyPass(
         publicKey: result.asset.publicKey.toString(),
         privateKey: bs58.encode(result.asset.secretKey),
         signature: result.signature,
+        network,
       }),
     })
 
