@@ -3,7 +3,6 @@ import prisma from '@/lib/prisma'
 import { createServerProgram, Network } from '@/lib/methods/serverProgram'
 import { getAssetData } from '@verxioprotocol/core'
 import { publicKey } from '@metaplex-foundation/umi'
-import { getImageFromMetadata } from '@/lib/getImageFromMetadata'
 
 export async function GET(request: Request) {
   try {
@@ -36,17 +35,11 @@ export async function GET(request: Request) {
         try {
           // Create server context for this pass
           const context = createServerProgram(pass.recipient, pass.publicKey, network)
-
           const details = await getAssetData(context, publicKey(pass.publicKey))
-          const bannerImage = details ? await getImageFromMetadata(details.uri) : null
-
-          return {
-            details,
-            bannerImage,
-          }
+          return { ...pass, details }
         } catch (error) {
-          console.error(`Error fetching details for pass ${pass.publicKey}:`, error)
-          return pass // Return just the database data if fetching details fails
+          // Silently handle errors and return just the database data
+          return pass
         }
       }),
     )

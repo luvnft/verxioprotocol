@@ -5,6 +5,7 @@ import LoyaltyCard from '@/components/loyalty/LoyaltyCard'
 import { useRouter } from 'next/navigation'
 import { useWallet } from '@solana/wallet-adapter-react'
 import { useNetwork } from '@/lib/network-context'
+import { getImageFromMetadata } from '@/lib/getImageFromMetadata'
 
 export interface PassDetails {
   xp: number
@@ -35,8 +36,8 @@ export interface PassDetails {
 }
 
 interface PassWithImage {
-  details: PassDetails | null
-  bannerImage: string | null
+  details: PassDetails
+  bannerImage?: string
 }
 
 export default function MyLoyaltyPasses() {
@@ -72,8 +73,19 @@ export default function MyLoyaltyPasses() {
       try {
         const response = await fetch(`/api/getLoyaltyPasses?recipient=${walletPublicKey.toString()}&network=${network}`)
         const data = await response.json()
+
         if (mounted.current) {
-          setLoyaltyPasses(data)
+          // Fetch images for each pass
+          const passesWithImages = await Promise.all(
+            data.map(async (pass: PassWithImage) => {
+              if (pass.details?.uri) {
+                const bannerImage = await getImageFromMetadata(pass.details.uri)
+                return { ...pass, bannerImage }
+              }
+              return pass
+            }),
+          )
+          setLoyaltyPasses(passesWithImages)
         }
       } catch (error) {
         console.error('Error fetching passes:', error)
