@@ -1,6 +1,6 @@
 # Verxio Protocol
 
-On-chain loyalty protocol powered by Metaplex CORE for creating and managing loyalty programs
+On-chain loyalty protocol powered by Metaplex's CORE for creating and managing loyalty programs
 
 ## Features
 
