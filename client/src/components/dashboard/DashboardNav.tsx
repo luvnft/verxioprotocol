@@ -74,11 +74,6 @@ export default function DashboardNav({ isOrganization }: DashboardNavProps) {
       icon: Trophy,
       exact: false,
     },
-    // {
-    //   title: 'Settings',
-    //   href: '/dashboard/settings',
-    //   icon: Settings,
-    // },
   ]
 
   const navItems = isOrganization ? organizationNavItems : userNavItems

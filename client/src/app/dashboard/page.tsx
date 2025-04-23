@@ -8,13 +8,8 @@ import Link from 'next/link'
 import MyLoyaltyPasses from '@/components/dashboard/MyLoyaltyPass'
 import { useEffect, useState, useRef } from 'react'
 import { useNetwork } from '@/lib/network-context'
+import { getProgramStats, ProgramStats } from '@/app/actions/program'
 
-interface ProgramStats {
-  totalPrograms: number
-  activePasses: number
-  totalMembers: number
-  totalPoints: number
-}
 
 export default function DashboardPage() {
   const { connected, publicKey: walletPublicKey } = useWallet()
@@ -37,8 +32,7 @@ export default function DashboardPage() {
 
       setIsLoading(true)
       try {
-        const response = await fetch(`/api/getProgramStats?creator=${walletPublicKey.toString()}&network=${network}`)
-        const data = await response.json()
+        const data = await getProgramStats(walletPublicKey.toString(), network)
         if (mounted.current) {
           setStats(data)
         }

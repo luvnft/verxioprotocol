@@ -7,25 +7,11 @@ import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import { useWallet } from '@solana/wallet-adapter-react'
 import { useNetwork } from '@/lib/network-context'
+import { getPrograms, ProgramWithDetails } from '@/app/actions/program'
 
-interface ProgramDetails {
-  collectionAddress: string
-  creator: string
-  metadata: {
-    organizationName: string
-    brandColor: string
-  }
-  name: string
-  numMinted: number
-  pointsPerAction: Record<string, number>
-  tiers: any[]
-  transferAuthority: string
-  updateAuthority: string
-  uri: string
-}
 
 export default function ProgramsPage() {
-  const [programs, setPrograms] = useState<{ details: ProgramDetails }[]>([])
+  const [programs, setPrograms] = useState<ProgramWithDetails[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [currentPage, setCurrentPage] = useState(1)
   const { publicKey: walletPublicKey } = useWallet()
@@ -43,8 +29,7 @@ export default function ProgramsPage() {
 
       setIsLoading(true)
       try {
-        const response = await fetch(`/api/getPrograms?creator=${walletPublicKey.toString()}&network=${network}`)
-        const data = await response.json()
+        const data = await getPrograms(walletPublicKey.toString(), network)
         setPrograms(data)
       } catch (error) {
         console.error('Error fetching programs:', error)

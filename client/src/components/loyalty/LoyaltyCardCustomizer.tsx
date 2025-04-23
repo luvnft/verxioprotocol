@@ -21,6 +21,7 @@ import { Info, Upload } from 'lucide-react'
 import { generateImageUri } from '@/lib/metadata/generateImageUri'
 import { generateNftMetadata } from '@/lib/metadata/generateNftMetadata'
 import { useNetwork } from '@/lib/network-context'
+import { storeLoyaltyProgram } from '@/app/actions/program'
 
 const colorOptions = [
   { name: 'Purple', value: 'purple' },
@@ -233,24 +234,18 @@ export default function LoyaltyCardCustomizer({ onRotationComplete }: LoyaltyCar
         pointsPerAction: formData.pointsPerAction,
       })
 
-      // Store in database with network
+      // Store in database using server action
       if (!address) {
         toast.error('No account address available')
         return
       }
 
-      await fetch('/api/storeLoyaltyProgram', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          creator: address?.toString(),
-          publicKey: result.collection.publicKey.toString(),
-          privateKey: bs58.encode(result.collection.secretKey),
-          signature: result.signature,
-          network: network,
-        }),
+      await storeLoyaltyProgram({
+        creator: address.toString(),
+        publicKey: result.collection.publicKey.toString(),
+        privateKey: bs58.encode(result.collection.secretKey),
+        signature: result.signature,
+        network: network,
       })
 
       setSuccessData({
