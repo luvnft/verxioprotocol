@@ -102,4 +102,4 @@ export const createRaffle = cache(async (data: CreateRaffleData) => {
     console.error('Error creating raffle:', error)
     throw new Error('Failed to create raffle')
   }
-}) 
+})

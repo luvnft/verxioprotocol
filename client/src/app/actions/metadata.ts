@@ -27,4 +27,4 @@ export const storeMetadata = cache(async (data: any) => {
     console.error('Error uploading metadata:', error)
     throw new Error('Failed to store metadata')
   }
-}) 
+})

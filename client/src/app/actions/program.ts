@@ -5,6 +5,7 @@ import { createServerProgram, Network } from '@/lib/methods/serverProgram'
 import { getAssetData, getProgramDetails as getProgramDetailsCore } from '@verxioprotocol/core'
 import { publicKey } from '@metaplex-foundation/umi'
 import { getProgramNetwork } from '@/lib/methods/getProgramNetwork'
+import { getImageFromMetadata } from '@/lib/getImageFromMetadata'
 import { cache } from 'react'
 
 export interface ProgramStats {
@@ -14,7 +15,7 @@ export interface ProgramStats {
   totalPoints: string
 }
 
-interface MemberPass {
+export interface MemberPass {
   publicKey: string
   name: string
   xp: number
@@ -30,7 +31,7 @@ interface MemberPass {
   rewards: string[]
 }
 
-interface Member {
+export interface Member {
   address: string
   passes: MemberPass[]
   totalXp: number
@@ -52,6 +53,7 @@ export interface ProgramDetails {
   transferAuthority: string
   updateAuthority: string
   uri: string
+  network: string
 }
 
 export interface ProgramWithDetails {
@@ -137,7 +139,7 @@ export const getProgramStats = cache(async (creator: string, network: string): P
   }
 })
 
-export const getProgramDetails = cache(async (programId: string) => {
+export const getProgramDetails = cache(async (programId: string): Promise<ProgramWithDetails> => {
   try {
     if (!programId) {
       throw new Error('Program ID is required')
@@ -150,16 +152,33 @@ export const getProgramDetails = cache(async (programId: string) => {
     }
 
     // Create server context for this program
-    const context = createServerProgram(
-      programId,
-      programId,
-      network as Network,
-    )
+    const context = createServerProgram(programId, programId, network as Network)
 
     // Get program details using the context
-    const details = await getAssetData(context, publicKey(programId))
+    const details = await getProgramDetailsCore(context)
 
-    return { ...details, network }
+    if (!details) {
+      throw new Error('Failed to fetch program details')
+    }
+
+    return {
+      details: {
+        name: details.name || '',
+        uri: details.uri || '',
+        collectionAddress: programId,
+        updateAuthority: programId,
+        numMinted: 0,
+        transferAuthority: programId,
+        creator: programId,
+        tiers: [],
+        pointsPerAction: {},
+        metadata: {
+          organizationName: details.metadata?.organizationName || '',
+          brandColor: details.metadata?.brandColor || '#000000',
+        },
+        network,
+      },
+    }
   } catch (error) {
     console.error('Error fetching program details:', error)
     throw new Error('Failed to fetch program details')
@@ -193,7 +212,7 @@ export const getPrograms = cache(async (creator: string, network: string): Promi
         try {
           const context = createServerProgram(program.creator, program.publicKey, network as Network)
           const details = await getProgramDetailsCore(context)
-          
+
           if (!details) {
             throw new Error('Failed to fetch program details')
           }
@@ -212,6 +231,7 @@ export const getPrograms = cache(async (creator: string, network: string): Promi
               organizationName: details.metadata?.organizationName || '',
               brandColor: details.metadata?.brandColor || '#000000',
             },
+            network: network,
           }
 
           return { details: programDetails }
@@ -319,29 +339,25 @@ export const getProgramMembers = cache(async (creator: string, network: string):
   }
 })
 
-export const storeLoyaltyProgram = cache(async (data: {
-  creator: string
-  publicKey: string
-  privateKey: string
-  signature: string
-  network: string
-}) => {
-  try {
-    const { creator, publicKey, privateKey, signature, network } = data
+export const storeLoyaltyProgram = cache(
+  async (data: { creator: string; publicKey: string; privateKey: string; signature: string; network: string }) => {
+    try {
+      const { creator, publicKey, privateKey, signature, network } = data
 
-    const program = await prisma.loyaltyProgram.create({
-      data: {
-        creator,
-        publicKey,
-        privateKey,
-        signature,
-        network,
-      },
-    })
+      const program = await prisma.loyaltyProgram.create({
+        data: {
+          creator,
+          publicKey,
+          privateKey,
+          signature,
+          network,
+        },
+      })
 
-    return program
-  } catch (error) {
-    console.error('Error storing loyalty program:', error)
-    throw new Error('Failed to store loyalty program')
-  }
-}) 
+      return program
+    } catch (error) {
+      console.error('Error storing loyalty program:', error)
+      throw new Error('Failed to store loyalty program')
+    }
+  },
+)

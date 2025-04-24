@@ -5,13 +5,7 @@ import { Loader2, Trophy, Medal, Crown, ChevronLeft, ChevronRight, Sparkles } fr
 import { useEffect, useState } from 'react'
 import { useWallet } from '@solana/wallet-adapter-react'
 import { useNetwork } from '@/lib/network-context'
-
-interface LeaderboardMember {
-  address: string
-  totalXp: number
-  lastAction: string | null
-  rank: number
-}
+import { getLeaderboard, LeaderboardMember } from '@/app/actions/leaderboard'
 
 export default function LeaderboardPage() {
   const [members, setMembers] = useState<LeaderboardMember[]>([])
@@ -32,8 +26,7 @@ export default function LeaderboardPage() {
 
       setIsLoading(true)
       try {
-        const response = await fetch(`/api/getLeaderboard?creator=${walletPublicKey.toString()}&network=${network}`)
-        const data = await response.json()
+        const data = await getLeaderboard(walletPublicKey.toString(), network)
         setMembers(data)
       } catch (error) {
         console.error('Error fetching leaderboard:', error)

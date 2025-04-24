@@ -6,7 +6,7 @@ import { getAssetData } from '@verxioprotocol/core'
 import { publicKey } from '@metaplex-foundation/umi'
 import { cache } from 'react'
 
-interface LeaderboardMember {
+export interface LeaderboardMember {
   address: string
   totalXp: number
   lastAction: string | null
@@ -103,4 +103,4 @@ export const getLeaderboard = cache(async (creator: string, network: string): Pr
     console.error('Error fetching leaderboard:', error)
     throw new Error('Failed to fetch leaderboard')
   }
-}) 
+})

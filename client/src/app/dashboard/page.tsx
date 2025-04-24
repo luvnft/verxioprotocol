@@ -10,7 +10,6 @@ import { useEffect, useState, useRef } from 'react'
 import { useNetwork } from '@/lib/network-context'
 import { getProgramStats, ProgramStats } from '@/app/actions/program'
 
-
 export default function DashboardPage() {
   const { connected, publicKey: walletPublicKey } = useWallet()
   const { isOrganization, setIsOrganization } = useDashboard()

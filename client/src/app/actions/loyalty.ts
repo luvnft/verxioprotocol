@@ -8,7 +8,38 @@ import { getProgramNetwork } from '@/lib/methods/getProgramNetwork'
 import { getImageFromMetadata } from '@/lib/getImageFromMetadata'
 import { cache } from 'react'
 
-export const getLoyaltyPasses = cache(async (recipient: string, network: string) => {
+export interface PassWithImage {
+  details: {
+    xp: number
+    lastAction: string | null
+    actionHistory: Array<{
+      type: string
+      points: number
+      timestamp: number
+      newTotal: number
+    }>
+    currentTier: string
+    tierUpdatedAt: number
+    rewards: string[]
+    name: string
+    uri: string
+    owner: string
+    pass: string
+    metadata: {
+      organizationName: string
+      brandColor?: string
+      [key: string]: any
+    }
+    rewardTiers: Array<{
+      name: string
+      xpRequired: number
+      rewards: string[]
+    }>
+  }
+  bannerImage?: string
+}
+
+export const getLoyaltyPasses = cache(async (recipient: string, network: string): Promise<PassWithImage[]> => {
   try {
     if (!recipient) {
       throw new Error('Recipient address is required')
@@ -29,22 +60,50 @@ export const getLoyaltyPasses = cache(async (recipient: string, network: string)
       },
     })
 
-    // Then fetch asset data for each pass
+    // Then fetch asset data and images for each pass
     const passesWithDetails = await Promise.all(
       dbPasses.map(async (pass) => {
         try {
           // Create server context for this pass
           const context = createServerProgram(pass.recipient, pass.publicKey, network as Network)
           const details = await getAssetData(context, publicKey(pass.publicKey))
-          return { ...pass, details }
+
+          if (!details) {
+            return null
+          }
+
+          // Fetch image if URI exists
+          let bannerImage: string | undefined
+          if (details.uri) {
+            bannerImage = await getImageFromMetadata(details.uri)
+          }
+
+          return {
+            details: {
+              xp: details.xp,
+              lastAction: details.lastAction,
+              actionHistory: details.actionHistory,
+              currentTier: details.currentTier,
+              tierUpdatedAt: details.tierUpdatedAt,
+              rewards: details.rewards,
+              name: details.name,
+              uri: details.uri,
+              owner: details.owner,
+              pass: pass.publicKey,
+              metadata: details.metadata,
+              rewardTiers: details.rewardTiers,
+            },
+            bannerImage,
+          }
         } catch (error) {
-          // Silently handle errors and return just the database data
-          return pass
+          console.error(`Error fetching details for pass ${pass.publicKey}:`, error)
+          return null
         }
       }),
     )
 
-    return passesWithDetails
+    // Filter out null values and return valid passes
+    return passesWithDetails.filter((pass): pass is NonNullable<typeof pass> => pass !== null)
   } catch (error) {
     console.error('Error fetching loyalty passes:', error)
     throw new Error('Failed to fetch loyalty passes')
@@ -84,38 +143,54 @@ export const getPassDetails = cache(async (passId: string) => {
     // Get pass details using the context
     const details = await getAssetData(context, publicKey(passId))
 
-    return { ...details, network }
+    if (!details) {
+      throw new Error('Failed to fetch pass details')
+    }
+
+    // Fetch image if URI exists
+    let bannerImage: string | undefined
+    if (details.uri) {
+      bannerImage = await getImageFromMetadata(details.uri)
+    }
+
+    return {
+      ...details,
+      network,
+      bannerImage,
+    }
   } catch (error) {
     console.error('Error fetching pass details:', error)
     throw new Error('Failed to fetch pass details')
   }
 })
 
-export const storeLoyaltyPass = cache(async (data: {
-  collection: string
-  recipient: string
-  publicKey: string
-  privateKey: string
-  signature: string
-  network: string
-}) => {
-  try {
-    const { collection, recipient, publicKey, privateKey, signature, network } = data
+export const storeLoyaltyPass = cache(
+  async (data: {
+    collection: string
+    recipient: string
+    publicKey: string
+    privateKey: string
+    signature: string
+    network: string
+  }) => {
+    try {
+      const { collection, recipient, publicKey, privateKey, signature, network } = data
 
-    const pass = await prisma.loyaltyPass.create({
-      data: {
-        collection,
-        recipient,
-        publicKey,
-        privateKey,
-        signature,
-        network,
-      },
-    })
+      const pass = await prisma.loyaltyPass.create({
+        data: {
+          collection,
+          recipient,
+          publicKey,
+          privateKey,
+          signature,
+          network,
+        },
+      })
 
-    return pass
-  } catch (error) {
-    console.error('Error storing loyalty pass:', error)
-    throw new Error('Failed to store loyalty pass')
-  }
-}) 
+      return pass
+    } catch (error) {
+      console.error('Error storing loyalty pass:', error)
+      throw new Error('Failed to store loyalty pass')
+    }
+  },
+)

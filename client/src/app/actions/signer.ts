@@ -25,4 +25,4 @@ export const getSigner = cache(async (publicKey: string) => {
     console.error('Error getting signer:', error)
     throw new Error('Failed to get signer')
   }
-}) 
+})

@@ -9,7 +9,6 @@ import { useWallet } from '@solana/wallet-adapter-react'
 import { useNetwork } from '@/lib/network-context'
 import { getPrograms, ProgramWithDetails } from '@/app/actions/program'
 
-
 export default function ProgramsPage() {
   const [programs, setPrograms] = useState<ProgramWithDetails[]>([])
   const [isLoading, setIsLoading] = useState(true)
