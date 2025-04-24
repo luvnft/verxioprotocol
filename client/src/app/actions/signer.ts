@@ -3,7 +3,7 @@
 import prisma from '@/lib/prisma'
 import { cache } from 'react'
 
-export const getSigner = cache(async (publicKey: string) => {
+export const getAssetSigner = cache(async (publicKey: string) => {
   try {
     if (!publicKey) {
       throw new Error('Missing or invalid publicKey')
@@ -22,7 +22,31 @@ export const getSigner = cache(async (publicKey: string) => {
       collection: pass.collection,
     }
   } catch (error) {
-    console.error('Error getting signer:', error)
-    throw new Error('Failed to get signer')
+    console.error('Error getting asset signer:', error)
+    throw new Error('Failed to get asset signer')
+  }
+})
+
+export const getProgramSigner = cache(async (publicKey: string) => {
+  try {
+    if (!publicKey) {
+      throw new Error('Missing or invalid publicKey')
+    }
+
+    const program = await prisma.loyaltyProgram.findFirst({
+      where: { publicKey },
+    })
+
+    if (!program) {
+      throw new Error('Loyalty program not found')
+    }
+
+    return {
+      privateKey: program.privateKey,
+      publicKey: program.publicKey,
+    }
+  } catch (error) {
+    console.error('Error getting program signer:', error)
+    throw new Error('Failed to get program signer')
   }
 })

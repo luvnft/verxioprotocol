@@ -4,12 +4,11 @@ import { useEffect, useState, use } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { useRouter } from 'next/navigation'
 import LoyaltyCard from '@/components/loyalty/LoyaltyCard'
 import { getImageFromMetadata } from '@/lib/getImageFromMetadata'
 import { getPassDetails } from '@/app/actions/loyalty'
 
-interface PassDetails {
+export interface PassDetails {
   xp: number
   lastAction: string | null
   actionHistory: Array<{
