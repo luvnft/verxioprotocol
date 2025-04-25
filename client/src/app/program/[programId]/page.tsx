@@ -9,11 +9,15 @@ import { Button } from '@/components/ui/button'
 import { useWallet } from '@solana/wallet-adapter-react'
 import { WalletButton } from '@/components/layout/buttonConfig'
 import { getImageFromMetadata } from '@/lib/getImageFromMetadata'
-import { mintLoyaltyPass } from '@/components/program/mintLoyaltyPass'
 import { SuccessModal } from '@/components/ui/success-modal'
 import { toast } from 'sonner'
 import { useNetwork } from '@/lib/network-context'
 import { getProgramDetails, ProgramWithDetails } from '@/app/actions/program'
+import { issuePasses } from '@/app/actions/manage-program'
+import { createServerProgram, Network } from '@/lib/methods/serverProgram'
+import { getProgramSigner } from '@/app/actions/signer'
+import { createSignerFromKeypair, keypairIdentity } from '@metaplex-foundation/umi'
+import { convertSecretKeyToKeypair } from '@/lib/utils'
 
 interface ProgramTier {
   name: string
@@ -44,7 +48,7 @@ export default function PublicProgramPage({ params }: { params: Promise<{ progra
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [bannerImage, setBannerImage] = useState<string | null>(null)
-  const context = useVerxioProgram()
+  const [serverContext, setServerContext] = useState<any>(null)
   const { connected, publicKey: address } = useWallet()
   const { network } = useNetwork()
   const qrCodeUrl = program ? `${window.location.origin}/program/${program.details.collectionAddress}` : ''
@@ -92,6 +96,38 @@ export default function PublicProgramPage({ params }: { params: Promise<{ progra
     }
   }, [resolvedParams.programId, network])
 
+  useEffect(() => {
+    async function initializeServerContext() {
+      try {
+        const programSignerData = await getProgramSigner(resolvedParams.programId)
+        if (!programSignerData?.privateKey) {
+          throw new Error('Program signer not found')
+        }
+
+        const context = createServerProgram(
+          resolvedParams.programId,
+          resolvedParams.programId,
+          network as Network
+        )
+
+        const keypairSigner = createSignerFromKeypair(
+          context.umi,
+          convertSecretKeyToKeypair(programSignerData.privateKey)
+        )
+        context.umi.use(keypairIdentity(keypairSigner))
+
+        setServerContext(context)
+      } catch (error) {
+        console.error('Error initializing server context:', error)
+        toast.error('Failed to initialize program context')
+      }
+    }
+
+    if (resolvedParams.programId && network) {
+      initializeServerContext()
+    }
+  }, [resolvedParams.programId, network])
+
   const handleMintPass = async () => {
     if (!address) {
       toast.error('Please connect your wallet first')
@@ -103,8 +139,8 @@ export default function PublicProgramPage({ params }: { params: Promise<{ progra
       return
     }
 
-    if (!context) {
-      toast.error('Please connect your wallet first')
+    if (!serverContext) {
+      toast.error('Program context not initialized')
       return
     }
 
@@ -120,24 +156,25 @@ export default function PublicProgramPage({ params }: { params: Promise<{ progra
 
     setIsMinting(true)
     try {
-      const result = await mintLoyaltyPass(
-        context,
-        program.details.collectionAddress,
-        program.details.name,
-        program.details.uri,
-        address.toString(),
-        network,
+      const results = await issuePasses(
+        serverContext,
+        [{
+          collectionAddress: program.details.collectionAddress,
+          recipient: address.toString(),
+          passName: program.details.name,
+          passMetadataUri: program.details.uri,
+          network,
+        }]
       )
 
-      if (result) {
+      if (results) {
         toast.success('Loyalty pass minted successfully!')
         setSuccessData({
-          title: 'Passes Issued Successfully',
-          message: `Your loyalty pass has been issued successfully`,
-          signature: result.signature,
+          title: 'Pass Issued Successfully',
+          message: 'Your loyalty pass has been issued successfully',
         })
+        setShowSuccessModal(true)
       }
-      setShowSuccessModal(true)
     } catch (error) {
       console.error('Error minting pass:', error)
       toast.error('Failed to mint loyalty pass')

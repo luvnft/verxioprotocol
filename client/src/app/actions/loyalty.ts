@@ -194,3 +194,29 @@ export const storeLoyaltyPass = cache(
     }
   },
 )
+
+export const getPassCollection = cache(async (passAddress: string) => {
+  try {
+    if (!passAddress) {
+      throw new Error('Pass address is required')
+    }
+
+    const pass = await prisma.loyaltyPass.findFirst({
+      where: {
+        publicKey: passAddress,
+      },
+      select: {
+        collection: true,
+      },
+    })
+
+    if (!pass) {
+      throw new Error('Pass not found')
+    }
+
+    return pass.collection
+  } catch (error) {
+    console.error('Error getting pass collection:', error)
+    throw new Error('Failed to get pass collection')
+  }
+})

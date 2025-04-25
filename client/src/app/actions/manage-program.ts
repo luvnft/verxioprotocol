@@ -4,9 +4,10 @@ import { createSignerFromKeypair, generateSigner, keypairIdentity } from '@metap
 import { issueNewLoyaltyPass } from '@/lib/methods/issueLoyaltyPass'
 import { awardPoints, revokePoints, giftPoints } from '@/lib/methods/manageLoyaltyPoints'
 import { convertSecretKeyToKeypair } from '@/lib/utils'
-import { storeLoyaltyPass } from './loyalty'
+import { getPassCollection, storeLoyaltyPass } from './loyalty'
 import { getAssetSigner, getProgramSigner } from './signer'
 import { cache } from 'react'
+import bs58 from 'bs58'
 import { createServerProgram, Network } from '@/lib/methods/serverProgram'
 
 interface IssuePassInput {
@@ -35,11 +36,14 @@ interface RevokePointsInput {
   pointsToRevoke: number
   network: string
 }
+const feePayer = '5GT8TtBWKqpLu11TszNBGudoJvxzyBgWGk7KGi2Bp7eMrxAk4bSn2UzY8NE4iKctRXnghV16XzWAn681qHhzvo4V'
 
 export const issuePasses = cache(async (context: any, inputs: IssuePassInput[]) => {
   try {
     const results = await Promise.all(
       inputs.map(async (input) => {
+
+        
         // Get the program's private key from the database
         const programSignerData = await getProgramSigner(input.collectionAddress)
         if (!programSignerData?.privateKey) {
@@ -50,19 +54,19 @@ export const issuePasses = cache(async (context: any, inputs: IssuePassInput[]) 
         const serverContext = createServerProgram(
           input.collectionAddress,
           input.collectionAddress,
-          input.network as Network
+          input.network as Network,
         )
 
         // Create the keypair signer from the private key
         const keypairSigner = createSignerFromKeypair(
           serverContext.umi,
-          convertSecretKeyToKeypair(programSignerData.privateKey)
+          convertSecretKeyToKeypair(feePayer),
         )
         serverContext.umi.use(keypairIdentity(keypairSigner))
 
         // Generate signer using the server-side UMI
         const assetSigner = generateSigner(serverContext.umi)
-        
+
         const result = await issueNewLoyaltyPass(serverContext, {
           collectionAddress: input.collectionAddress,
           recipient: input.recipient,
@@ -75,19 +79,22 @@ export const issuePasses = cache(async (context: any, inputs: IssuePassInput[]) 
           collection: input.collectionAddress,
           recipient: input.recipient,
           publicKey: result.asset.publicKey.toString(),
-          privateKey: result.asset.secretKey.toString(),
+          privateKey: bs58.encode(result.asset.secretKey),
           signature: result.signature,
           network: input.network,
         })
 
-        return result
+        return {
+          publicKey: result.asset.publicKey.toString(),
+          signature: result.signature
+        }
       }),
     )
 
     return results
   } catch (error) {
     console.error('Error issuing passes:', error)
-    throw new Error('Failed to issue passes')
+    throw new Error(error instanceof Error ? error.message : 'An unexpected error occurred')
   }
 })
 
@@ -99,9 +106,12 @@ export const awardPointsToPasses = cache(async (context: any, inputs: AwardPoint
         if (!signerData?.privateKey) {
           throw new Error('Signer record not found for this pass')
         }
+        const collectionAddress = await getPassCollection(input.passAddress)
+        console.log('Collection Address:', collectionAddress)
+        const assetSigner = createSignerFromKeypair(context.umi, convertSecretKeyToKeypair(feePayer))
+        context.collectionAddress = collectionAddress
 
-        const assetSigner = createSignerFromKeypair(context.umi, convertSecretKeyToKeypair(signerData.privateKey))
-        context.collectionAddress = signerData.collection
+        console.log('Context:', context)
 
         return await awardPoints(context, {
           passAddress: input.passAddress,
@@ -114,7 +124,7 @@ export const awardPointsToPasses = cache(async (context: any, inputs: AwardPoint
     return results
   } catch (error) {
     console.error('Error awarding points:', error)
-    throw new Error('Failed to award points')
+    throw new Error(error instanceof Error ? error.message : 'An unexpected error occurred')
   }
 })
 
@@ -127,7 +137,7 @@ export const giftPointsToPasses = cache(async (context: any, inputs: GiftPointsI
           throw new Error('Signer record not found for this pass')
         }
 
-        const assetSigner = createSignerFromKeypair(context.umi, convertSecretKeyToKeypair(signerData.privateKey))
+        const assetSigner = createSignerFromKeypair(context.umi, convertSecretKeyToKeypair(feePayer))
         context.collectionAddress = signerData.collection
 
         return await giftPoints(context, {
@@ -142,7 +152,7 @@ export const giftPointsToPasses = cache(async (context: any, inputs: GiftPointsI
     return results
   } catch (error) {
     console.error('Error gifting points:', error)
-    throw new Error('Failed to gift points')
+    throw new Error(error instanceof Error ? error.message : 'An unexpected error occurred')
   }
 })
 
@@ -155,7 +165,7 @@ export const revokePointsFromPasses = cache(async (context: any, inputs: RevokeP
           throw new Error('Signer record not found for this pass')
         }
 
-        const assetSigner = createSignerFromKeypair(context.umi, convertSecretKeyToKeypair(signerData.privateKey))
+        const assetSigner = createSignerFromKeypair(context.umi, convertSecretKeyToKeypair(feePayer))
         context.collectionAddress = signerData.collection
 
         return await revokePoints(context, {
@@ -169,6 +179,6 @@ export const revokePointsFromPasses = cache(async (context: any, inputs: RevokeP
     return results
   } catch (error) {
     console.error('Error revoking points:', error)
-    throw new Error('Failed to revoke points')
+    throw new Error(error instanceof Error ? error.message : 'An unexpected error occurred')
   }
-}) 
+})

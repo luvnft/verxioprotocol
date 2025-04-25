@@ -12,7 +12,12 @@ import { toast } from 'sonner'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { SuccessModal } from '@/components/ui/success-modal'
 import { useNetwork } from '@/lib/network-context'
-import { issuePasses, awardPointsToPasses, giftPointsToPasses, revokePointsFromPasses } from '@/app/actions/manage-program'
+import {
+  issuePasses,
+  awardPointsToPasses,
+  giftPointsToPasses,
+  revokePointsFromPasses,
+} from '@/app/actions/manage-program'
 import { createServerProgram, Network } from '@/lib/methods/serverProgram'
 import { getProgramSigner } from '@/app/actions/signer'
 import { createSignerFromKeypair, keypairIdentity } from '@metaplex-foundation/umi'
@@ -47,15 +52,11 @@ export function ProgramActions({ programId, pointsPerAction, programName, progra
           throw new Error('Program signer not found')
         }
 
-        const context = createServerProgram(
-          programId,
-          programId,
-          network as Network
-        )
+        const context = createServerProgram(programId, programId, network as Network)
 
         const keypairSigner = createSignerFromKeypair(
           context.umi,
-          convertSecretKeyToKeypair(programSignerData.privateKey)
+          convertSecretKeyToKeypair(programSignerData.privateKey),
         )
         context.umi.use(keypairIdentity(keypairSigner))
 
@@ -89,27 +90,25 @@ export function ProgramActions({ programId, pointsPerAction, programName, progra
 
     setIsLoading(true)
     try {
-      const inputs = csvFile
-        ? await parseCsvFile(csvFile)
-        : [address]
+      const inputs = csvFile ? await parseCsvFile(csvFile) : [address]
 
       const results = await issuePasses(
         serverContext,
-        inputs.map(recipient => ({
+        inputs.map((recipient) => ({
           collectionAddress: programId,
           recipient,
           passName: programName,
           passMetadataUri: programUri,
           network,
-        }))
+        })),
       )
 
       setSuccessData({
         title: 'Pass Issued Successfully',
-        message: inputs.length === 1 
-          ? 'Your loyalty pass has been issued successfully'
-          : `Successfully issued ${inputs.length} loyalty passes`,
-        signature: results[0]?.signature,
+        message:
+          inputs.length === 1
+            ? 'Your loyalty pass has been issued successfully'
+            : `Successfully issued ${inputs.length} loyalty passes`,
       })
       setShowSuccessModal(true)
       setAddress('')
@@ -130,10 +129,13 @@ export function ProgramActions({ programId, pointsPerAction, programName, progra
 
     setIsLoading(true)
     try {
-      const inputs = csvFile
-        ? await parseCsvFileWithActions(csvFile)
-        : [{ address, action: selectedAction }]
-
+      const inputs = csvFile ? await parseCsvFileWithActions(csvFile) : [{ address, action: selectedAction }]
+      console.log('Award Points Input:', {
+        passAddress: address,
+        action: selectedAction,
+        network
+      })
+      console.log('Server Context:', serverContext)
       const results = await awardPointsToPasses(
         serverContext,
         inputs.map((input) => ({
@@ -142,12 +144,14 @@ export function ProgramActions({ programId, pointsPerAction, programName, progra
           network,
         })),
       )
+      console.log('Award Points Results:', results)
 
       setSuccessData({
         title: 'Points Awarded Successfully',
-        message: inputs.length === 1
-          ? `Successfully awarded points for ${selectedAction}`
-          : `Successfully awarded points to ${inputs.length} loyalty passes`,
+        message:
+          inputs.length === 1
+            ? `Successfully awarded points for ${selectedAction}`
+            : `Successfully awarded points to ${inputs.length} loyalty passes`,
       })
       setShowSuccessModal(true)
       setAddress('')
@@ -185,9 +189,10 @@ export function ProgramActions({ programId, pointsPerAction, programName, progra
 
       setSuccessData({
         title: 'Points Gifted Successfully',
-        message: inputs.length === 1
-          ? `Successfully gifted ${pointsToGift} points for ${action}`
-          : `Successfully gifted points to ${inputs.length} loyalty passes`,
+        message:
+          inputs.length === 1
+            ? `Successfully gifted ${pointsToGift} points for ${action}`
+            : `Successfully gifted points to ${inputs.length} loyalty passes`,
       })
       setShowSuccessModal(true)
       setAddress('')
@@ -210,9 +215,7 @@ export function ProgramActions({ programId, pointsPerAction, programName, progra
 
     setIsLoading(true)
     try {
-      const inputs = csvFile
-        ? await parseCsvFileWithPoints(csvFile)
-        : [{ address, points: parseInt(pointsToRevoke) }]
+      const inputs = csvFile ? await parseCsvFileWithPoints(csvFile) : [{ address, points: parseInt(pointsToRevoke) }]
 
       const results = await revokePointsFromPasses(
         serverContext,
@@ -225,9 +228,10 @@ export function ProgramActions({ programId, pointsPerAction, programName, progra
 
       setSuccessData({
         title: 'Points Revoked Successfully',
-        message: inputs.length === 1
-          ? `Successfully revoked ${pointsToRevoke} points`
-          : `Successfully revoked points from ${inputs.length} loyalty passes`,
+        message:
+          inputs.length === 1
+            ? `Successfully revoked ${pointsToRevoke} points`
+            : `Successfully revoked points from ${inputs.length} loyalty passes`,
       })
       setShowSuccessModal(true)
       setAddress('')
@@ -322,9 +326,7 @@ export function ProgramActions({ programId, pointsPerAction, programName, progra
                     <SelectValue placeholder="Select an action" />
                   </SelectTrigger>
                   <SelectContent>
-                    {Object.entries(pointsPerAction)
-                      .filter(([action]) => action && action.trim() !== '')
-                      .length > 0 ? (
+                    {Object.entries(pointsPerAction).filter(([action]) => action && action.trim() !== '').length > 0 ? (
                       Object.entries(pointsPerAction)
                         .filter(([action]) => action && action.trim() !== '')
                         .map(([action, points]) => (

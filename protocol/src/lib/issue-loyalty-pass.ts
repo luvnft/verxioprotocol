@@ -46,10 +46,9 @@ export async function issueLoyaltyPass(
           attributeList: [{ key: ATTRIBUTE_KEYS.TYPE, value: `${config.passName} loyalty pass` }],
         },
       ],
-    }).add(feeInstruction)
-
-    const tx = await txnInstruction.sendAndConfirm(context.umi, { confirm: { commitment: 'confirmed' } })
-    await writeData(context.umi, {
+    })
+    .add(feeInstruction)
+    .add(writeData(context.umi, {
       key: {
         type: PLUGIN_TYPES.APP_DATA,
         dataAuthority: {
@@ -61,7 +60,9 @@ export async function issueLoyaltyPass(
       data: new TextEncoder().encode(JSON.stringify(DEFAULT_PASS_DATA)),
       asset: publicKey(asset.publicKey),
       collection: config.collectionAddress,
-    }).sendAndConfirm(context.umi)
+    }))
+
+    const tx = await txnInstruction.sendAndConfirm(context.umi, { confirm: { commitment: 'confirmed' }} )
 
     return {
       asset,
