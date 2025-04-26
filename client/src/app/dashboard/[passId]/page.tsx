@@ -6,10 +6,9 @@ import { Loader2, ArrowLeft, Clock, Zap } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useRouter } from 'next/navigation'
 import LoyaltyCard from '@/components/loyalty/LoyaltyCard'
-import { getAssetData } from '@verxioprotocol/core'
 import { useVerxioProgram } from '@/lib/methods/initializeProgram'
-import { publicKey } from '@metaplex-foundation/umi'
-import { PassDetails } from '@/components/dashboard/MyLoyaltyPass'
+import { getPassDetails } from '@/app/actions/loyalty'
+import { PassDetails } from '@/app/pass/[passId]/page'
 import { getImageFromMetadata } from '@/lib/getImageFromMetadata'
 
 interface PageProps {
@@ -38,12 +37,14 @@ export default function LoyaltyPassDetails({ params }: PageProps) {
       if (!context || !passId) return
 
       try {
-        const data = await getAssetData(context, publicKey(passId))
+        const data = await getPassDetails(passId)
         if (data) {
           setAssetData(data)
           // Fetch the image URL from metadata
-          const imageUrl = await getImageFromMetadata(data.uri)
-          setBannerImage(imageUrl)
+          if (data.uri) {
+            const imageUrl = await getImageFromMetadata(data.uri)
+            setBannerImage(imageUrl)
+          }
         }
       } catch (error) {
         console.error('Error fetching asset data:', error)

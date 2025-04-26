@@ -1,28 +1,26 @@
-import { NextResponse } from 'next/server'
+'use server'
+
 import prisma from '@/lib/prisma'
 import { createServerProgram, Network } from '@/lib/methods/serverProgram'
 import { getAssetData } from '@verxioprotocol/core'
 import { publicKey } from '@metaplex-foundation/umi'
+import { cache } from 'react'
 
-interface LeaderboardMember {
+export interface LeaderboardMember {
   address: string
   totalXp: number
   lastAction: string | null
   rank: number
 }
 
-export async function GET(request: Request) {
+export const getLeaderboard = cache(async (creator: string, network: string): Promise<LeaderboardMember[]> => {
   try {
-    const { searchParams } = new URL(request.url)
-    const creator = searchParams.get('creator')
-    const network = searchParams.get('network')
-
     if (!creator) {
-      return NextResponse.json({ error: 'Creator address is required' }, { status: 400 })
+      throw new Error('Creator address is required')
     }
 
     if (!network) {
-      return NextResponse.json({ error: 'Network is required' }, { status: 400 })
+      throw new Error('Network is required')
     }
 
     // Get all programs created by the user
@@ -40,7 +38,7 @@ export async function GET(request: Request) {
     const passes = await prisma.loyaltyPass.findMany({
       where: {
         collection: {
-          in: programs.map((program: { publicKey: string }) => program.publicKey),
+          in: programs.map((program) => program.publicKey),
         },
         network: network,
       },
@@ -100,9 +98,9 @@ export async function GET(request: Request) {
       member.rank = index + 1
     })
 
-    return NextResponse.json(sortedMembers)
+    return sortedMembers
   } catch (error) {
     console.error('Error fetching leaderboard:', error)
-    return NextResponse.json({ error: 'Failed to fetch leaderboard' }, { status: 500 })
+    throw new Error('Failed to fetch leaderboard')
   }
-}
+})

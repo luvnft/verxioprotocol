@@ -2,32 +2,19 @@
 
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Plus, Users, Gift, FileText, Key, Loader2 } from 'lucide-react'
+import { Plus, Users, Gift, FileText, Key, Loader2, Copy, Check } from 'lucide-react'
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import { useWallet } from '@solana/wallet-adapter-react'
 import { useNetwork } from '@/lib/network-context'
-
-interface ProgramDetails {
-  collectionAddress: string
-  creator: string
-  metadata: {
-    organizationName: string
-    brandColor: string
-  }
-  name: string
-  numMinted: number
-  pointsPerAction: Record<string, number>
-  tiers: any[]
-  transferAuthority: string
-  updateAuthority: string
-  uri: string
-}
+import { getPrograms, ProgramWithDetails } from '@/app/actions/program'
+import { toast } from 'sonner'
 
 export default function ProgramsPage() {
-  const [programs, setPrograms] = useState<{ details: ProgramDetails }[]>([])
+  const [programs, setPrograms] = useState<ProgramWithDetails[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [currentPage, setCurrentPage] = useState(1)
+  const [copiedProgramId, setCopiedProgramId] = useState<string | null>(null)
   const { publicKey: walletPublicKey } = useWallet()
   const { network } = useNetwork()
 
@@ -37,14 +24,24 @@ export default function ProgramsPage() {
   const endIndex = startIndex + PROGRAMS_PER_PAGE
   const currentPrograms = programs.slice(startIndex, endIndex)
 
+  const copyToClipboard = async (text: string, programId: string) => {
+    try {
+      await navigator.clipboard.writeText(text)
+      setCopiedProgramId(programId)
+      setTimeout(() => setCopiedProgramId(null), 2000)
+      toast.success('Address copied to clipboard')
+    } catch (err) {
+      toast.error('Failed to copy address')
+    }
+  }
+
   useEffect(() => {
     async function fetchPrograms() {
       if (!walletPublicKey || !network) return
 
       setIsLoading(true)
       try {
-        const response = await fetch(`/api/getPrograms?creator=${walletPublicKey.toString()}&network=${network}`)
-        const data = await response.json()
+        const data = await getPrograms(walletPublicKey.toString(), network)
         setPrograms(data)
       } catch (error) {
         console.error('Error fetching programs:', error)
@@ -106,6 +103,30 @@ export default function ProgramsPage() {
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-4">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-2">
+                          <Key className="h-4 w-4 text-[#7000FF]" />
+                          <span className="text-sm text-white/70">Fee Address</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-medium text-white">
+                            {program.details.feeAddress.slice(0, 6)}...{program.details.feeAddress.slice(-4)}
+                          </span>
+                          <button
+                            onClick={(e) => {
+                              e.preventDefault()
+                              copyToClipboard(program.details.feeAddress, program.details.collectionAddress)
+                            }}
+                            className="p-1 hover:bg-white/10 rounded-md transition-colors"
+                          >
+                            {copiedProgramId === program.details.collectionAddress ? (
+                              <Check className="h-4 w-4 text-green-500" />
+                            ) : (
+                              <Copy className="h-4 w-4 text-white/70" />
+                            )}
+                          </button>
+                        </div>
+                      </div>
                       <div className="flex items-center justify-between">
                         <div className="flex items-center space-x-2">
                           <Users className="h-4 w-4 text-[#0085FF]" />

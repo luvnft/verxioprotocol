@@ -5,40 +5,7 @@ import LoyaltyCard from '@/components/loyalty/LoyaltyCard'
 import { useRouter } from 'next/navigation'
 import { useWallet } from '@solana/wallet-adapter-react'
 import { useNetwork } from '@/lib/network-context'
-import { getImageFromMetadata } from '@/lib/getImageFromMetadata'
-
-export interface PassDetails {
-  xp: number
-  lastAction: string | null
-  actionHistory: Array<{
-    type: string
-    points: number
-    timestamp: number
-    newTotal: number
-  }>
-  currentTier: string
-  tierUpdatedAt: number
-  rewards: string[]
-  name: string
-  uri: string
-  owner: string
-  pass: string
-  metadata: {
-    organizationName: string
-    brandColor?: string
-    [key: string]: any
-  }
-  rewardTiers: Array<{
-    name: string
-    xpRequired: number
-    rewards: string[]
-  }>
-}
-
-interface PassWithImage {
-  details: PassDetails
-  bannerImage?: string
-}
+import { getLoyaltyPasses, PassWithImage } from '@/app/actions/loyalty'
 
 export default function MyLoyaltyPasses() {
   const router = useRouter()
@@ -71,21 +38,10 @@ export default function MyLoyaltyPasses() {
       setIsLoading(true)
 
       try {
-        const response = await fetch(`/api/getLoyaltyPasses?recipient=${walletPublicKey.toString()}&network=${network}`)
-        const data = await response.json()
+        const data = await getLoyaltyPasses(walletPublicKey.toString(), network)
 
         if (mounted.current) {
-          // Fetch images for each pass
-          const passesWithImages = await Promise.all(
-            data.map(async (pass: PassWithImage) => {
-              if (pass.details?.uri) {
-                const bannerImage = await getImageFromMetadata(pass.details.uri)
-                return { ...pass, bannerImage }
-              }
-              return pass
-            }),
-          )
-          setLoyaltyPasses(passesWithImages)
+          setLoyaltyPasses(data)
         }
       } catch (error) {
         console.error('Error fetching passes:', error)
@@ -140,7 +96,7 @@ export default function MyLoyaltyPasses() {
                         pointsPerAction={{}}
                         organizationName={pass.details.metadata.organizationName}
                         brandColor={pass.details.metadata.brandColor || '#00adef'}
-                        loyaltyPassAddress={pass.details.owner}
+                        loyaltyPassAddress={pass.details.pass}
                         qrCodeUrl={
                           typeof window !== 'undefined' ? `${window.location.origin}/pass/${pass.details.pass}` : ''
                         }

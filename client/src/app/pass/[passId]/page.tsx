@@ -2,16 +2,42 @@
 
 import { useEffect, useState, use } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Loader2, ArrowLeft } from 'lucide-react'
+import { Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { useRouter } from 'next/navigation'
 import LoyaltyCard from '@/components/loyalty/LoyaltyCard'
 import { getImageFromMetadata } from '@/lib/getImageFromMetadata'
-import { PassDetails } from '@/components/dashboard/MyLoyaltyPass'
+import { getPassDetails } from '@/app/actions/loyalty'
+
+export interface PassDetails {
+  xp: number
+  lastAction: string | null
+  actionHistory: Array<{
+    type: string
+    points: number
+    timestamp: number
+    newTotal: number
+  }>
+  currentTier: string
+  tierUpdatedAt: number
+  rewards: string[]
+  name: string
+  uri: string
+  owner: string
+  pass: string
+  metadata: {
+    organizationName: string
+    brandColor?: string
+    [key: string]: any
+  }
+  rewardTiers: Array<{
+    name: string
+    xpRequired: number
+    rewards: string[]
+  }>
+}
 
 export default function PublicPassPage({ params }: { params: Promise<{ passId: string }> }) {
   const resolvedParams = use(params)
-  const router = useRouter()
   const [pass, setPass] = useState<PassDetails | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -25,12 +51,7 @@ export default function PublicPassPage({ params }: { params: Promise<{ passId: s
     async function fetchPass() {
       try {
         setError(null)
-        const response = await fetch(`/api/getPassDetails?passId=${resolvedParams.passId}`)
-        const details = await response.json()
-
-        if (!response.ok) {
-          throw new Error(details.error || 'Failed to fetch pass details')
-        }
+        const details = await getPassDetails(resolvedParams.passId)
 
         if (isMounted) {
           setPass(details)

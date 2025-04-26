@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -9,15 +9,15 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Upload, Info, Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
-import { useVerxioProgram } from '@/lib/methods/initializeProgram'
-import { issueNewLoyaltyPass } from '@/lib/methods/issueLoyaltyPass'
-import { awardPoints, revokePoints, giftPoints } from '@/lib/methods/manageLoyaltyPoints'
-import { generateSigner, createSignerFromKeypair } from '@metaplex-foundation/umi'
-import { convertSecretKeyToKeypair } from '@/lib/utils'
-import bs58 from 'bs58'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { SuccessModal } from '@/components/ui/success-modal'
 import { useNetwork } from '@/lib/network-context'
+import {
+  issuePasses,
+  awardPointsToPasses,
+  giftPointsToPasses,
+  revokePointsFromPasses,
+} from '@/app/actions/manage-program'
 
 interface ProgramActionsProps {
   programId: string
@@ -37,7 +37,6 @@ export function ProgramActions({ programId, pointsPerAction, programName, progra
   const [isLoading, setIsLoading] = useState(false)
   const [showSuccessModal, setShowSuccessModal] = useState(false)
   const [successData, setSuccessData] = useState<{ title: string; message: string; signature?: string } | null>(null)
-  const context = useVerxioProgram()
   const { network } = useNetwork()
 
   const handleTabChange = (value: string) => {
@@ -51,83 +50,31 @@ export function ProgramActions({ programId, pointsPerAction, programName, progra
   }
 
   const handleIssuePass = async () => {
-    if (!context) {
-      toast.error('Please connect your wallet first')
-      return
-    }
-
     setIsLoading(true)
     try {
-      if (csvFile) {
-        const addresses = await parseCsvFile(csvFile)
-        for (const addr of addresses) {
-          const assetSigner = generateSigner(context.umi)
-          const result = await issueNewLoyaltyPass(context, {
-            collectionAddress: programId,
-            recipient: addr,
-            passName: programName,
-            passMetadataUri: programUri,
-            assetSigner,
-          })
-          // Store in database with network
-          await fetch('/api/storeLoyaltyPass', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              collection: programId,
-              recipient: addr,
-              publicKey: result.asset.publicKey.toString(),
-              privateKey: bs58.encode(result.asset.secretKey),
-              signature: result.signature,
-              network: network, // Add network to the request
-            }),
-          })
-          setSuccessData({
-            title: 'Passes Issued Successfully',
-            message: `Successfully issued passes to ${addresses.length} addresses`,
-            signature: result.signature,
-          })
-        }
-        setShowSuccessModal(true)
-        setAddress('')
-        setCsvFile(null)
-      } else if (address) {
-        const assetSigner = generateSigner(context.umi)
-        const result = await issueNewLoyaltyPass(context, {
+      const inputs = csvFile ? await parseCsvFile(csvFile) : [address]
+
+      const results = await issuePasses(
+        inputs.map((recipient) => ({
           collectionAddress: programId,
-          recipient: address,
+          recipient,
           passName: programName,
           passMetadataUri: programUri,
-          assetSigner,
-        })
+          network,
+        })),
+      )
 
-        // Store in database with network
-        await fetch('/api/storeLoyaltyPass', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            collection: programId,
-            recipient: address,
-            publicKey: result.asset.publicKey.toString(),
-            privateKey: bs58.encode(result.asset.secretKey),
-            signature: result.signature,
-            network: network, // Add network to the request
-          }),
-        })
-        setSuccessData({
-          title: 'Pass Issued Successfully',
-          message: 'Your loyalty pass has been issued successfully',
-          signature: result.signature,
-        })
-
-        setShowSuccessModal(true)
-        setAddress('')
-        setCsvFile(null)
-      }
+      setSuccessData({
+        title: 'Pass Issued Successfully',
+        message:
+          inputs.length === 1
+            ? 'Your loyalty pass has been issued successfully'
+            : `Successfully issued ${inputs.length} loyalty passes`,
+        signature: inputs.length === 1 ? results[0].signature : undefined,
+      })
+      setShowSuccessModal(true)
+      setAddress('')
+      setCsvFile(null)
     } catch (error) {
       console.error('Error issuing pass:', error)
       toast.error(error instanceof Error ? error.message : 'Failed to issue pass')
@@ -137,56 +84,29 @@ export function ProgramActions({ programId, pointsPerAction, programName, progra
   }
 
   const handleAwardPoints = async () => {
-    if (!context) {
-      toast.error('Please connect your wallet first')
-      return
-    }
-
     setIsLoading(true)
     try {
-      if (csvFile) {
-        const records = await parseCsvFileWithActions(csvFile)
-        for (const record of records) {
-          const assetSigner = generateSigner(context.umi)
-          await awardPoints(context, {
-            passAddress: record.address,
-            action: record.action,
-            signer: assetSigner,
-          })
-        }
-        setSuccessData({
-          title: 'Points Awarded Successfully',
-          message: `Successfully awarded points to ${records.length} addresses`,
-        })
-        setShowSuccessModal(true)
-        setAddress('')
-        setSelectedAction('')
-        setCsvFile(null)
-      } else if (address && selectedAction) {
-        const res = await fetch(`/api/getSigner?publicKey=${address}`)
-        const data = await res.json()
-        if (!data?.privateKey) {
-          toast.error('Signer record not found for this pass')
-          return
-        }
+      const inputs = csvFile ? await parseCsvFileWithActions(csvFile) : [{ address, action: selectedAction }]
+      const results = await awardPointsToPasses(
+        inputs.map((input) => ({
+          passAddress: input.address,
+          action: input.action,
+          network,
+        })),
+      )
 
-        const assetSigner = createSignerFromKeypair(context.umi, convertSecretKeyToKeypair(data.privateKey))
-        context.collectionAddress = data.collection
-
-        await awardPoints(context, {
-          passAddress: address,
-          action: selectedAction,
-          signer: assetSigner,
-        })
-        setSuccessData({
-          title: 'Points Awarded Successfully',
-          message: 'Points have been awarded successfully',
-        })
-        setShowSuccessModal(true)
-        setAddress('')
-        setSelectedAction('')
-        setCsvFile(null)
-      }
+      setSuccessData({
+        title: 'Points Awarded Successfully',
+        message:
+          inputs.length === 1
+            ? `Successfully awarded points for ${selectedAction}`
+            : `Successfully awarded points to ${inputs.length} loyalty passes`,
+        signature: inputs.length === 1 ? results[0].signature : undefined,
+      })
+      setShowSuccessModal(true)
+      setAddress('')
+      setSelectedAction('')
+      setCsvFile(null)
     } catch (error) {
       console.error('Error awarding points:', error)
       toast.error(error instanceof Error ? error.message : 'Failed to award points')
@@ -195,121 +115,71 @@ export function ProgramActions({ programId, pointsPerAction, programName, progra
     }
   }
 
-  const handleRevokePoints = async () => {
-    if (!context) {
-      toast.error('Please connect your wallet first')
-      return
-    }
-
+  const handleGiftPoints = async () => {
     setIsLoading(true)
     try {
-      if (csvFile) {
-        const records = await parseCsvFileWithPoints(csvFile)
-        for (const record of records) {
-          const assetSigner = generateSigner(context.umi)
-          await revokePoints(context, {
-            passAddress: record.address,
-            pointsToRevoke: record.points,
-            signer: assetSigner,
-          })
-        }
-        setSuccessData({
-          title: 'Points Revoked Successfully',
-          message: `Successfully revoked points from ${records.length} addresses`,
-        })
-        setShowSuccessModal(true)
-        setAddress('')
-        setPointsToRevoke('')
-        setCsvFile(null)
-      } else if (address && pointsToRevoke) {
-        const res = await fetch(`/api/getSigner?publicKey=${address}`)
-        const data = await res.json()
-        if (!data?.privateKey) {
-          toast.error('Signer record not found for this pass')
-          return
-        }
-        const assetSigner = createSignerFromKeypair(context.umi, convertSecretKeyToKeypair(data.privateKey))
-        context.collectionAddress = data.collection
-        await revokePoints(context, {
-          passAddress: address,
-          pointsToRevoke: parseInt(pointsToRevoke),
-          signer: assetSigner,
-        })
-        setSuccessData({
-          title: 'Points Revoked Successfully',
-          message: 'Points have been revoked successfully',
-        })
-        setShowSuccessModal(true)
-        setAddress('')
-        setPointsToRevoke('')
-        setCsvFile(null)
-      }
+      const inputs = csvFile
+        ? await parseCsvFileWithGiftPoints(csvFile)
+        : [{ address, points: parseInt(pointsToGift), action }]
+
+      const results = await giftPointsToPasses(
+        inputs.map((input) => ({
+          passAddress: input.address,
+          pointsToGift: input.points,
+          action: input.action,
+          network,
+        })),
+      )
+
+      setSuccessData({
+        title: 'Points Gifted Successfully',
+        message:
+          inputs.length === 1
+            ? `Successfully gifted ${pointsToGift} points for ${action}`
+            : `Successfully gifted points to ${inputs.length} loyalty passes`,
+        signature: inputs.length === 1 ? results[0].signature : undefined,
+      })
+      setShowSuccessModal(true)
+      setAddress('')
+      setPointsToGift('')
+      setAction('')
+      setCsvFile(null)
     } catch (error) {
-      console.error('Error revoking points:', error)
-      toast.error(error instanceof Error ? error.message : 'Failed to revoke points')
+      console.error('Error gifting points:', error)
+      toast.error(error instanceof Error ? error.message : 'Failed to gift points')
     } finally {
       setIsLoading(false)
     }
   }
 
-  const handleGiftPoints = async () => {
-    if (!context) {
-      toast.error('Please connect your wallet first')
-      return
-    }
-
+  const handleRevokePoints = async () => {
     setIsLoading(true)
     try {
-      if (csvFile) {
-        const records = await parseCsvFileWithGiftPoints(csvFile)
-        for (const record of records) {
-          const assetSigner = generateSigner(context.umi)
-          await giftPoints(context, {
-            passAddress: record.address,
-            pointsToGift: record.points,
-            signer: assetSigner,
-            action: record.action || 'gift',
-          })
-        }
-        setSuccessData({
-          title: 'Points Gifted Successfully',
-          message: `Successfully gifted points to ${records.length} addresses`,
-        })
-        setShowSuccessModal(true)
-        setAddress('')
-        setPointsToGift('')
-        setAction('')
-        setCsvFile(null)
-      } else if (address && pointsToGift && action) {
-        const res = await fetch(`/api/getSigner?publicKey=${address}`)
-        const data = await res.json()
-        if (!data?.privateKey) {
-          toast.error('Signer record not found for this pass')
-          return
-        }
+      const inputs = csvFile ? await parseCsvFileWithPoints(csvFile) : [{ address, points: parseInt(pointsToRevoke) }]
 
-        const assetSigner = createSignerFromKeypair(context.umi, convertSecretKeyToKeypair(data.privateKey))
-        context.collectionAddress = data.collection
+      const results = await revokePointsFromPasses(
+        inputs.map((input) => ({
+          passAddress: input.address,
+          pointsToRevoke: input.points,
+          network,
+        })),
+      )
 
-        await giftPoints(context, {
-          passAddress: address,
-          pointsToGift: parseInt(pointsToGift),
-          signer: assetSigner,
-          action,
-        })
-        setSuccessData({
-          title: 'Points Gifted Successfully',
-          message: 'Points have been gifted successfully',
-        })
-        setShowSuccessModal(true)
-        setAddress('')
-        setPointsToGift('')
-        setAction('')
-        setCsvFile(null)
-      }
+      setSuccessData({
+        title: 'Points Revoked Successfully',
+        message:
+          inputs.length === 1
+            ? `Successfully revoked ${pointsToRevoke} points`
+            : `Successfully revoked points from ${inputs.length} loyalty passes`,
+        signature: inputs.length === 1 ? results[0].signature : undefined,
+      })
+      setShowSuccessModal(true)
+      setAddress('')
+      setPointsToRevoke('')
+      setCsvFile(null)
     } catch (error) {
-      console.error('Error gifting points:', error)
-      toast.error(error instanceof Error ? error.message : 'Failed to gift points')
+      console.error('Error revoking points:', error)
+      toast.error(error instanceof Error ? error.message : 'Failed to revoke points')
     } finally {
       setIsLoading(false)
     }
@@ -396,11 +266,19 @@ export function ProgramActions({ programId, pointsPerAction, programName, progra
                     <SelectValue placeholder="Select an action" />
                   </SelectTrigger>
                   <SelectContent>
-                    {Object.entries(pointsPerAction).map(([action, points]) => (
-                      <SelectItem key={action} value={action}>
-                        {action} ({points} points)
+                    {Object.entries(pointsPerAction).filter(([action]) => action && action.trim() !== '').length > 0 ? (
+                      Object.entries(pointsPerAction)
+                        .filter(([action]) => action && action.trim() !== '')
+                        .map(([action, points]) => (
+                          <SelectItem key={action} value={action}>
+                            {action} ({points} points)
+                          </SelectItem>
+                        ))
+                    ) : (
+                      <SelectItem value="no-action" disabled>
+                        No actions found
                       </SelectItem>
-                    ))}
+                    )}
                   </SelectContent>
                 </Select>
               </div>

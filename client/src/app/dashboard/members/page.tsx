@@ -1,32 +1,11 @@
 'use client'
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Loader2, Users, Gift, Clock, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Loader2, Users, Clock, ChevronLeft, ChevronRight } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useWallet } from '@solana/wallet-adapter-react'
 import { useNetwork } from '@/lib/network-context'
-
-interface MemberPass {
-  publicKey: string
-  name: string
-  xp: number
-  lastAction: string | null
-  actionHistory: Array<{
-    type: string
-    points: number
-    timestamp: number
-    newTotal: number
-  }>
-  currentTier: string
-  tierUpdatedAt: number
-  rewards: string[]
-}
-
-interface Member {
-  address: string
-  passes: MemberPass[]
-  totalXp: number
-}
+import { getProgramMembers, Member } from '@/app/actions/program'
 
 export default function MembersPage() {
   const [members, setMembers] = useState<Member[]>([])
@@ -48,8 +27,7 @@ export default function MembersPage() {
 
       setIsLoading(true)
       try {
-        const response = await fetch(`/api/getProgramMembers?creator=${walletPublicKey.toString()}&network=${network}`)
-        const data = await response.json()
+        const data = await getProgramMembers(walletPublicKey.toString(), network)
         setMembers(data)
       } catch (error) {
         console.error('Error fetching members:', error)
