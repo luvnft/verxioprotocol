@@ -48,7 +48,11 @@ export const issuePasses = cache(async (inputs: IssuePassInput[]) => {
           throw new Error('Fee payer account not found')
         }
 
-        const serverContext = createServerContextWithFeePayer(input.collectionAddress, input.network as Network, feePayerAccount)
+        const serverContext = createServerContextWithFeePayer(
+          input.collectionAddress,
+          input.network as Network,
+          feePayerAccount,
+        )
         const assetSigner = generateSigner(serverContext.umi)
         const result = await issueNewLoyaltyPass(serverContext, {
           collectionAddress: input.collectionAddress,
@@ -69,7 +73,7 @@ export const issuePasses = cache(async (inputs: IssuePassInput[]) => {
 
         return {
           publicKey: result.asset.publicKey.toString(),
-          signature: result.signature
+          signature: result.signature,
         }
       }),
     )
@@ -94,7 +98,11 @@ export const awardPointsToPasses = cache(async (inputs: AwardPointsInput[]) => {
         if (!feePayerAccount) {
           throw new Error('Fee payer account not found')
         }
-        const serverContext = createServerContextWithFeePayer(collectionAddress, input.network as Network, feePayerAccount)
+        const serverContext = createServerContextWithFeePayer(
+          collectionAddress,
+          input.network as Network,
+          feePayerAccount,
+        )
         const assetSigner = createSignerFromKeypair(serverContext.umi, convertSecretKeyToKeypair(signerData.privateKey))
 
         return await awardPoints(serverContext, {
@@ -126,7 +134,11 @@ export const giftPointsToPasses = cache(async (inputs: GiftPointsInput[]) => {
         if (!feePayerAccount) {
           throw new Error('Fee payer account not found')
         }
-        const serverContext = createServerContextWithFeePayer(collectionAddress, input.network as Network, feePayerAccount)
+        const serverContext = createServerContextWithFeePayer(
+          collectionAddress,
+          input.network as Network,
+          feePayerAccount,
+        )
         const assetSigner = createSignerFromKeypair(serverContext.umi, convertSecretKeyToKeypair(signerData.privateKey))
 
         return await giftPoints(serverContext, {
@@ -159,7 +171,11 @@ export const revokePointsFromPasses = cache(async (inputs: RevokePointsInput[]) 
         if (!feePayerAccount) {
           throw new Error('Fee payer account not found')
         }
-        const serverContext = createServerContextWithFeePayer(collectionAddress, input.network as Network, feePayerAccount)
+        const serverContext = createServerContextWithFeePayer(
+          collectionAddress,
+          input.network as Network,
+          feePayerAccount,
+        )
         const assetSigner = createSignerFromKeypair(serverContext.umi, convertSecretKeyToKeypair(signerData.privateKey))
 
         return await revokePoints(serverContext, {

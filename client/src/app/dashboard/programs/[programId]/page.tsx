@@ -63,7 +63,6 @@ export default function ProgramPage() {
     fetchProgram()
   }, [context, programId])
 
-
   if (!program) {
     return (
       <div className="min-h-screen bg-gradient-to-b from-black via-purple-950/20 to-black flex items-center justify-center">

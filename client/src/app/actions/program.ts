@@ -139,7 +139,7 @@ export const getProgramStats = cache(async (creator: string, network: string): P
   }
 })
 
-export const getProgramDetails = cache(async (programId: string): Promise<ProgramWithDetails> => {
+export const getProgramDetails = cache(async (programId: string): Promise<ProgramDetails> => {
   try {
     if (!programId) {
       throw new Error('Program ID is required')
@@ -156,7 +156,6 @@ export const getProgramDetails = cache(async (programId: string): Promise<Progra
 
     // Get program details using the context
     const details = await getProgramDetailsCore(context)
-
     if (!details) {
       throw new Error('Failed to fetch program details')
     }
@@ -172,22 +171,12 @@ export const getProgramDetails = cache(async (programId: string): Promise<Progra
     })
 
     return {
-      details: {
-        name: details.name || '',
-        uri: details.uri || '',
-        collectionAddress: programId,
-        updateAuthority: programId,
-        numMinted: 0,
-        transferAuthority: programId,
-        creator: programId,
-        tiers: [],
-        pointsPerAction: {},
-        metadata: {
-          organizationName: details.metadata?.organizationName || '',
-          brandColor: details.metadata?.brandColor || '#000000',
-        },
-        network,
-        feeAddress: program?.feePayerPublic || ''
+      ...details,
+      network: network,
+      feeAddress: program?.feePayerPublic || '',
+      metadata: {
+        ...details.metadata,
+        brandColor: details.metadata?.brandColor || '#000000',
       },
     }
   } catch (error) {
@@ -357,7 +346,15 @@ export const getProgramMembers = cache(async (creator: string, network: string):
 })
 
 export const storeLoyaltyProgram = cache(
-  async (data: { creator: string; publicKey: string; privateKey: string; signature: string; network: string; feePayerPrivate: string; feePayerPublic: string }) => {
+  async (data: {
+    creator: string
+    publicKey: string
+    privateKey: string
+    signature: string
+    network: string
+    feePayerPrivate: string
+    feePayerPublic: string
+  }) => {
     try {
       const { creator, publicKey, privateKey, signature, network, feePayerPrivate, feePayerPublic } = data
 
@@ -369,7 +366,7 @@ export const storeLoyaltyProgram = cache(
           signature,
           network,
           feePayerPrivate,
-          feePayerPublic
+          feePayerPublic,
         },
       })
 

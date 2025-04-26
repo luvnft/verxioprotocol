@@ -19,7 +19,6 @@ import {
   revokePointsFromPasses,
 } from '@/app/actions/manage-program'
 
-
 interface ProgramActionsProps {
   programId: string
   pointsPerAction: Record<string, number>
@@ -39,7 +38,6 @@ export function ProgramActions({ programId, pointsPerAction, programName, progra
   const [showSuccessModal, setShowSuccessModal] = useState(false)
   const [successData, setSuccessData] = useState<{ title: string; message: string; signature?: string } | null>(null)
   const { network } = useNetwork()
-
 
   const handleTabChange = (value: string) => {
     setActiveTab(value)
@@ -96,7 +94,7 @@ export function ProgramActions({ programId, pointsPerAction, programName, progra
           network,
         })),
       )
-      
+
       setSuccessData({
         title: 'Points Awarded Successfully',
         message:
@@ -157,9 +155,7 @@ export function ProgramActions({ programId, pointsPerAction, programName, progra
   const handleRevokePoints = async () => {
     setIsLoading(true)
     try {
-      const inputs = csvFile 
-        ? await parseCsvFileWithPoints(csvFile) 
-        : [{ address, points: parseInt(pointsToRevoke) }]
+      const inputs = csvFile ? await parseCsvFileWithPoints(csvFile) : [{ address, points: parseInt(pointsToRevoke) }]
 
       const results = await revokePointsFromPasses(
         inputs.map((input) => ({
@@ -274,8 +270,8 @@ export function ProgramActions({ programId, pointsPerAction, programName, progra
                       Object.entries(pointsPerAction)
                         .filter(([action]) => action && action.trim() !== '')
                         .map(([action, points]) => (
-                      <SelectItem key={action} value={action}>
-                        {action} ({points} points)
+                          <SelectItem key={action} value={action}>
+                            {action} ({points} points)
                           </SelectItem>
                         ))
                     ) : (

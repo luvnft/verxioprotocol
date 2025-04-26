@@ -11,41 +11,18 @@ import { getImageFromMetadata } from '@/lib/getImageFromMetadata'
 import { SuccessModal } from '@/components/ui/success-modal'
 import { toast } from 'sonner'
 import { useNetwork } from '@/lib/network-context'
-import { getProgramDetails, ProgramWithDetails } from '@/app/actions/program'
+import { getProgramDetails, ProgramDetails } from '@/app/actions/program'
 import { issuePasses } from '@/app/actions/manage-program'
-
-interface ProgramTier {
-  name: string
-  xpRequired: number
-  rewards: string[]
-}
-
-interface ProgramDetails {
-  name: string
-  uri: string
-  collectionAddress: string
-  updateAuthority: string
-  numMinted: number
-  creator: string
-  tiers: ProgramTier[]
-  pointsPerAction: Record<string, number>
-  metadata: {
-    organizationName: string
-    brandColor?: string
-    [key: string]: any
-  }
-  network: string
-}
 
 export default function PublicProgramPage({ params }: { params: Promise<{ programId: string }> }) {
   const resolvedParams = use(params)
-  const [program, setProgram] = useState<ProgramWithDetails | null>(null)
+  const [program, setProgram] = useState<ProgramDetails | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [bannerImage, setBannerImage] = useState<string | null>(null)
   const { connected, publicKey: address } = useWallet()
   const { network } = useNetwork()
-  const qrCodeUrl = program ? `${window.location.origin}/program/${program.details.collectionAddress}` : ''
+  const qrCodeUrl = program ? `${window.location.origin}/program/${program.collectionAddress}` : ''
   const [isMinting, setIsMinting] = useState(false)
   const [showSuccessModal, setShowSuccessModal] = useState(false)
   const [successData, setSuccessData] = useState<{ title: string; message: string; signature?: string } | null>(null)
@@ -66,8 +43,8 @@ export default function PublicProgramPage({ params }: { params: Promise<{ progra
         if (isMounted) {
           setProgram(details)
           // Fetch the image URL from metadata
-          if (details.details.uri) {
-            const imageUrl = await getImageFromMetadata(details.details.uri)
+          if (details.uri) {
+            const imageUrl = await getImageFromMetadata(details.uri)
             setBannerImage(imageUrl)
           }
         }
@@ -90,7 +67,6 @@ export default function PublicProgramPage({ params }: { params: Promise<{ progra
     }
   }, [resolvedParams.programId, network])
 
-
   const handleMintPass = async () => {
     if (!address) {
       toast.error('Please connect your wallet first')
@@ -107,22 +83,22 @@ export default function PublicProgramPage({ params }: { params: Promise<{ progra
       return
     }
 
-    if (program.details.network !== network) {
-      toast.error(`Please switch to ${program.details.network} network to mint this pass`)
+    if (program.network !== network) {
+      toast.error(`Please switch to ${program.network} network to mint this pass`)
       return
     }
 
     setIsMinting(true)
     try {
-      const results = await issuePasses(
-        [{
-          collectionAddress: program.details.collectionAddress,
+      const results = await issuePasses([
+        {
+          collectionAddress: program.collectionAddress,
           recipient: address.toString(),
-          passName: program.details.name,
-          passMetadataUri: program.details.uri,
+          passName: program.name,
+          passMetadataUri: program.uri,
           network,
-        }]
-      )
+        },
+      ])
 
       if (results) {
         toast.success('Loyalty pass minted successfully!')
@@ -183,7 +159,7 @@ export default function PublicProgramPage({ params }: { params: Promise<{ progra
       </div>
       <div className="max-w-[1200px] mx-auto px-2 sm:px-4 py-4 sm:py-8">
         <div className="mb-4 sm:mb-6">
-          <h1 className="text-2xl sm:text-3xl font-bold text-white mb-1 sm:mb-2">{program.details.name}</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold text-white mb-1 sm:mb-2">{program.name}</h1>
           <p className="text-sm sm:text-base text-white/70">Join our loyalty program and earn rewards!</p>
         </div>
 
@@ -199,24 +175,24 @@ export default function PublicProgramPage({ params }: { params: Promise<{ progra
                   <div>
                     <p className="text-xs sm:text-sm text-white/50">Creator</p>
                     <p className="text-sm sm:text-base text-white font-mono">
-                      {program.details.creator.slice(0, 12)}...{program.details.creator.slice(-6)}
+                      {program.creator.slice(0, 8)}...{program.creator.slice(-6)}
                     </p>
                   </div>
                   <div>
                     <p className="text-xs sm:text-sm text-white/50">Authority</p>
                     <p className="text-sm sm:text-base text-white font-mono">
-                      {program.details.updateAuthority.slice(0, 12)}...{program.details.updateAuthority.slice(-6)}
+                      {program.updateAuthority.slice(0, 8)}...{program.updateAuthority.slice(-6)}
                     </p>
                   </div>
                   <div>
                     <p className="text-xs sm:text-sm text-white/50">Collection</p>
                     <p className="text-sm sm:text-base text-white font-mono">
-                      {program.details.collectionAddress.slice(0, 12)}...{program.details.collectionAddress.slice(-6)}
+                      {program.collectionAddress.slice(0, 8)}...{program.collectionAddress.slice(-6)}
                     </p>
                   </div>
                   <div>
                     <p className="text-xs sm:text-sm text-white/50">Members</p>
-                    <p className="text-sm sm:text-base text-white">{program.details.numMinted}</p>
+                    <p className="text-sm sm:text-base text-white">{program.numMinted}</p>
                   </div>
                 </div>
               </CardContent>
@@ -228,7 +204,7 @@ export default function PublicProgramPage({ params }: { params: Promise<{ progra
               </CardHeader>
               <CardContent className="p-4 sm:p-6">
                 <div className="space-y-3 sm:space-y-4">
-                  {program.details.tiers.map((tier, index) => (
+                  {program.tiers.map((tier, index) => (
                     <div key={index} className="p-3 sm:p-4 rounded-lg bg-black/40">
                       <div className="flex justify-between items-center mb-2">
                         <h3 className="text-base sm:text-lg font-semibold text-white">{tier.name}</h3>
@@ -251,7 +227,7 @@ export default function PublicProgramPage({ params }: { params: Promise<{ progra
               </CardHeader>
               <CardContent className="p-4 sm:p-6">
                 <div className="space-y-3 sm:space-y-4">
-                  {Object.entries(program.details.pointsPerAction).map(([action, points], index) => (
+                  {Object.entries(program.pointsPerAction).map(([action, points], index) => (
                     <div key={index} className="flex justify-between items-center p-3 sm:p-4 rounded-lg bg-black/40">
                       <span className="text-sm sm:text-base text-white capitalize">{action}</span>
                       <span className="text-sm sm:text-base text-white/70">{points} points</span>
@@ -266,13 +242,13 @@ export default function PublicProgramPage({ params }: { params: Promise<{ progra
           <div className="lg:sticky lg:top-6 flex flex-col items-center gap-4">
             <div className="w-full max-w-[350px] sm:max-w-[450px]">
               <ProgramCard
-                programName={program.details.name}
-                creator={program.details.creator}
-                pointsPerAction={program.details.pointsPerAction}
-                collectionAddress={program.details.collectionAddress}
+                programName={program.name}
+                creator={program.creator}
+                pointsPerAction={program.pointsPerAction}
+                collectionAddress={program.collectionAddress}
                 qrCodeUrl={qrCodeUrl}
-                brandColor={program.details.metadata.brandColor}
-                organizationName={program.details.metadata.organizationName}
+                brandColor={program.metadata.brandColor}
+                organizationName={program.metadata.organizationName}
                 bannerImage={bannerImage}
               />
             </div>
