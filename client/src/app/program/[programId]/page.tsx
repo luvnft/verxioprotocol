@@ -2,7 +2,6 @@
 
 import { useEffect, useState, use } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { useVerxioProgram } from '@/lib/methods/initializeProgram'
 import ProgramCard from '@/components/loyalty/ProgramCard'
 import { Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -14,10 +13,6 @@ import { toast } from 'sonner'
 import { useNetwork } from '@/lib/network-context'
 import { getProgramDetails, ProgramWithDetails } from '@/app/actions/program'
 import { issuePasses } from '@/app/actions/manage-program'
-import { createServerProgram, Network } from '@/lib/methods/serverProgram'
-import { getProgramSigner } from '@/app/actions/signer'
-import { createSignerFromKeypair, keypairIdentity } from '@metaplex-foundation/umi'
-import { convertSecretKeyToKeypair } from '@/lib/utils'
 
 interface ProgramTier {
   name: string
@@ -48,7 +43,6 @@ export default function PublicProgramPage({ params }: { params: Promise<{ progra
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [bannerImage, setBannerImage] = useState<string | null>(null)
-  const [serverContext, setServerContext] = useState<any>(null)
   const { connected, publicKey: address } = useWallet()
   const { network } = useNetwork()
   const qrCodeUrl = program ? `${window.location.origin}/program/${program.details.collectionAddress}` : ''
@@ -205,19 +199,19 @@ export default function PublicProgramPage({ params }: { params: Promise<{ progra
                   <div>
                     <p className="text-xs sm:text-sm text-white/50">Creator</p>
                     <p className="text-sm sm:text-base text-white font-mono">
-                      {program.details.creator.slice(0, 6)}...{program.details.creator.slice(-4)}
+                      {program.details.creator.slice(0, 12)}...{program.details.creator.slice(-6)}
                     </p>
                   </div>
                   <div>
                     <p className="text-xs sm:text-sm text-white/50">Authority</p>
                     <p className="text-sm sm:text-base text-white font-mono">
-                      {program.details.updateAuthority.slice(0, 6)}...{program.details.updateAuthority.slice(-4)}
+                      {program.details.updateAuthority.slice(0, 12)}...{program.details.updateAuthority.slice(-6)}
                     </p>
                   </div>
                   <div>
                     <p className="text-xs sm:text-sm text-white/50">Collection</p>
                     <p className="text-sm sm:text-base text-white font-mono">
-                      {program.details.collectionAddress.slice(0, 6)}...{program.details.collectionAddress.slice(-4)}
+                      {program.details.collectionAddress.slice(0, 12)}...{program.details.collectionAddress.slice(-6)}
                     </p>
                   </div>
                   <div>

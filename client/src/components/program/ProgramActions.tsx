@@ -18,10 +18,7 @@ import {
   giftPointsToPasses,
   revokePointsFromPasses,
 } from '@/app/actions/manage-program'
-import { createServerProgram, Network } from '@/lib/methods/serverProgram'
-import { getProgramSigner } from '@/app/actions/signer'
-import { createSignerFromKeypair, keypairIdentity } from '@metaplex-foundation/umi'
-import { convertSecretKeyToKeypair } from '@/lib/utils'
+
 
 interface ProgramActionsProps {
   programId: string
@@ -41,36 +38,8 @@ export function ProgramActions({ programId, pointsPerAction, programName, progra
   const [isLoading, setIsLoading] = useState(false)
   const [showSuccessModal, setShowSuccessModal] = useState(false)
   const [successData, setSuccessData] = useState<{ title: string; message: string; signature?: string } | null>(null)
-  const [serverContext, setServerContext] = useState<any>(null)
   const { network } = useNetwork()
 
-  // useEffect(() => {
-  //   async function initializeServerContext() {
-  //     try {
-  //       const programSignerData = await getProgramSigner(programId)
-  //       if (!programSignerData?.privateKey) {
-  //         throw new Error('Program signer not found')
-  //       }
-
-  //       const context = createServerProgram(programId, programId, network as Network)
-
-  //       const keypairSigner = createSignerFromKeypair(
-  //         context.umi,
-  //         convertSecretKeyToKeypair(programSignerData.privateKey),
-  //       )
-  //       context.umi.use(keypairIdentity(keypairSigner))
-
-  //       setServerContext(context)
-  //     } catch (error) {
-  //       console.error('Error initializing server context:', error)
-  //       toast.error('Failed to initialize program context')
-  //     }
-  //   }
-
-  //   if (programId && network) {
-  //     initializeServerContext()
-  //   }
-  // }, [programId, network])
 
   const handleTabChange = (value: string) => {
     setActiveTab(value)
@@ -103,6 +72,7 @@ export function ProgramActions({ programId, pointsPerAction, programName, progra
           inputs.length === 1
             ? 'Your loyalty pass has been issued successfully'
             : `Successfully issued ${inputs.length} loyalty passes`,
+        signature: inputs.length === 1 ? results[0].signature : undefined,
       })
       setShowSuccessModal(true)
       setAddress('')
@@ -126,13 +96,14 @@ export function ProgramActions({ programId, pointsPerAction, programName, progra
           network,
         })),
       )
-
+      
       setSuccessData({
         title: 'Points Awarded Successfully',
         message:
           inputs.length === 1
             ? `Successfully awarded points for ${selectedAction}`
             : `Successfully awarded points to ${inputs.length} loyalty passes`,
+        signature: inputs.length === 1 ? results[0].signature : undefined,
       })
       setShowSuccessModal(true)
       setAddress('')
@@ -168,6 +139,7 @@ export function ProgramActions({ programId, pointsPerAction, programName, progra
           inputs.length === 1
             ? `Successfully gifted ${pointsToGift} points for ${action}`
             : `Successfully gifted points to ${inputs.length} loyalty passes`,
+        signature: inputs.length === 1 ? results[0].signature : undefined,
       })
       setShowSuccessModal(true)
       setAddress('')
@@ -203,6 +175,7 @@ export function ProgramActions({ programId, pointsPerAction, programName, progra
           inputs.length === 1
             ? `Successfully revoked ${pointsToRevoke} points`
             : `Successfully revoked points from ${inputs.length} loyalty passes`,
+        signature: inputs.length === 1 ? results[0].signature : undefined,
       })
       setShowSuccessModal(true)
       setAddress('')
@@ -301,8 +274,8 @@ export function ProgramActions({ programId, pointsPerAction, programName, progra
                       Object.entries(pointsPerAction)
                         .filter(([action]) => action && action.trim() !== '')
                         .map(([action, points]) => (
-                          <SelectItem key={action} value={action}>
-                            {action} ({points} points)
+                      <SelectItem key={action} value={action}>
+                        {action} ({points} points)
                           </SelectItem>
                         ))
                     ) : (

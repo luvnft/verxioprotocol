@@ -1,11 +1,11 @@
 'use server'
 
-import { createSignerFromKeypair, generateSigner } from '@metaplex-foundation/umi'
+import { createSignerFromKeypair, generateSigner, keypairIdentity } from '@metaplex-foundation/umi'
 import { issueNewLoyaltyPass } from '@/lib/methods/issueLoyaltyPass'
 import { awardPoints, revokePoints, giftPoints } from '@/lib/methods/manageLoyaltyPoints'
 import { convertSecretKeyToKeypair } from '@/lib/utils'
 import { getPassCollection, storeLoyaltyPass } from './loyalty'
-import { getAssetSigner, getProgramSigner } from './signer'
+import { getAssetSigner } from './signer'
 import { getFeePayerAccount } from './program'
 import { cache } from 'react'
 import bs58 from 'bs58'
@@ -43,13 +43,6 @@ export const issuePasses = cache(async (inputs: IssuePassInput[]) => {
   try {
     const results = await Promise.all(
       inputs.map(async (input) => {
-
-        // Get the program's private key from the database
-        const programSignerData = await getProgramSigner(input.collectionAddress)
-        if (!programSignerData?.privateKey) {
-          throw new Error('Program signer not found')
-        }
-          
         const feePayerAccount = await getFeePayerAccount(input.collectionAddress)
         if (!feePayerAccount) {
           throw new Error('Fee payer account not found')

@@ -22,6 +22,7 @@ import { generateImageUri } from '@/lib/metadata/generateImageUri'
 import { generateNftMetadata } from '@/lib/metadata/generateNftMetadata'
 import { useNetwork } from '@/lib/network-context'
 import { storeLoyaltyProgram } from '@/app/actions/program'
+import { generateSigner } from '@metaplex-foundation/umi'
 
 const colorOptions = [
   { name: 'Purple', value: 'purple' },
@@ -170,7 +171,7 @@ export default function LoyaltyCardCustomizer({ onRotationComplete }: LoyaltyCar
   const isAppearanceValid = formData.metadata.brandColor
 
   const handleSave = async () => {
-    if (!connected) {
+    if (!connected || !address) {
       toast.error('Please connect your wallet to save the loyalty program')
       return
     }
@@ -219,7 +220,7 @@ export default function LoyaltyCardCustomizer({ onRotationComplete }: LoyaltyCar
           metadataUri: imageUri,
         },
         imageUri,
-        address?.toString() || '',
+        address.toString(),
         formData.bannerImage?.type,
       )
 
@@ -234,18 +235,17 @@ export default function LoyaltyCardCustomizer({ onRotationComplete }: LoyaltyCar
         pointsPerAction: formData.pointsPerAction,
       })
 
+      // Generate fee account
+      const feeAccount = generateSigner(context.umi)
       // Store in database using server action
-      if (!address) {
-        toast.error('No account address available')
-        return
-      }
-
       await storeLoyaltyProgram({
         creator: address.toString(),
         publicKey: result.collection.publicKey.toString(),
         privateKey: bs58.encode(result.collection.secretKey),
         signature: result.signature,
         network: network,
+        feePayerPrivate: bs58.encode(feeAccount.secretKey),
+        feePayerPublic: feeAccount.publicKey.toString(),
       })
 
       setSuccessData({
