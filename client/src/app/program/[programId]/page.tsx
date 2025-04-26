@@ -96,37 +96,6 @@ export default function PublicProgramPage({ params }: { params: Promise<{ progra
     }
   }, [resolvedParams.programId, network])
 
-  useEffect(() => {
-    async function initializeServerContext() {
-      try {
-        const programSignerData = await getProgramSigner(resolvedParams.programId)
-        if (!programSignerData?.privateKey) {
-          throw new Error('Program signer not found')
-        }
-
-        const context = createServerProgram(
-          resolvedParams.programId,
-          resolvedParams.programId,
-          network as Network
-        )
-
-        const keypairSigner = createSignerFromKeypair(
-          context.umi,
-          convertSecretKeyToKeypair(programSignerData.privateKey)
-        )
-        context.umi.use(keypairIdentity(keypairSigner))
-
-        setServerContext(context)
-      } catch (error) {
-        console.error('Error initializing server context:', error)
-        toast.error('Failed to initialize program context')
-      }
-    }
-
-    if (resolvedParams.programId && network) {
-      initializeServerContext()
-    }
-  }, [resolvedParams.programId, network])
 
   const handleMintPass = async () => {
     if (!address) {
@@ -136,11 +105,6 @@ export default function PublicProgramPage({ params }: { params: Promise<{ progra
 
     if (!program) {
       toast.error('Program not found')
-      return
-    }
-
-    if (!serverContext) {
-      toast.error('Program context not initialized')
       return
     }
 
@@ -157,7 +121,6 @@ export default function PublicProgramPage({ params }: { params: Promise<{ progra
     setIsMinting(true)
     try {
       const results = await issuePasses(
-        serverContext,
         [{
           collectionAddress: program.details.collectionAddress,
           recipient: address.toString(),

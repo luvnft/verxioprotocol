@@ -44,33 +44,33 @@ export function ProgramActions({ programId, pointsPerAction, programName, progra
   const [serverContext, setServerContext] = useState<any>(null)
   const { network } = useNetwork()
 
-  useEffect(() => {
-    async function initializeServerContext() {
-      try {
-        const programSignerData = await getProgramSigner(programId)
-        if (!programSignerData?.privateKey) {
-          throw new Error('Program signer not found')
-        }
+  // useEffect(() => {
+  //   async function initializeServerContext() {
+  //     try {
+  //       const programSignerData = await getProgramSigner(programId)
+  //       if (!programSignerData?.privateKey) {
+  //         throw new Error('Program signer not found')
+  //       }
 
-        const context = createServerProgram(programId, programId, network as Network)
+  //       const context = createServerProgram(programId, programId, network as Network)
 
-        const keypairSigner = createSignerFromKeypair(
-          context.umi,
-          convertSecretKeyToKeypair(programSignerData.privateKey),
-        )
-        context.umi.use(keypairIdentity(keypairSigner))
+  //       const keypairSigner = createSignerFromKeypair(
+  //         context.umi,
+  //         convertSecretKeyToKeypair(programSignerData.privateKey),
+  //       )
+  //       context.umi.use(keypairIdentity(keypairSigner))
 
-        setServerContext(context)
-      } catch (error) {
-        console.error('Error initializing server context:', error)
-        toast.error('Failed to initialize program context')
-      }
-    }
+  //       setServerContext(context)
+  //     } catch (error) {
+  //       console.error('Error initializing server context:', error)
+  //       toast.error('Failed to initialize program context')
+  //     }
+  //   }
 
-    if (programId && network) {
-      initializeServerContext()
-    }
-  }, [programId, network])
+  //   if (programId && network) {
+  //     initializeServerContext()
+  //   }
+  // }, [programId, network])
 
   const handleTabChange = (value: string) => {
     setActiveTab(value)
@@ -83,17 +83,11 @@ export function ProgramActions({ programId, pointsPerAction, programName, progra
   }
 
   const handleIssuePass = async () => {
-    if (!serverContext) {
-      toast.error('Program context not initialized')
-      return
-    }
-
     setIsLoading(true)
     try {
       const inputs = csvFile ? await parseCsvFile(csvFile) : [address]
 
       const results = await issuePasses(
-        serverContext,
         inputs.map((recipient) => ({
           collectionAddress: programId,
           recipient,
@@ -122,29 +116,16 @@ export function ProgramActions({ programId, pointsPerAction, programName, progra
   }
 
   const handleAwardPoints = async () => {
-    if (!serverContext) {
-      toast.error('Program context not initialized')
-      return
-    }
-
     setIsLoading(true)
     try {
       const inputs = csvFile ? await parseCsvFileWithActions(csvFile) : [{ address, action: selectedAction }]
-      console.log('Award Points Input:', {
-        passAddress: address,
-        action: selectedAction,
-        network
-      })
-      console.log('Server Context:', serverContext)
       const results = await awardPointsToPasses(
-        serverContext,
         inputs.map((input) => ({
           passAddress: input.address,
           action: input.action,
           network,
         })),
       )
-      console.log('Award Points Results:', results)
 
       setSuccessData({
         title: 'Points Awarded Successfully',
@@ -166,11 +147,6 @@ export function ProgramActions({ programId, pointsPerAction, programName, progra
   }
 
   const handleGiftPoints = async () => {
-    if (!serverContext) {
-      toast.error('Program context not initialized')
-      return
-    }
-
     setIsLoading(true)
     try {
       const inputs = csvFile
@@ -178,7 +154,6 @@ export function ProgramActions({ programId, pointsPerAction, programName, progra
         : [{ address, points: parseInt(pointsToGift), action }]
 
       const results = await giftPointsToPasses(
-        serverContext,
         inputs.map((input) => ({
           passAddress: input.address,
           pointsToGift: input.points,
@@ -208,17 +183,13 @@ export function ProgramActions({ programId, pointsPerAction, programName, progra
   }
 
   const handleRevokePoints = async () => {
-    if (!serverContext) {
-      toast.error('Program context not initialized')
-      return
-    }
-
     setIsLoading(true)
     try {
-      const inputs = csvFile ? await parseCsvFileWithPoints(csvFile) : [{ address, points: parseInt(pointsToRevoke) }]
+      const inputs = csvFile 
+        ? await parseCsvFileWithPoints(csvFile) 
+        : [{ address, points: parseInt(pointsToRevoke) }]
 
       const results = await revokePointsFromPasses(
-        serverContext,
         inputs.map((input) => ({
           passAddress: input.address,
           pointsToRevoke: input.points,

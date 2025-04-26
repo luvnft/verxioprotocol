@@ -47,22 +47,24 @@ export async function issueLoyaltyPass(
         },
       ],
     })
-    .add(feeInstruction)
-    .add(writeData(context.umi, {
-      key: {
-        type: PLUGIN_TYPES.APP_DATA,
-        dataAuthority: {
-          type: 'Address',
-          address: asset.publicKey,
-        },
-      },
-      authority: asset,
-      data: new TextEncoder().encode(JSON.stringify(DEFAULT_PASS_DATA)),
-      asset: publicKey(asset.publicKey),
-      collection: config.collectionAddress,
-    }))
+      .add(feeInstruction)
+      .add(
+        writeData(context.umi, {
+          key: {
+            type: PLUGIN_TYPES.APP_DATA,
+            dataAuthority: {
+              type: 'Address',
+              address: asset.publicKey,
+            },
+          },
+          authority: asset,
+          data: new TextEncoder().encode(JSON.stringify(DEFAULT_PASS_DATA)),
+          asset: publicKey(asset.publicKey),
+          collection: config.collectionAddress,
+        }),
+      )
 
-    const tx = await txnInstruction.sendAndConfirm(context.umi, { confirm: { commitment: 'confirmed' }} )
+    const tx = await txnInstruction.sendAndConfirm(context.umi, { confirm: { commitment: 'confirmed' } })
 
     return {
       asset,

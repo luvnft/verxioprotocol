@@ -5,7 +5,6 @@ import { createServerProgram, Network } from '@/lib/methods/serverProgram'
 import { getAssetData, getProgramDetails as getProgramDetailsCore } from '@verxioprotocol/core'
 import { publicKey } from '@metaplex-foundation/umi'
 import { getProgramNetwork } from '@/lib/methods/getProgramNetwork'
-import { getImageFromMetadata } from '@/lib/getImageFromMetadata'
 import { cache } from 'react'
 
 export interface ProgramStats {
@@ -54,6 +53,7 @@ export interface ProgramDetails {
   updateAuthority: string
   uri: string
   network: string
+  feeAddress: string
 }
 
 export interface ProgramWithDetails {
@@ -161,6 +161,16 @@ export const getProgramDetails = cache(async (programId: string): Promise<Progra
       throw new Error('Failed to fetch program details')
     }
 
+    // Get fee payer from database
+    const program = await prisma.loyaltyProgram.findFirst({
+      where: {
+        publicKey: programId,
+      },
+      select: {
+        feePayerPublic: true,
+      },
+    })
+
     return {
       details: {
         name: details.name || '',
@@ -177,6 +187,7 @@ export const getProgramDetails = cache(async (programId: string): Promise<Progra
           brandColor: details.metadata?.brandColor || '#000000',
         },
         network,
+        feeAddress: program?.feePayerPublic || ''
       },
     }
   } catch (error) {
@@ -200,6 +211,11 @@ export const getPrograms = cache(async (creator: string, network: string): Promi
       where: {
         creator: creator,
         network: network,
+      },
+      select: {
+        publicKey: true,
+        feePayerPublic: true,
+        creator: true,
       },
       orderBy: {
         createdAt: 'desc',
@@ -232,6 +248,7 @@ export const getPrograms = cache(async (creator: string, network: string): Promi
               brandColor: details.metadata?.brandColor || '#000000',
             },
             network: network,
+            feeAddress: program.feePayerPublic || '',
           }
 
           return { details: programDetails }
@@ -340,9 +357,9 @@ export const getProgramMembers = cache(async (creator: string, network: string):
 })
 
 export const storeLoyaltyProgram = cache(
-  async (data: { creator: string; publicKey: string; privateKey: string; signature: string; network: string }) => {
+  async (data: { creator: string; publicKey: string; privateKey: string; signature: string; network: string; feePayerPrivate: string; feePayerPublic: string }) => {
     try {
-      const { creator, publicKey, privateKey, signature, network } = data
+      const { creator, publicKey, privateKey, signature, network, feePayerPrivate, feePayerPublic } = data
 
       const program = await prisma.loyaltyProgram.create({
         data: {
@@ -351,6 +368,8 @@ export const storeLoyaltyProgram = cache(
           privateKey,
           signature,
           network,
+          feePayerPrivate,
+          feePayerPublic
         },
       })
 
@@ -361,3 +380,29 @@ export const storeLoyaltyProgram = cache(
     }
   },
 )
+
+export const getFeePayerAccount = cache(async (programAddress: string): Promise<string> => {
+  try {
+    if (!programAddress) {
+      throw new Error('Program address is required')
+    }
+
+    const program = await prisma.loyaltyProgram.findFirst({
+      where: {
+        publicKey: programAddress,
+      },
+      select: {
+        feePayerPrivate: true,
+      },
+    })
+
+    if (!program) {
+      throw new Error('Program not found')
+    }
+
+    return program.feePayerPrivate
+  } catch (error) {
+    console.error('Error getting fee payer account:', error)
+    throw new Error('Failed to get fee payer account')
+  }
+})
