@@ -18,8 +18,8 @@ export const DEFAULT_PASS_DATA = {
 export const PLUGIN_TYPES = {
   ATTRIBUTES: 'Attributes',
   APP_DATA: 'AppData',
-  LINKED_APP_DATA: 'LinkedAppData',
   PERMANENT_TRANSFER_DELEGATE: 'PermanentTransferDelegate',
+  UPDATE_DELEGATE: 'UpdateDelegate',
 } as const
 
 export const ATTRIBUTE_KEYS = {

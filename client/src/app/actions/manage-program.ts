@@ -1,12 +1,11 @@
 'use server'
 
-import { createSignerFromKeypair, generateSigner, keypairIdentity } from '@metaplex-foundation/umi'
+import { createSignerFromKeypair, generateSigner } from '@metaplex-foundation/umi'
 import { issueNewLoyaltyPass } from '@/lib/methods/issueLoyaltyPass'
 import { awardPoints, revokePoints, giftPoints } from '@/lib/methods/manageLoyaltyPoints'
 import { convertSecretKeyToKeypair } from '@/lib/utils'
 import { getPassCollection, storeLoyaltyPass } from './loyalty'
-import { getAssetSigner } from './signer'
-import { getFeePayerAccount } from './program'
+import { getProgramAuthorityAccount } from './program'
 import { cache } from 'react'
 import bs58 from 'bs58'
 import { Network } from '@/lib/methods/serverProgram'
@@ -43,15 +42,19 @@ export const issuePasses = cache(async (inputs: IssuePassInput[]) => {
   try {
     const results = await Promise.all(
       inputs.map(async (input) => {
-        const feePayerAccount = await getFeePayerAccount(input.collectionAddress)
-        if (!feePayerAccount) {
-          throw new Error('Fee payer account not found')
+        const programAuthorityAccount = await getProgramAuthorityAccount(input.collectionAddress)
+        if (!programAuthorityAccount) {
+          throw new Error('Program authority account not found')
         }
-
         const serverContext = createServerContextWithFeePayer(
           input.collectionAddress,
           input.network as Network,
-          feePayerAccount,
+          programAuthorityAccount,
+        )
+
+        const programSigner = createSignerFromKeypair(
+          serverContext.umi,
+          convertSecretKeyToKeypair(programAuthorityAccount),
         )
         const assetSigner = generateSigner(serverContext.umi)
         const result = await issueNewLoyaltyPass(serverContext, {
@@ -60,6 +63,7 @@ export const issuePasses = cache(async (inputs: IssuePassInput[]) => {
           passName: input.passName,
           passMetadataUri: input.passMetadataUri,
           assetSigner,
+          updateAuthority: programSigner,
         })
 
         await storeLoyaltyPass({
@@ -81,6 +85,12 @@ export const issuePasses = cache(async (inputs: IssuePassInput[]) => {
     return results
   } catch (error) {
     console.error('Error issuing passes:', error)
+    if (
+      error instanceof Error &&
+      error.message.includes('Attempt to debit an account but found no record of a prior credit')
+    ) {
+      throw new Error("Contact owner to top up loyalty program's fee account to continue")
+    }
     throw new Error(error instanceof Error ? error.message : 'An unexpected error occurred')
   }
 })
@@ -89,26 +99,24 @@ export const awardPointsToPasses = cache(async (inputs: AwardPointsInput[]) => {
   try {
     const results = await Promise.all(
       inputs.map(async (input) => {
-        const signerData = await getAssetSigner(input.passAddress)
-        if (!signerData?.privateKey) {
-          throw new Error('Signer record not found for this pass')
-        }
         const collectionAddress = await getPassCollection(input.passAddress)
-        const feePayerAccount = await getFeePayerAccount(collectionAddress)
-        if (!feePayerAccount) {
-          throw new Error('Fee payer account not found')
+        const programAuthorityAccount = await getProgramAuthorityAccount(collectionAddress)
+        if (!programAuthorityAccount) {
+          throw new Error('Program authority account not found')
         }
         const serverContext = createServerContextWithFeePayer(
           collectionAddress,
           input.network as Network,
-          feePayerAccount,
+          programAuthorityAccount,
         )
-        const assetSigner = createSignerFromKeypair(serverContext.umi, convertSecretKeyToKeypair(signerData.privateKey))
-
+        const programSigner = createSignerFromKeypair(
+          serverContext.umi,
+          convertSecretKeyToKeypair(programAuthorityAccount),
+        )
         return await awardPoints(serverContext, {
           passAddress: input.passAddress,
           action: input.action,
-          signer: assetSigner,
+          signer: programSigner,
         })
       }),
     )
@@ -124,27 +132,25 @@ export const giftPointsToPasses = cache(async (inputs: GiftPointsInput[]) => {
   try {
     const results = await Promise.all(
       inputs.map(async (input) => {
-        const signerData = await getAssetSigner(input.passAddress)
-        if (!signerData?.privateKey) {
-          throw new Error('Signer record not found for this pass')
-        }
-
         const collectionAddress = await getPassCollection(input.passAddress)
-        const feePayerAccount = await getFeePayerAccount(collectionAddress)
-        if (!feePayerAccount) {
-          throw new Error('Fee payer account not found')
+        const programAuthorityAccount = await getProgramAuthorityAccount(collectionAddress)
+        if (!programAuthorityAccount) {
+          throw new Error('Program authority account not found')
         }
         const serverContext = createServerContextWithFeePayer(
           collectionAddress,
           input.network as Network,
-          feePayerAccount,
+          programAuthorityAccount,
         )
-        const assetSigner = createSignerFromKeypair(serverContext.umi, convertSecretKeyToKeypair(signerData.privateKey))
+        const programSigner = createSignerFromKeypair(
+          serverContext.umi,
+          convertSecretKeyToKeypair(programAuthorityAccount),
+        )
 
         return await giftPoints(serverContext, {
           passAddress: input.passAddress,
           pointsToGift: input.pointsToGift,
-          signer: assetSigner,
+          signer: programSigner,
           action: input.action,
         })
       }),
@@ -161,27 +167,25 @@ export const revokePointsFromPasses = cache(async (inputs: RevokePointsInput[]) 
   try {
     const results = await Promise.all(
       inputs.map(async (input) => {
-        const signerData = await getAssetSigner(input.passAddress)
-        if (!signerData?.privateKey) {
-          throw new Error('Signer record not found for this pass')
-        }
-
         const collectionAddress = await getPassCollection(input.passAddress)
-        const feePayerAccount = await getFeePayerAccount(collectionAddress)
-        if (!feePayerAccount) {
-          throw new Error('Fee payer account not found')
+        const programAuthorityAccount = await getProgramAuthorityAccount(collectionAddress)
+        if (!programAuthorityAccount) {
+          throw new Error('Program authority account not found')
         }
         const serverContext = createServerContextWithFeePayer(
           collectionAddress,
           input.network as Network,
-          feePayerAccount,
+          programAuthorityAccount,
         )
-        const assetSigner = createSignerFromKeypair(serverContext.umi, convertSecretKeyToKeypair(signerData.privateKey))
+        const programSigner = createSignerFromKeypair(
+          serverContext.umi,
+          convertSecretKeyToKeypair(programAuthorityAccount),
+        )
 
         return await revokePoints(serverContext, {
           passAddress: input.passAddress,
           pointsToRevoke: input.pointsToRevoke,
-          signer: assetSigner,
+          signer: programSigner,
         })
       }),
     )

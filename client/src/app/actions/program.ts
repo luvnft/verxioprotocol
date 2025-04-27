@@ -166,14 +166,14 @@ export const getProgramDetails = cache(async (programId: string): Promise<Progra
         publicKey: programId,
       },
       select: {
-        feePayerPublic: true,
+        programAuthorityPublic: true,
       },
     })
 
     return {
       ...details,
       network: network,
-      feeAddress: program?.feePayerPublic || '',
+      feeAddress: program?.programAuthorityPublic || '',
       metadata: {
         ...details.metadata,
         brandColor: details.metadata?.brandColor || '#000000',
@@ -203,7 +203,7 @@ export const getPrograms = cache(async (creator: string, network: string): Promi
       },
       select: {
         publicKey: true,
-        feePayerPublic: true,
+        programAuthorityPublic: true,
         creator: true,
       },
       orderBy: {
@@ -237,7 +237,7 @@ export const getPrograms = cache(async (creator: string, network: string): Promi
               brandColor: details.metadata?.brandColor || '#000000',
             },
             network: network,
-            feeAddress: program.feePayerPublic || '',
+            feeAddress: program.programAuthorityPublic || '',
           }
 
           return { details: programDetails }
@@ -352,11 +352,12 @@ export const storeLoyaltyProgram = cache(
     privateKey: string
     signature: string
     network: string
-    feePayerPrivate: string
-    feePayerPublic: string
+    programAuthorityPrivate: string
+    programAuthorityPublic: string
   }) => {
     try {
-      const { creator, publicKey, privateKey, signature, network, feePayerPrivate, feePayerPublic } = data
+      const { creator, publicKey, privateKey, signature, network, programAuthorityPrivate, programAuthorityPublic } =
+        data
 
       const program = await prisma.loyaltyProgram.create({
         data: {
@@ -365,8 +366,8 @@ export const storeLoyaltyProgram = cache(
           privateKey,
           signature,
           network,
-          feePayerPrivate,
-          feePayerPublic,
+          programAuthorityPrivate,
+          programAuthorityPublic,
         },
       })
 
@@ -378,7 +379,7 @@ export const storeLoyaltyProgram = cache(
   },
 )
 
-export const getFeePayerAccount = cache(async (programAddress: string): Promise<string> => {
+export const getProgramAuthorityAccount = cache(async (programAddress: string): Promise<string> => {
   try {
     if (!programAddress) {
       throw new Error('Program address is required')
@@ -389,7 +390,7 @@ export const getFeePayerAccount = cache(async (programAddress: string): Promise<
         publicKey: programAddress,
       },
       select: {
-        feePayerPrivate: true,
+        programAuthorityPrivate: true,
       },
     })
 
@@ -397,7 +398,7 @@ export const getFeePayerAccount = cache(async (programAddress: string): Promise<
       throw new Error('Program not found')
     }
 
-    return program.feePayerPrivate
+    return program.programAuthorityPrivate
   } catch (error) {
     console.error('Error getting fee payer account:', error)
     throw new Error('Failed to get fee payer account')

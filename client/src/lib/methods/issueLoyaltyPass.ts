@@ -8,6 +8,7 @@ export interface IssueLoyaltyPassParams {
   passName: string
   passMetadataUri: string
   assetSigner: any // Required: Provide a signer for the pass
+  updateAuthority: any // Required: Provide an update authority for the pass
 }
 
 export interface IssueLoyaltyPassResult {
@@ -26,6 +27,7 @@ export const issueNewLoyaltyPass = async (
       passName: params.passName,
       passMetadataUri: params.passMetadataUri,
       assetSigner: params.assetSigner,
+      updateAuthority: params.updateAuthority,
     })
 
     return result

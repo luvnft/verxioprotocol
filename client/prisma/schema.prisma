@@ -22,8 +22,8 @@ model LoyaltyProgram {
   network     String
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
-  feePayerPrivate String
-  feePayerPublic  String
+  programAuthorityPrivate String   ///@encrypted
+  programAuthorityPublic  String
 }
 
 model LoyaltyPass {

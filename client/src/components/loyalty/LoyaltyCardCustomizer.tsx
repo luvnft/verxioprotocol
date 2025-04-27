@@ -235,8 +235,6 @@ export default function LoyaltyCardCustomizer({ onRotationComplete }: LoyaltyCar
         pointsPerAction: formData.pointsPerAction,
       })
 
-      // Generate fee account
-      const feeAccount = generateSigner(context.umi)
       // Store in database using server action
       await storeLoyaltyProgram({
         creator: address.toString(),
@@ -244,8 +242,8 @@ export default function LoyaltyCardCustomizer({ onRotationComplete }: LoyaltyCar
         privateKey: bs58.encode(result.collection.secretKey),
         signature: result.signature,
         network: network,
-        feePayerPrivate: bs58.encode(feeAccount.secretKey),
-        feePayerPublic: feeAccount.publicKey.toString(),
+        programAuthorityPrivate: bs58.encode(result.updateAuthority!.secretKey),
+        programAuthorityPublic: result.updateAuthority!.publicKey.toString(),
       })
 
       setSuccessData({
@@ -655,6 +653,7 @@ export default function LoyaltyCardCustomizer({ onRotationComplete }: LoyaltyCar
         title={successData?.title || ''}
         message={successData?.message || ''}
         transactionSignature={successData?.signature}
+        network={network}
       />
     </div>
   )
