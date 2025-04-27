@@ -8,7 +8,7 @@ interface SuccessModalProps {
   title: string
   message: string
   transactionSignature?: string
-  network?: 'mainnet-beta' | 'devnet'
+  network?: string
 }
 
 export function SuccessModal({ isOpen, onClose, title, message, transactionSignature, network }: SuccessModalProps) {

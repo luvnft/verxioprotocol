@@ -15,11 +15,13 @@ describe('issue-loyalty-pass', () => {
   })
 
   let collection: KeypairSigner | undefined
+  let authority: KeypairSigner | undefined
 
   beforeEach(async () => {
     // Each of the tests below will have access to a new collection
     const created = await createTestLoyaltyProgram(context)
     collection = created.collection
+    authority = created.updateAuthority
   })
 
   describe('expected usage', () => {
@@ -32,6 +34,7 @@ describe('issue-loyalty-pass', () => {
         passName: 'Test Pass',
         passMetadataUri: 'https://arweave.net/123abc',
         recipient: feePayer.publicKey,
+        updateAuthority: authority!,
       }
 
       // ACT
@@ -54,6 +57,7 @@ describe('issue-loyalty-pass', () => {
         passMetadataUri: 'https://arweave.net/123abc',
         recipient: feePayer.publicKey,
         assetSigner,
+        updateAuthority: authority!,
       }
 
       // ACT
@@ -87,6 +91,7 @@ describe('issue-loyalty-pass', () => {
         passName: 'Test Pass',
         passMetadataUri: 'https://arweave.net/123abc',
         recipient: feePayer.publicKey,
+        updateAuthority: authority!,
       }
 
       // ACT
@@ -96,6 +101,28 @@ describe('issue-loyalty-pass', () => {
       expect(result).toBeTruthy()
       expect(result.asset).toBeTruthy()
       expect(result.signature).toBeTruthy()
+    })
+
+    it('should create a new loyalty pass with a separate update authority', async () => {
+      expect.assertions(4)
+
+      // ARRANGE
+      const config: IssueLoyaltyPassConfig = {
+        collectionAddress: collection!.publicKey,
+        passName: 'Test Pass',
+        passMetadataUri: 'https://arweave.net/123abc',
+        recipient: feePayer.publicKey,
+        updateAuthority: authority!,
+      }
+
+      // ACT
+      const result = await issueLoyaltyPass(context, config)
+
+      // ASSERT
+      expect(result).toBeTruthy()
+      expect(result.asset).toBeTruthy()
+      expect(result.signature).toBeTruthy()
+      expect(result.asset.publicKey).not.toEqual(authority!.publicKey)
     })
   })
 
@@ -108,6 +135,7 @@ describe('issue-loyalty-pass', () => {
         passName: '',
         passMetadataUri: 'https://arweave.net/123abc',
         recipient: feePayer.publicKey,
+        updateAuthority: authority!,
       }
 
       // ACT

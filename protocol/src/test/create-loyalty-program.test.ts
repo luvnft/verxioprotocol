@@ -63,6 +63,28 @@ describe('create-loyalty-program', { sequential: true, timeout: 30000 }, () => {
       expect(result.signature).toBeTruthy()
       expect(result.collection.publicKey).toEqual(collectionSigner.publicKey)
     })
+
+    it('should create a new loyalty program with a provided update authority', async () => {
+      expect.assertions(5)
+      // ARRANGE
+      const updateAuthority = generateSigner(context.umi)
+      const config: CreateLoyaltyProgramConfig = createTestLoyaltyProgramConfig({
+        programAuthority: context.programAuthority,
+        updateAuthority,
+        metadata: {
+          organizationName: 'Test Host',
+        },
+      })
+      // ACT
+      const result = await createLoyaltyProgram(context, config)
+
+      // ASSERT
+      expect(result).toBeTruthy()
+      expect(result.collection).toBeTruthy()
+      expect(result.signature).toBeTruthy()
+      expect(result.updateAuthority).toBeTruthy()
+      expect(result.updateAuthority?.publicKey).toEqual(updateAuthority.publicKey)
+    })
   })
 
   describe('unexpected usage', () => {

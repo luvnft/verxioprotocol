@@ -637,6 +637,7 @@ export function ProgramActions({ programId, pointsPerAction, programName, progra
           title={successData.title}
           message={successData.message}
           transactionSignature={successData.signature}
+          network={network}
         />
       )}
     </>
