@@ -18,6 +18,13 @@ import {
   giftPointsToPasses,
   revokePointsFromPasses,
 } from '@/app/actions/manage-program'
+import {
+  parseCsvFile,
+  parseCsvFileWithActions,
+  parseCsvFileWithGiftPoints,
+  parseCsvFileWithPoints,
+  downloadResultsAsCsv,
+} from './parse-csv'
 
 interface ProgramActionsProps {
   programId: string
@@ -26,13 +33,17 @@ interface ProgramActionsProps {
   programUri: string
 }
 
+interface InputState {
+  address: string
+  action?: string
+  points?: number
+  reason?: string
+  signature?: string
+}
+
 export function ProgramActions({ programId, pointsPerAction, programName, programUri }: ProgramActionsProps) {
   const [activeTab, setActiveTab] = useState('issue')
-  const [address, setAddress] = useState('')
-  const [selectedAction, setSelectedAction] = useState('')
-  const [pointsToRevoke, setPointsToRevoke] = useState('')
-  const [pointsToGift, setPointsToGift] = useState('')
-  const [action, setAction] = useState('')
+  const [inputs, setInputs] = useState<InputState[]>([{ address: '' }])
   const [csvFile, setCsvFile] = useState<File | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [showSuccessModal, setShowSuccessModal] = useState(false)
@@ -41,21 +52,68 @@ export function ProgramActions({ programId, pointsPerAction, programName, progra
 
   const handleTabChange = (value: string) => {
     setActiveTab(value)
-    setAddress('')
-    setSelectedAction('')
-    setPointsToRevoke('')
-    setPointsToGift('')
-    setAction('')
+    setInputs([{ address: '' }])
     setCsvFile(null)
+  }
+
+  const handleAddInput = () => {
+    if (inputs.length < 5) {
+      setInputs([...inputs, { address: '' }])
+    }
+  }
+
+  const handleRemoveInput = (index: number) => {
+    setInputs(inputs.filter((_, i) => i !== index))
+  }
+
+  const handleInputChange = (index: number, field: keyof InputState, value: string | number) => {
+    // Clear CSV file when manual input starts
+    if (csvFile) {
+      setCsvFile(null)
+      // Clear the file input field
+      const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement
+      if (fileInput) {
+        fileInput.value = ''
+      }
+    }
+    const newInputs = [...inputs]
+    newInputs[index] = { ...newInputs[index], [field]: value }
+    setInputs(newInputs)
+  }
+
+  const handleCsvUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (file) {
+      setCsvFile(file)
+      switch (activeTab) {
+        case 'issue':
+          setInputs([{ address: '' }])
+          break
+        case 'award':
+          setInputs([{ address: '', action: '' }])
+          break
+        case 'gift':
+          setInputs([{ address: '', points: 0, reason: '' }])
+          break
+        case 'revoke':
+          setInputs([{ address: '', points: 0 }])
+          break
+      }
+    }
   }
 
   const handleIssuePass = async () => {
     setIsLoading(true)
     try {
-      const inputs = csvFile ? await parseCsvFile(csvFile) : [address]
+      let addresses: string[] = []
+      if (csvFile) {
+        addresses = await parseCsvFile(csvFile)
+      } else {
+        addresses = inputs.map((input) => input.address).filter(Boolean)
+      }
 
       const results = await issuePasses(
-        inputs.map((recipient) => ({
+        addresses.map((recipient) => ({
           collectionAddress: programId,
           recipient,
           passName: programName,
@@ -64,20 +122,30 @@ export function ProgramActions({ programId, pointsPerAction, programName, progra
         })),
       )
 
+      const message =
+        addresses.length === 1
+          ? `Successfully issued loyalty pass to ${addresses[0].slice(0, 4)}...${addresses[0].slice(-4)}.`
+          : `Successfully issued ${addresses.length} loyalty passes. Transaction details will be downloaded automatically.`
+
       setSuccessData({
-        title: 'Pass Issued Successfully',
-        message:
-          inputs.length === 1
-            ? 'Your loyalty pass has been issued successfully'
-            : `Successfully issued ${inputs.length} loyalty passes`,
-        signature: inputs.length === 1 ? results[0].signature : undefined,
+        title: 'Passes Issued Successfully',
+        message,
+        signature: addresses.length === 1 ? results[0].signature : undefined,
       })
       setShowSuccessModal(true)
-      setAddress('')
+      setInputs([{ address: '' }])
       setCsvFile(null)
+
+      // Only download CSV for multiple transactions
+      if (addresses.length > 1) {
+        downloadResultsAsCsv(
+          results.map((r, i) => ({ address: addresses[i], signature: r.signature })),
+          'issue',
+        )
+      }
     } catch (error) {
-      console.error('Error issuing pass:', error)
-      toast.error(error instanceof Error ? error.message : 'Failed to issue pass')
+      console.error('Error issuing passes:', error)
+      toast.error(error instanceof Error ? error.message : 'Failed to issue passes')
     } finally {
       setIsLoading(false)
     }
@@ -86,27 +154,44 @@ export function ProgramActions({ programId, pointsPerAction, programName, progra
   const handleAwardPoints = async () => {
     setIsLoading(true)
     try {
-      const inputs = csvFile ? await parseCsvFileWithActions(csvFile) : [{ address, action: selectedAction }]
+      let data: { address: string; action: string }[] = []
+      if (csvFile) {
+        data = await parseCsvFileWithActions(csvFile)
+      } else {
+        data = inputs
+          .map((input) => ({ address: input.address, action: input.action || '' }))
+          .filter((d) => d.address && d.action)
+      }
+
       const results = await awardPointsToPasses(
-        inputs.map((input) => ({
+        data.map((input) => ({
           passAddress: input.address,
           action: input.action,
           network,
         })),
       )
 
+      const message =
+        data.length === 1
+          ? `Successfully awarded ${pointsPerAction[data[0].action]} points for ${data[0].action} to pass ${data[0].address.slice(0, 4)}...${data[0].address.slice(-4)}.`
+          : `Successfully awarded points to ${data.length} loyalty passes. Transaction details will be downloaded automatically.`
+
       setSuccessData({
         title: 'Points Awarded Successfully',
-        message:
-          inputs.length === 1
-            ? `Successfully awarded points for ${selectedAction}`
-            : `Successfully awarded points to ${inputs.length} loyalty passes`,
-        signature: inputs.length === 1 ? results[0].signature : undefined,
+        message,
+        signature: data.length === 1 ? results[0].signature : undefined,
       })
       setShowSuccessModal(true)
-      setAddress('')
-      setSelectedAction('')
+      setInputs([{ address: '', action: '' }])
       setCsvFile(null)
+
+      // Only download CSV for multiple transactions
+      if (data.length > 1) {
+        downloadResultsAsCsv(
+          results.map((r, i) => ({ address: data[i].address, action: data[i].action, signature: r.signature })),
+          'award',
+        )
+      }
     } catch (error) {
       console.error('Error awarding points:', error)
       toast.error(error instanceof Error ? error.message : 'Failed to award points')
@@ -118,32 +203,54 @@ export function ProgramActions({ programId, pointsPerAction, programName, progra
   const handleGiftPoints = async () => {
     setIsLoading(true)
     try {
-      const inputs = csvFile
-        ? await parseCsvFileWithGiftPoints(csvFile)
-        : [{ address, points: parseInt(pointsToGift), action }]
+      let data: { address: string; points: number; reason: string }[] = []
+      if (csvFile) {
+        data = await parseCsvFileWithGiftPoints(csvFile)
+      } else {
+        data = inputs
+          .map((input) => ({
+            address: input.address,
+            points: input.points || 0,
+            reason: input.reason || '',
+          }))
+          .filter((d) => d.address && d.points > 0 && d.reason)
+      }
 
       const results = await giftPointsToPasses(
-        inputs.map((input) => ({
+        data.map((input) => ({
           passAddress: input.address,
           pointsToGift: input.points,
-          action: input.action,
+          action: input.reason,
           network,
         })),
       )
 
+      const message =
+        data.length === 1
+          ? `Successfully gifted ${data[0].points} points for "${data[0].reason}" to pass ${data[0].address.slice(0, 4)}...${data[0].address.slice(-4)}.`
+          : `Successfully gifted points to ${data.length} loyalty passes. Transaction details will be downloaded automatically.`
+
       setSuccessData({
         title: 'Points Gifted Successfully',
-        message:
-          inputs.length === 1
-            ? `Successfully gifted ${pointsToGift} points for ${action}`
-            : `Successfully gifted points to ${inputs.length} loyalty passes`,
-        signature: inputs.length === 1 ? results[0].signature : undefined,
+        message,
+        signature: data.length === 1 ? results[0].signature : undefined,
       })
       setShowSuccessModal(true)
-      setAddress('')
-      setPointsToGift('')
-      setAction('')
+      setInputs([{ address: '', points: 0, reason: '' }])
       setCsvFile(null)
+
+      // Only download CSV for multiple transactions
+      if (data.length > 1) {
+        downloadResultsAsCsv(
+          results.map((r, i) => ({
+            address: data[i].address,
+            points: data[i].points,
+            reason: data[i].reason,
+            signature: r.signature,
+          })),
+          'gift',
+        )
+      }
     } catch (error) {
       console.error('Error gifting points:', error)
       toast.error(error instanceof Error ? error.message : 'Failed to gift points')
@@ -155,28 +262,51 @@ export function ProgramActions({ programId, pointsPerAction, programName, progra
   const handleRevokePoints = async () => {
     setIsLoading(true)
     try {
-      const inputs = csvFile ? await parseCsvFileWithPoints(csvFile) : [{ address, points: parseInt(pointsToRevoke) }]
+      let data: { address: string; points: number }[] = []
+      if (csvFile) {
+        data = await parseCsvFileWithPoints(csvFile)
+      } else {
+        data = inputs
+          .map((input) => ({
+            address: input.address,
+            points: input.points || 0,
+          }))
+          .filter((d) => d.address && d.points > 0)
+      }
 
       const results = await revokePointsFromPasses(
-        inputs.map((input) => ({
+        data.map((input) => ({
           passAddress: input.address,
           pointsToRevoke: input.points,
           network,
         })),
       )
 
+      const message =
+        data.length === 1
+          ? `Successfully revoked ${data[0].points} points from pass ${data[0].address.slice(0, 4)}...${data[0].address.slice(-4)}.`
+          : `Successfully revoked points from ${data.length} loyalty passes. Transaction details will be downloaded automatically.`
+
       setSuccessData({
         title: 'Points Revoked Successfully',
-        message:
-          inputs.length === 1
-            ? `Successfully revoked ${pointsToRevoke} points`
-            : `Successfully revoked points from ${inputs.length} loyalty passes`,
-        signature: inputs.length === 1 ? results[0].signature : undefined,
+        message,
+        signature: data.length === 1 ? results[0].signature : undefined,
       })
       setShowSuccessModal(true)
-      setAddress('')
-      setPointsToRevoke('')
+      setInputs([{ address: '', points: 0 }])
       setCsvFile(null)
+
+      // Only download CSV for multiple transactions
+      if (data.length > 1) {
+        downloadResultsAsCsv(
+          results.map((r, i) => ({
+            address: data[i].address,
+            points: data[i].points,
+            signature: r.signature,
+          })),
+          'revoke',
+        )
+      }
     } catch (error) {
       console.error('Error revoking points:', error)
       toast.error(error instanceof Error ? error.message : 'Failed to revoke points')
@@ -201,17 +331,30 @@ export function ProgramActions({ programId, pointsPerAction, programName, progra
             </TabsList>
 
             <TabsContent value="issue" className="space-y-4">
-              <div className="space-y-2">
-                <Label className="orbitron">Wallet Address</Label>
-                <Input
-                  placeholder="Enter wallet address"
-                  value={address}
-                  onChange={(e) => setAddress(e.target.value)}
-                />
-              </div>
+              {inputs.map((input, index) => (
+                <div key={index} className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <Input
+                      placeholder="Enter recipient wallet address"
+                      value={input.address}
+                      onChange={(e) => handleInputChange(index, 'address', e.target.value)}
+                    />
+                    {index > 0 && (
+                      <Button variant="ghost" size="icon" onClick={() => handleRemoveInput(index)}>
+                        ×
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              ))}
+              {inputs.length < 5 && (
+                <Button variant="outline" onClick={handleAddInput}>
+                  + Add Another Wallet
+                </Button>
+              )}
               <div className="space-y-2">
                 <div className="flex items-center gap-2">
-                  <Label className="orbitron text-xs text-white/50">Premium: Upload CSV</Label>
+                  <Label className="orbitron text-xs text-white/50">Or Upload CSV</Label>
                   <Popover>
                     <PopoverTrigger asChild>
                       <Button variant="ghost" size="icon" className="h-4 w-4 p-0">
@@ -220,71 +363,75 @@ export function ProgramActions({ programId, pointsPerAction, programName, progra
                     </PopoverTrigger>
                     <PopoverContent className="w-80 bg-slate-900 border-slate-700/20">
                       <div className="space-y-2">
-                        <h4 className="font-medium orbitron">Premium Feature (Coming Soon)</h4>
-                        <p className="text-sm text-white/90">Batch operations are available in our premium plan.</p>
-                        <p className="text-sm text-white/90 mt-2">Upgrade to process multiple addresses at once.</p>
+                        <h4 className="font-medium orbitron">CSV Format</h4>
+                        <p className="text-sm text-white/90">Upload a CSV file with one wallet address per line.</p>
+                        <p className="text-sm text-red-400">
+                          Note: Do not include headers in your CSV file as they will be treated as data.
+                        </p>
                       </div>
                     </PopoverContent>
                   </Popover>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Input type="file" accept=".csv" className="cursor-not-allowed opacity-50" disabled />
-                  <Button variant="outline" size="icon" disabled>
+                  <Input type="file" accept=".csv" onChange={handleCsvUpload} />
+                  <Button variant="outline" size="icon">
                     <Upload className="h-4 w-4" />
                   </Button>
                 </div>
               </div>
               <Button
                 onClick={handleIssuePass}
-                disabled={!address || isLoading}
+                disabled={isLoading || (!csvFile && !inputs.some((input) => input.address))}
                 className="w-full bg-gradient-to-r from-[#00FFE0] via-[#0085FF] to-[#7000FF] text-white hover:opacity-90 orbitron disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isLoading ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Issuing Pass...
+                    Issuing Passes...
                   </>
                 ) : (
-                  'Issue Loyalty Pass'
+                  'Issue Loyalty Passes'
                 )}
               </Button>
             </TabsContent>
 
             <TabsContent value="award" className="space-y-4">
-              <div className="space-y-2">
-                <Label className="orbitron">Loyalty Pass Address</Label>
-                <Input
-                  placeholder="Enter the loyalty pass address to reward"
-                  value={address}
-                  onChange={(e) => setAddress(e.target.value)}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label className="orbitron">Action</Label>
-                <Select value={selectedAction} onValueChange={setSelectedAction}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select an action" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {Object.entries(pointsPerAction).filter(([action]) => action && action.trim() !== '').length > 0 ? (
-                      Object.entries(pointsPerAction)
-                        .filter(([action]) => action && action.trim() !== '')
-                        .map(([action, points]) => (
+              {inputs.map((input, index) => (
+                <div key={index} className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <Input
+                      placeholder="Enter loyalty pass address"
+                      value={input.address}
+                      onChange={(e) => handleInputChange(index, 'address', e.target.value)}
+                    />
+                    <Select value={input.action} onValueChange={(value) => handleInputChange(index, 'action', value)}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select action" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {Object.entries(pointsPerAction).map(([action, points]) => (
                           <SelectItem key={action} value={action}>
                             {action} ({points} points)
                           </SelectItem>
-                        ))
-                    ) : (
-                      <SelectItem value="no-action" disabled>
-                        No actions found
-                      </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    {index > 0 && (
+                      <Button variant="ghost" size="icon" onClick={() => handleRemoveInput(index)}>
+                        ×
+                      </Button>
                     )}
-                  </SelectContent>
-                </Select>
-              </div>
+                  </div>
+                </div>
+              ))}
+              {inputs.length < 5 && (
+                <Button variant="outline" onClick={handleAddInput}>
+                  + Add Another Pass
+                </Button>
+              )}
               <div className="space-y-2">
                 <div className="flex items-center gap-2">
-                  <Label className="orbitron text-xs text-white/50">Premium: Upload CSV</Label>
+                  <Label className="orbitron text-xs text-white/50">Or Upload CSV</Label>
                   <Popover>
                     <PopoverTrigger asChild>
                       <Button variant="ghost" size="icon" className="h-4 w-4 p-0">
@@ -293,23 +440,27 @@ export function ProgramActions({ programId, pointsPerAction, programName, progra
                     </PopoverTrigger>
                     <PopoverContent className="w-80 bg-slate-900 border-slate-700/20">
                       <div className="space-y-2">
-                        <h4 className="font-medium orbitron">Premium Feature (Coming Soon)</h4>
-                        <p className="text-sm text-white/90">Batch operations are available in our premium plan.</p>
-                        <p className="text-sm text-white/90 mt-2">Upgrade to process multiple addresses at once.</p>
+                        <h4 className="font-medium orbitron">CSV Format</h4>
+                        <p className="text-sm text-white/90">
+                          Upload a CSV file with loyalty pass address and action per line.
+                        </p>
+                        <p className="text-sm text-red-400">
+                          Note: Do not include headers in your CSV file as they will be treated as data.
+                        </p>
                       </div>
                     </PopoverContent>
                   </Popover>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Input type="file" accept=".csv" className="cursor-not-allowed opacity-50" disabled />
-                  <Button variant="outline" size="icon" disabled>
+                  <Input type="file" accept=".csv" onChange={handleCsvUpload} />
+                  <Button variant="outline" size="icon">
                     <Upload className="h-4 w-4" />
                   </Button>
                 </div>
               </div>
               <Button
                 onClick={handleAwardPoints}
-                disabled={!address || !selectedAction || isLoading}
+                disabled={isLoading || (!csvFile && !inputs.some((input) => input.address && input.action))}
                 className="w-full bg-gradient-to-r from-[#00FFE0] via-[#0085FF] to-[#7000FF] text-white hover:opacity-90 orbitron disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isLoading ? (
@@ -324,34 +475,41 @@ export function ProgramActions({ programId, pointsPerAction, programName, progra
             </TabsContent>
 
             <TabsContent value="gift" className="space-y-4">
-              <div className="space-y-2">
-                <Label className="orbitron">Loyalty Pass Address</Label>
-                <Input
-                  placeholder="Enter the loyalty pass address to gift points"
-                  value={address}
-                  onChange={(e) => setAddress(e.target.value)}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label className="orbitron">Points to Gift</Label>
-                <Input
-                  type="number"
-                  placeholder="Enter number of points to gift"
-                  value={pointsToGift}
-                  onChange={(e) => setPointsToGift(e.target.value)}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label className="orbitron">Reason</Label>
-                <Input
-                  placeholder="Enter reason for gifting points"
-                  value={action}
-                  onChange={(e) => setAction(e.target.value)}
-                />
-              </div>
+              {inputs.map((input, index) => (
+                <div key={index} className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <Input
+                      placeholder="Enter loyalty pass address"
+                      value={input.address}
+                      onChange={(e) => handleInputChange(index, 'address', e.target.value)}
+                    />
+                    <Input
+                      type="number"
+                      placeholder="Points to gift"
+                      value={input.points}
+                      onChange={(e) => handleInputChange(index, 'points', parseInt(e.target.value) || 0)}
+                    />
+                    <Input
+                      placeholder="Reason for gifting"
+                      value={input.reason}
+                      onChange={(e) => handleInputChange(index, 'reason', e.target.value)}
+                    />
+                    {index > 0 && (
+                      <Button variant="ghost" size="icon" onClick={() => handleRemoveInput(index)}>
+                        ×
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              ))}
+              {inputs.length < 5 && (
+                <Button variant="outline" onClick={handleAddInput}>
+                  + Add Another Pass
+                </Button>
+              )}
               <div className="space-y-2">
                 <div className="flex items-center gap-2">
-                  <Label className="orbitron text-xs text-white/50">Premium: Upload CSV</Label>
+                  <Label className="orbitron text-xs text-white/50">Or Upload CSV</Label>
                   <Popover>
                     <PopoverTrigger asChild>
                       <Button variant="ghost" size="icon" className="h-4 w-4 p-0">
@@ -360,23 +518,29 @@ export function ProgramActions({ programId, pointsPerAction, programName, progra
                     </PopoverTrigger>
                     <PopoverContent className="w-80 bg-slate-900 border-slate-700/20">
                       <div className="space-y-2">
-                        <h4 className="font-medium orbitron">Premium Feature (Coming Soon)</h4>
-                        <p className="text-sm text-white/90">Batch operations are available in our premium plan.</p>
-                        <p className="text-sm text-white/90 mt-2">Upgrade to process multiple addresses at once.</p>
+                        <h4 className="font-medium orbitron">CSV Format</h4>
+                        <p className="text-sm text-white/90">
+                          Upload a CSV file with loyalty pass address, points, and reason per line.
+                        </p>
+                        <p className="text-sm text-red-400">
+                          Note: Do not include headers in your CSV file as they will be treated as data.
+                        </p>
                       </div>
                     </PopoverContent>
                   </Popover>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Input type="file" accept=".csv" className="cursor-not-allowed opacity-50" disabled />
-                  <Button variant="outline" size="icon" disabled>
+                  <Input type="file" accept=".csv" onChange={handleCsvUpload} />
+                  <Button variant="outline" size="icon">
                     <Upload className="h-4 w-4" />
                   </Button>
                 </div>
               </div>
               <Button
                 onClick={handleGiftPoints}
-                disabled={!address || !pointsToGift || !action || isLoading}
+                disabled={
+                  isLoading || (!csvFile && !inputs.some((input) => input.address && input.points && input.reason))
+                }
                 className="w-full bg-gradient-to-r from-[#00FFE0] via-[#0085FF] to-[#7000FF] text-white hover:opacity-90 orbitron disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isLoading ? (
@@ -391,26 +555,36 @@ export function ProgramActions({ programId, pointsPerAction, programName, progra
             </TabsContent>
 
             <TabsContent value="revoke" className="space-y-4">
-              <div className="space-y-2">
-                <Label className="orbitron">Loyalty Pass Address</Label>
-                <Input
-                  placeholder="Enter the loyalty address to debit from"
-                  value={address}
-                  onChange={(e) => setAddress(e.target.value)}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label className="orbitron">Points to Revoke</Label>
-                <Input
-                  type="number"
-                  placeholder="Enter number of points to revoke"
-                  value={pointsToRevoke}
-                  onChange={(e) => setPointsToRevoke(e.target.value)}
-                />
-              </div>
+              {inputs.map((input, index) => (
+                <div key={index} className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <Input
+                      placeholder="Enter loyalty pass address"
+                      value={input.address}
+                      onChange={(e) => handleInputChange(index, 'address', e.target.value)}
+                    />
+                    <Input
+                      type="number"
+                      placeholder="Points to revoke"
+                      value={input.points}
+                      onChange={(e) => handleInputChange(index, 'points', parseInt(e.target.value) || 0)}
+                    />
+                    {index > 0 && (
+                      <Button variant="ghost" size="icon" onClick={() => handleRemoveInput(index)}>
+                        ×
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              ))}
+              {inputs.length < 5 && (
+                <Button variant="outline" onClick={handleAddInput}>
+                  + Add Another Pass
+                </Button>
+              )}
               <div className="space-y-2">
                 <div className="flex items-center gap-2">
-                  <Label className="orbitron text-xs text-white/50">Premium: Upload CSV</Label>
+                  <Label className="orbitron text-xs text-white/50">Or Upload CSV</Label>
                   <Popover>
                     <PopoverTrigger asChild>
                       <Button variant="ghost" size="icon" className="h-4 w-4 p-0">
@@ -419,23 +593,27 @@ export function ProgramActions({ programId, pointsPerAction, programName, progra
                     </PopoverTrigger>
                     <PopoverContent className="w-80 bg-slate-900 border-slate-700/20">
                       <div className="space-y-2">
-                        <h4 className="font-medium orbitron">Premium Feature (Coming Soon)</h4>
-                        <p className="text-sm text-white/90">Batch operations are available in our premium plan.</p>
-                        <p className="text-sm text-white/90 mt-2">Upgrade to process multiple addresses at once.</p>
+                        <h4 className="font-medium orbitron">CSV Format</h4>
+                        <p className="text-sm text-white/90">
+                          Upload a CSV file with loyalty pass address and points per line.
+                        </p>
+                        <p className="text-sm text-red-400">
+                          Note: Do not include headers in your CSV file as they will be treated as data.
+                        </p>
                       </div>
                     </PopoverContent>
                   </Popover>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Input type="file" accept=".csv" className="cursor-not-allowed opacity-50" disabled />
-                  <Button variant="outline" size="icon" disabled>
+                  <Input type="file" accept=".csv" onChange={handleCsvUpload} />
+                  <Button variant="outline" size="icon">
                     <Upload className="h-4 w-4" />
                   </Button>
                 </div>
               </div>
               <Button
                 onClick={handleRevokePoints}
-                disabled={!address || !pointsToRevoke || isLoading}
+                disabled={isLoading || (!csvFile && !inputs.some((input) => input.address && input.points))}
                 className="w-full bg-gradient-to-r from-[#00FFE0] via-[#0085FF] to-[#7000FF] text-white hover:opacity-90 orbitron disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isLoading ? (
@@ -459,50 +637,8 @@ export function ProgramActions({ programId, pointsPerAction, programName, progra
           title={successData.title}
           message={successData.message}
           transactionSignature={successData.signature}
-          network={network}
         />
       )}
     </>
   )
-}
-
-async function parseCsvFile(file: File): Promise<string[]> {
-  const text = await file.text()
-  return text
-    .split('\n')
-    .map((line) => line.trim())
-    .filter(Boolean)
-}
-
-async function parseCsvFileWithActions(file: File): Promise<{ address: string; action: string }[]> {
-  const text = await file.text()
-  return text
-    .split('\n')
-    .map((line) => {
-      const [address, action] = line.split(',').map((item) => item.trim())
-      return { address, action }
-    })
-    .filter((record) => record.address && record.action)
-}
-
-async function parseCsvFileWithPoints(file: File): Promise<{ address: string; points: number; action: string }[]> {
-  const text = await file.text()
-  return text
-    .split('\n')
-    .map((line) => {
-      const [address, points, action] = line.split(',').map((item) => item.trim())
-      return { address, points: parseInt(points), action: action || 'gift' }
-    })
-    .filter((record) => record.address && !isNaN(record.points))
-}
-
-async function parseCsvFileWithGiftPoints(file: File): Promise<{ address: string; points: number; action: string }[]> {
-  const text = await file.text()
-  return text
-    .split('\n')
-    .map((line) => {
-      const [address, points, action] = line.split(',').map((item) => item.trim())
-      return { address, points: parseInt(points), action: action || 'gift' }
-    })
-    .filter((record) => record.address && !isNaN(record.points))
 }

@@ -64,7 +64,10 @@ export async function issueLoyaltyPass(
         }),
       )
 
-    const tx = await txnInstruction.sendAndConfirm(context.umi, { confirm: { commitment: 'confirmed' } })
+    const tx = await txnInstruction.sendAndConfirm(context.umi, {
+      confirm: { commitment: 'confirmed' },
+      send: { skipPreflight: true },
+    })
 
     return {
       asset,

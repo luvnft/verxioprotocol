@@ -1,6 +1,6 @@
 'use server'
 
-import { createSignerFromKeypair, generateSigner, keypairIdentity } from '@metaplex-foundation/umi'
+import { createSignerFromKeypair, generateSigner } from '@metaplex-foundation/umi'
 import { issueNewLoyaltyPass } from '@/lib/methods/issueLoyaltyPass'
 import { awardPoints, revokePoints, giftPoints } from '@/lib/methods/manageLoyaltyPoints'
 import { convertSecretKeyToKeypair } from '@/lib/utils'
@@ -47,12 +47,12 @@ export const issuePasses = cache(async (inputs: IssuePassInput[]) => {
         if (!feePayerAccount) {
           throw new Error('Fee payer account not found')
         }
-
         const serverContext = createServerContextWithFeePayer(
           input.collectionAddress,
           input.network as Network,
           feePayerAccount,
         )
+
         const assetSigner = generateSigner(serverContext.umi)
         const result = await issueNewLoyaltyPass(serverContext, {
           collectionAddress: input.collectionAddress,

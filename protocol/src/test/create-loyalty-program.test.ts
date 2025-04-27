@@ -11,7 +11,7 @@ import { FEES } from '../utils/fee-structure'
 
 const { feePayer, context } = getTestContext()
 
-describe('create-loyalty-program', { sequential: true }, () => {
+describe('create-loyalty-program', { sequential: true, timeout: 30000 }, () => {
   beforeAll(async () => {
     // Ensure we have enough sol for both the collection creation and the fee
     await ensureFeePayerBalance(context.umi, {

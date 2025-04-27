@@ -1,7 +1,7 @@
 import { generateSigner, keypairIdentity, KeypairSigner } from '@metaplex-foundation/umi'
 import { beforeAll, beforeEach, describe, expect, it } from 'vitest'
 import { createTestLoyaltyProgram } from './helpers/create-test-loyalty-program'
-import { getTestContext } from './helpers/get-test-context'
+import { getTestContext, createContextWithFeePayer } from './helpers/get-test-context'
 import { ensureFeePayerBalance } from './helpers/ensure-fee-payer-balance'
 import { issueLoyaltyPass, IssueLoyaltyPassConfig } from '../lib/issue-loyalty-pass'
 
@@ -42,6 +42,7 @@ describe('issue-loyalty-pass', () => {
       expect(result.asset).toBeTruthy()
       expect(result.signature).toBeTruthy()
     })
+
     it('should create a new loyalty pass with a provided asset signer', async () => {
       expect.assertions(4)
 
@@ -63,6 +64,38 @@ describe('issue-loyalty-pass', () => {
       expect(result.asset).toBeTruthy()
       expect(result.signature).toBeTruthy()
       expect(result.asset.publicKey).toEqual(assetSigner.publicKey)
+    })
+
+    it('should create a new loyalty pass using a separate fee account', async () => {
+      expect.assertions(3)
+
+      // ARRANGE
+      // Create a new fee account
+      const feeAccount = generateSigner(context.umi)
+
+      // Fund the fee account with 1 SOL
+      await ensureFeePayerBalance(context.umi, {
+        account: feeAccount.publicKey,
+        amount: 1,
+      })
+
+      // Create a new context with the fee account
+      const feeContext = createContextWithFeePayer(context, feeAccount)
+
+      const config: IssueLoyaltyPassConfig = {
+        collectionAddress: collection!.publicKey,
+        passName: 'Test Pass',
+        passMetadataUri: 'https://arweave.net/123abc',
+        recipient: feePayer.publicKey,
+      }
+
+      // ACT
+      const result = await issueLoyaltyPass(feeContext, config)
+
+      // ASSERT
+      expect(result).toBeTruthy()
+      expect(result.asset).toBeTruthy()
+      expect(result.signature).toBeTruthy()
     })
   })
 
